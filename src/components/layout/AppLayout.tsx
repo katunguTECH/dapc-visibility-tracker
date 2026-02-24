@@ -24,7 +24,7 @@ export default function AppLayout({
         <div className="flex justify-between items-center max-w-6xl mx-auto">
           <h1 className="font-bold text-lg">DAPC Visibility</h1>
 
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-2 text-xs sm:text-sm overflow-x-auto">
             {navItems.map((item) => (
               <Link
                 key={item.href}

@@ -1,43 +1,24 @@
-import AppLayout from "@/components/layout/AppLayout";
-import { actionCenterData, recommendationsData } from "@/data/mockData";
-
-export default function ActionCenterPage() {
+export default function ActionsPage() {
   return (
-    <AppLayout>
-      <h1 className="text-2xl font-bold mb-6">DAPC Action Center</h1>
+    <div className="space-y-8">
+      <h1 className="text-2xl font-bold">Action Center</h1>
 
-      <div className="grid gap-6">
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="font-semibold mb-2">Active Work</h2>
-          <ul className="list-disc list-inside">
-            {actionCenterData.map((task) => (
-              <li key={task.task}>
-                {task.task} —{" "}
-                <span
-                  className={`${
-                    task.status === "Completed"
-                      ? "text-green-600"
-                      : task.status === "In Progress"
-                      ? "text-yellow-600"
-                      : "text-blue-600"
-                  }`}
-                >
-                  {task.status}
-                </span>
-              </li>
-            ))}
-          </ul>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
+          <p className="text-gray-500 text-sm">Google Profile Updates</p>
+          <h2 className="text-2xl font-bold text-blue-600">In Progress</h2>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="font-semibold mb-2">Recommendations</h2>
-          <ul className="list-disc list-inside">
-            {recommendationsData.map((rec, index) => (
-              <li key={index}>{rec}</li>
-            ))}
-          </ul>
+        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
+          <p className="text-gray-500 text-sm">Keyword Optimization</p>
+          <h2 className="text-2xl font-bold text-green-600">Completed</h2>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
+          <p className="text-gray-500 text-sm">Reviews & Reputation</p>
+          <h2 className="text-2xl font-bold text-purple-600">Ongoing</h2>
         </div>
       </div>
-    </AppLayout>
-  );
+    </div>
+  )
 }

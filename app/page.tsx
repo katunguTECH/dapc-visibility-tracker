@@ -1,34 +1,107 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import SearchBar from "@/components/SearchBar";
+"use client";
 
-export default async function HomePage() {
-  const { userId } = auth();
+import { useState } from "react";
+import AppLayout from "@/components/layout/AppLayout";
+import { useUser, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { fetchAIResponse } from "@/lib/ai"; // helper to call your AI backend
 
-  if (!userId) {
-    redirect("/sign-in");
-  }
+export default function LandingPage() {
+  const { user } = useUser();
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMessage = { role: "user" as const, content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const response = await fetchAIResponse(input, user?.id);
+      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, something went wrong." }]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex flex-col items-center justify-center px-6">
-      
-      {/* Hero Section */}
-      <div className="text-center mb-10">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-          Meet Your DAPC AI Assistant
-        </h1>
+    <AppLayout>
+      <div className="space-y-8">
 
-        <p className="text-gray-600 text-lg max-w-xl mx-auto">
-          Ask about your businesses, subscriptions, performance,
-          or anything related to your DAPC account.
-        </p>
+        {/* Clerk Authentication Links */}
+        <div className="flex justify-end gap-4">
+          <SignInButton>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded">Sign In</button>
+          </SignInButton>
+          <SignUpButton>
+            <button className="bg-green-600 text-white px-4 py-2 rounded">Sign Up</button>
+          </SignUpButton>
+        </div>
+
+        {/* AI Assistant */}
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h2 className="text-xl font-bold mb-3">AI Assistant</h2>
+          <div className="flex flex-col gap-2 max-h-64 overflow-y-auto border rounded p-2 bg-gray-50">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`p-2 rounded ${msg.role === "user" ? "bg-blue-100 self-end" : "bg-gray-200 self-start"}`}
+              >
+                {msg.content}
+              </div>
+            ))}
+            {loading && <div className="text-gray-400 italic">Assistant is typing...</div>}
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <input
+              type="text"
+              placeholder="Looking for something? Ask DAPC"
+              className="flex-1 border rounded p-2"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            />
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+              onClick={handleSend}
+              disabled={loading}
+            >
+              Send
+            </button>
+          </div>
+        </div>
+
+        {/* Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard title="Visibility Score" value="92" />
+          <MetricCard title="Exposure Reach" value="14.2K" />
+          <MetricCard title="Leads Generated" value="128" />
+          <MetricCard title="Conversion Rate" value="8.4%" />
+        </div>
+
+        {/* Visibility Growth Chart Placeholder */}
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h3 className="font-bold mb-3">Visibility Growth</h3>
+          <div className="h-48 flex items-center justify-center text-gray-400 italic">
+            Chart placeholder (Jan-Jun)
+          </div>
+        </div>
       </div>
+    </AppLayout>
+  );
+}
 
-      {/* AI Assistant */}
-      <div className="w-full max-w-3xl">
-        <SearchBar />
-      </div>
-
-    </main>
+function MetricCard({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className="bg-white p-5 rounded-xl shadow">
+      <h3 className="text-sm text-gray-500">{title}</h3>
+      <p className="text-2xl font-semibold mt-2">{value}</p>
+    </div>
   );
 }

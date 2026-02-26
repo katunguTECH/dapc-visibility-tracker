@@ -1,18 +1,16 @@
-import "./globals.css"
-import Navbar from "@/components/Navbar"
+import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 
-export const metadata = {
-  title: "DAPC Visibility Tracker",
-  description: "Track your business visibility and leads",
-}
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="bg-gray-50 min-h-screen">
-        <Navbar />
-        <main className="p-6">{children}</main>
-      </body>
-    </html>
-  )
+    <ClerkProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
+  );
 }

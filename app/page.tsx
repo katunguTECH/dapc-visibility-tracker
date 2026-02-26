@@ -1,33 +1,34 @@
-import GrowthChart from "@/components/GrowthChart"
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import SearchBar from "@/components/SearchBar";
 
-export default function DashboardPage() {
+export default async function HomePage() {
+  const { userId } = auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Scorecards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
-          <p className="text-gray-500 text-sm">Visibility Score</p>
-          <h2 className="text-3xl font-bold text-blue-600">92</h2>
-        </div>
+    <main className="min-h-screen bg-gradient-to-b from-white to-gray-100 flex flex-col items-center justify-center px-6">
+      
+      {/* Hero Section */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+          Meet Your DAPC AI Assistant
+        </h1>
 
-        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
-          <p className="text-gray-500 text-sm">Exposure Reach</p>
-          <h2 className="text-3xl font-bold">14.2K</h2>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
-          <p className="text-gray-500 text-sm">Leads Generated</p>
-          <h2 className="text-3xl font-bold text-green-600">128</h2>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition">
-          <p className="text-gray-500 text-sm">Conversion Rate</p>
-          <h2 className="text-3xl font-bold text-purple-600">8.4%</h2>
-        </div>
+        <p className="text-gray-600 text-lg max-w-xl mx-auto">
+          Ask about your businesses, subscriptions, performance,
+          or anything related to your DAPC account.
+        </p>
       </div>
 
-      {/* Growth Chart */}
-      <GrowthChart />
-    </div>
-  )
+      {/* AI Assistant */}
+      <div className="w-full max-w-3xl">
+        <SearchBar />
+      </div>
+
+    </main>
+  );
 }

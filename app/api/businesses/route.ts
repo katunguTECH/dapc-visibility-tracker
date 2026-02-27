@@ -1,12 +1,10 @@
-// app/api/businesses/route.ts
-
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
   try {
-    // Clerk auth (NO arguments)
     const { userId } = auth();
 
     if (!userId) {
@@ -16,7 +14,6 @@ export async function GET() {
       );
     }
 
-    // Fetch businesses where user is a member
     const memberships = await prisma.membership.findMany({
       where: {
         userId: userId,
@@ -26,12 +23,14 @@ export async function GET() {
       },
     });
 
-    const businesses = memberships.map((m) => ({
-      id: m.business.id,
-      name: m.business.name,
-      slug: m.business.slug,
-      subscriptionStatus: m.business.subscriptionStatus,
-    }));
+    const businesses = memberships.map(
+      (m: Prisma.MembershipGetPayload<{ include: { business: true } }>) => ({
+        id: m.business.id,
+        name: m.business.name,
+        slug: m.business.slug,
+        subscriptionStatus: m.business.subscriptionStatus,
+      })
+    );
 
     return NextResponse.json({ businesses });
   } catch (error) {

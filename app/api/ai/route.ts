@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 
@@ -7,66 +6,62 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-export async function POST(req: NextRequest) {
-  const { userId } = auth();
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { message, userId } = body;
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    if (!message || !userId) {
+      return NextResponse.json(
+        { error: "Missing message or userId" },
+        { status: 400 }
+      );
+    }
 
-  const { message } = await req.json();
-
-  // Fetch only businesses belonging to this Clerk user
-  const memberships = await prisma.businessUser.findMany({
-    where: {
-      user: {
-        clerkId: userId,
+    // Get memberships with business info
+    const memberships = await prisma.membership.findMany({
+      where: { userId },
+      include: {
+        business: true,
       },
-    },
-    include: {
-      business: {
-        include: {
-          subscriptions: true,
-        },
-      },
-    },
-  });
+    });
 
-  const context = memberships.map((m: any) => ({
-    name: m.business.name,
-    slug: m.business.slug,
-    subscriptionStatus:
-      m.business.subscriptions[0]?.status ?? "none",
-  }));
+    // Fix for strict TypeScript mode
+    const context = memberships.map((m: any) => ({
+      name: m.business.name,
+      slug: m.business.slug,
+      subscriptionStatus: m.business.subscriptionStatus,
+    }));
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
-You are DAPC AI Assistant.
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are an AI assistant for DAPC Visibility Tracker.
 
-You help users understand:
-- Their businesses
-- Subscription status
-- Account insights
-
-User Data:
+The user belongs to the following businesses:
 ${JSON.stringify(context, null, 2)}
 
-If they have no businesses, explain that clearly.
-Be concise, helpful, and professional.
-        `,
-      },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
-  });
+Answer clearly and professionally.
+          `,
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+    });
 
-  return NextResponse.json({
-    response: completion.choices[0].message.content,
-  });
+    return NextResponse.json({
+      response: completion.choices[0].message.content,
+    });
+  } catch (error) {
+    console.error("AI Route Error:", error);
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
+  }
 }

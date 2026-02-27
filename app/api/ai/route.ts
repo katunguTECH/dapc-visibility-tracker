@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const context = memberships.map((m) => ({
+  const context = memberships.map((m: any) => ({
     name: m.business.name,
     slug: m.business.slug,
     subscriptionStatus:

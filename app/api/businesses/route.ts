@@ -1,29 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// app/api/businesses/route.ts
+
+import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  const { userId } = auth(req);
+export async function GET() {
+  try {
+    // Clerk auth (NO arguments)
+    const { userId } = auth();
 
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-  const businesses = await prisma.businessUser.findMany({
-    where: { userId },
-    include: {
-      business: {
-        include: {
-          subscriptions: true,
-        },
+    // Fetch businesses where user is a member
+    const memberships = await prisma.membership.findMany({
+      where: {
+        userId: userId,
       },
-    },
-  });
+      include: {
+        business: true,
+      },
+    });
 
-  return NextResponse.json(
-    businesses.map(bu => ({
-      id: bu.business.id,
-      name: bu.business.name,
-      slug: bu.business.slug,
-      subscription: bu.business.subscriptions[0] || null,
-    }))
-  );
+    const businesses = memberships.map((m) => ({
+      id: m.business.id,
+      name: m.business.name,
+      slug: m.business.slug,
+      subscriptionStatus: m.business.subscriptionStatus,
+    }));
+
+    return NextResponse.json({ businesses });
+  } catch (error) {
+    console.error("Businesses Route Error:", error);
+
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

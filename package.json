@@ -7,28 +7,28 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed",
-    "prisma:reset": "prisma migrate reset"
-  },
-  "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "format": "prettier --write ."
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.0.0",
-    "@prisma/client": "^5.0.0",
-    "next": "14.0.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "stripe": "^14.0.0"
+    "@clerk/nextjs": "^5.7.5",
+    "@prisma/client": "^5.4.1",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "next": "^15.2.6",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "stripe": "^14.15.0"
   },
   "devDependencies": {
-    "prisma": "^5.0.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.0"
+    "@types/react": "19.2.14",
+    "autoprefixer": "^10.4.27",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.2.6",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

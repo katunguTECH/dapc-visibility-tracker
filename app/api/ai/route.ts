@@ -1,66 +1,44 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-export async function POST(req: Request) {
+export async function GET() {
   try {
-    const body = await req.json();
-    const { message, userId } = body;
+    // Get authenticated user
+    const { userId } = await auth();
 
-    if (!message || !userId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "Missing message or userId" },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Get memberships with business info
+    // Fetch memberships including related business
     const memberships = await prisma.membership.findMany({
-      where: { userId },
+      where: {
+        userId: userId,
+      },
       include: {
         business: true,
       },
     });
 
-    // Fix for strict TypeScript mode
-    const context = memberships.map((m: any) => ({
+    // Let TypeScript infer the type automatically
+    const businesses = memberships.map((m) => ({
+      id: m.business.id,
       name: m.business.name,
       slug: m.business.slug,
-      subscriptionStatus: m.business.subscriptionStatus,
+      createdAt: m.business.createdAt,
+      updatedAt: m.business.updatedAt,
     }));
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `
-You are an AI assistant for DAPC Visibility Tracker.
-
-The user belongs to the following businesses:
-${JSON.stringify(context, null, 2)}
-
-Answer clearly and professionally.
-          `,
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-    });
-
-    return NextResponse.json({
-      response: completion.choices[0].message.content,
-    });
+    return NextResponse.json(businesses);
   } catch (error) {
-    console.error("AI Route Error:", error);
+    console.error("Businesses API error:", error);
+
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

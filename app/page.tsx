@@ -4,31 +4,32 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden">
-
-      {/* Watermark */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img
-          src="/dapc-logo.jpg"
-          alt="DAPC watermark"
-          className="w-[700px] opacity-5 select-none"
-        />
-      </div>
+    <main
+      className="relative min-h-screen flex flex-col items-center justify-center px-6 text-center"
+      style={{
+        backgroundImage: "url('/dapc-logo.jpg')",
+        backgroundRepeat: "repeat",
+        backgroundSize: "250px",
+        backgroundPosition: "center",
+      }}
+    >
+      {/* Light overlay to soften watermark */}
+      <div className="absolute inset-0 bg-white/90"></div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
+      <div className="relative z-10 w-full max-w-3xl">
 
         {/* Title */}
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">
           DAPC Visibility Tracker
         </h1>
 
-        <p className="mt-4 text-lg text-gray-600 max-w-2xl">
+        <p className="mt-4 text-lg text-gray-600">
           Monitor your business exposure, track leads, and optimize your online presence with AI-powered insights.
         </p>
 
         {/* Navigation Buttons */}
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl w-full">
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4">
 
           <Link
             href="/sign-up"
@@ -80,9 +81,7 @@ export default function Home() {
           </Link>
 
         </div>
-
       </div>
-
     </main>
   );
 }

@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +13,6 @@ export async function GET() {
       );
     }
 
-    // Let TypeScript infer the type automatically
     const memberships = await prisma.membership.findMany({
       where: {
         userId,
@@ -24,7 +22,7 @@ export async function GET() {
       },
     });
 
-    const businesses = memberships.map((m) => ({
+    const businesses = memberships.map((m: (typeof memberships)[number]) => ({
       id: m.business.id,
       name: m.business.name,
       slug: m.business.slug,

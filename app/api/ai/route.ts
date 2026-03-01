@@ -1,7 +1,7 @@
+
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -14,10 +14,8 @@ export async function GET() {
       );
     }
 
-    // Explicitly type the result of the query
-    const memberships: Prisma.MembershipGetPayload<{
-      include: { business: true };
-    }>[] = await prisma.membership.findMany({
+    // Let TypeScript infer the type automatically
+    const memberships = await prisma.membership.findMany({
       where: {
         userId,
       },

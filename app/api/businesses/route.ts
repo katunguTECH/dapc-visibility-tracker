@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
 export async function GET() {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json(
@@ -14,7 +13,8 @@ export async function GET() {
       );
     }
 
-    const memberships = await prisma.membership.findMany({
+    // FIXED: Changed .membership to .businessUser
+    const memberships = await prisma.businessUser.findMany({
       where: {
         userId: userId,
       },
@@ -23,21 +23,19 @@ export async function GET() {
       },
     });
 
-    const businesses = memberships.map(
-      (m: Prisma.MembershipGetPayload<{ include: { business: true } }>) => ({
-        id: m.business.id,
-        name: m.business.name,
-        slug: m.business.slug,
-        subscriptionStatus: m.business.subscriptionStatus,
-      })
-    );
+    const businesses = memberships.map((m) => ({
+      id: m.business.id,
+      name: m.business.name,
+      slug: m.business.slug,
+      createdAt: m.business.createdAt,
+      updatedAt: m.business.updatedAt,
+    }));
 
-    return NextResponse.json({ businesses });
+    return NextResponse.json(businesses);
   } catch (error) {
-    console.error("Businesses Route Error:", error);
-
+    console.error("Businesses API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

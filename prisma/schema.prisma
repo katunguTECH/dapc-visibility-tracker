@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id         String         @id @default(cuid())
-  clerkId    String         @unique
-  email      String         @unique
-  name       String?
+  id              String         @id @default(cuid())
+  clerkId         String         @unique
+  email           String         @unique
+  name            String?
   
   // Back-relation for the Business.owner field
-  ownedBusinesses Business[] @relation("BusinessOwner")
+  ownedBusinesses Business[]     @relation("BusinessOwner")
   
   // Relation for the BusinessUser (memberships)
   memberships     BusinessUser[]
   
-  createdAt  DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model Business {
@@ -33,7 +34,10 @@ model Business {
   
   users         BusinessUser[]
   subscriptions Subscription[]
+  
   createdAt     DateTime       @default(now())
+  // FIXED: Added updatedAt to match your API route expectations
+  updatedAt     DateTime       @updatedAt
 }
 
 model BusinessUser {
@@ -43,6 +47,9 @@ model BusinessUser {
   user       User     @relation(fields: [userId], references: [id])
   userId     String
   role       String   @default("member") // "owner" or "member"
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Subscription {
@@ -53,5 +60,7 @@ model Subscription {
   status           String
   priceId          String
   currentPeriodEnd DateTime
+  
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

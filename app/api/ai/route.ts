@@ -5,15 +5,19 @@ import { Prisma } from "@prisma/client";
 
 /**
  * We use Prisma.PromiseReturnType to extract the exact shape of the 
- * BusinessUser including the nested business data.
+ * BusinessUser including the nested business data for TypeScript safety.
  */
 type BusinessUserWithBusiness = Prisma.PromiseReturnType<typeof getMemberships>[number];
 
 async function getMemberships(userId: string) {
-  // FIXED: Changed 'membership' to 'businessUser' to match your schema
+  // Matches 'model BusinessUser' in your schema.prisma
   return await prisma.businessUser.findMany({
-    where: { userId },
-    include: { business: true },
+    where: { 
+      userId: userId 
+    },
+    include: { 
+      business: true 
+    },
   });
 }
 
@@ -30,19 +34,21 @@ export async function GET() {
 
     const memberships = await getMemberships(userId);
 
-    // Map the results to the business details
+    // Map the results to the business details the frontend expects
     const businesses = memberships
       .map((m: BusinessUserWithBusiness) => {
+        // Safety check: skip if the business relation is missing
         if (!m.business) return null;
+
         return {
           id: m.business.id,
           name: m.business.name,
           slug: m.business.slug,
           createdAt: m.business.createdAt,
-          updatedAt: m.business.updatedAt,
+          updatedAt: m.business.updatedAt, // Now valid because it's in schema.prisma
         };
       })
-      .filter(Boolean);
+      .filter((b): b is NonNullable<typeof b> => b !== null); // Cleanly removes nulls
 
     return NextResponse.json(businesses);
   } catch (error) {

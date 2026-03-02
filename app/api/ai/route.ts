@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+
+// 1. Define the specific shape of the data we are fetching
+// This tells TypeScript: "A membership MUST include the business relation"
+type MembershipWithBusiness = Prisma.MembershipGetPayload<{
+  include: { business: true };
+}>;
 
 export async function GET() {
   try {
@@ -13,6 +20,7 @@ export async function GET() {
       );
     }
 
+    // 2. Fetch the data
     const memberships = await prisma.membership.findMany({
       where: {
         userId,
@@ -22,7 +30,8 @@ export async function GET() {
       },
     });
 
-    const businesses = memberships.map((m: (typeof memberships)[number]) => ({
+    // 3. Map using the explicit type defined above
+    const businesses = memberships.map((m: MembershipWithBusiness) => ({
       id: m.business.id,
       name: m.business.name,
       slug: m.business.slug,

@@ -4,15 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
 /**
- * Modern Type Inference: 
- * We define the type by looking at what findMany returns when including 'business'.
- * This avoids the 'MembershipGetPayload' error.
+ * We use Prisma.PromiseReturnType to extract the exact shape of the 
+ * BusinessUser including the nested business data.
  */
-type MembershipWithBusiness = Prisma.PromiseReturnType<typeof getMemberships>[number];
+type BusinessUserWithBusiness = Prisma.PromiseReturnType<typeof getMemberships>[number];
 
-// Helper function to help TypeScript infer the return type
 async function getMemberships(userId: string) {
-  return await prisma.membership.findMany({
+  // FIXED: Changed 'membership' to 'businessUser' to match your schema
+  return await prisma.businessUser.findMany({
     where: { userId },
     include: { business: true },
   });
@@ -31,19 +30,19 @@ export async function GET() {
 
     const memberships = await getMemberships(userId);
 
-    // Explicitly mapping the data to the format the frontend expects
-    const businesses = memberships.map((m: MembershipWithBusiness) => {
-      // Safety check: Ensure business exists to prevent runtime crashes
-      if (!m.business) return null;
-
-      return {
-        id: m.business.id,
-        name: m.business.name,
-        slug: m.business.slug,
-        createdAt: m.business.createdAt,
-        updatedAt: m.business.updatedAt,
-      };
-    }).filter(Boolean); // Removes any null entries if a business was missing
+    // Map the results to the business details
+    const businesses = memberships
+      .map((m: BusinessUserWithBusiness) => {
+        if (!m.business) return null;
+        return {
+          id: m.business.id,
+          name: m.business.name,
+          slug: m.business.slug,
+          createdAt: m.business.createdAt,
+          updatedAt: m.business.updatedAt,
+        };
+      })
+      .filter(Boolean);
 
     return NextResponse.json(businesses);
   } catch (error) {

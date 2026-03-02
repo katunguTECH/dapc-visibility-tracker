@@ -1,17 +1,20 @@
-import AppLayout from "@/components/layout/AppLayout";
-import VisibilityScoreCard from "@/components/dashboard/VisibilityScoreCard";
-import ScoreBreakdown from "@/components/dashboard/ScoreBreakdown";
-import Badges from "@/components/dashboard/Badges";
-import Charts from "@/components/dashboard/Charts";
+import AppLayout from "@/components/layout/AppLayout"; // Keep this if AppLayout is in root components
+import VisibilityScoreCard from "./VisibilityScoreCard"; // FIXED: Use ./ for same folder
+import ScoreBreakdown from "./ScoreBreakdown";           // FIXED
+import Badges from "./Badges";                           // FIXED
+import Charts from "./Charts";                           // FIXED
 
-export default function DashboardPage() {
+export default function DashboardComponent() {
   return (
     <AppLayout>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <VisibilityScoreCard />
-      <ScoreBreakdown />
-      <Charts />
-      <Badges />
+      <div className="p-6 space-y-6">
+        <VisibilityScoreCard />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ScoreBreakdown />
+          <Badges />
+        </div>
+        <Charts />
+      </div>
     </AppLayout>
   );
 }

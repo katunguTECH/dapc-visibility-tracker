@@ -8,23 +8,32 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  clerkId   String     @unique
-  email     String     @unique
-  name      String?
-  businesses BusinessUser[]
-  createdAt DateTime   @default(now())
+  id         String         @id @default(cuid())
+  clerkId    String         @unique
+  email      String         @unique
+  name       String?
+  
+  // Back-relation for the Business.owner field
+  ownedBusinesses Business[] @relation("BusinessOwner")
+  
+  // Relation for the BusinessUser (memberships)
+  memberships     BusinessUser[]
+  
+  createdAt  DateTime       @default(now())
 }
 
 model Business {
-  id           String          @id @default(cuid())
-  name         String
-  slug         String          @unique
-  ownerId      String
-  owner        User            @relation(fields: [ownerId], references: [id])
-  users        BusinessUser[]
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  ownerId       String
+  
+  // Added "BusinessOwner" name to disambiguate from the BusinessUser relation
+  owner         User           @relation("BusinessOwner", fields: [ownerId], references: [id])
+  
+  users         BusinessUser[]
   subscriptions Subscription[]
-  createdAt    DateTime        @default(now())
+  createdAt     DateTime       @default(now())
 }
 
 model BusinessUser {
@@ -37,12 +46,12 @@ model BusinessUser {
 }
 
 model Subscription {
-  id                String    @id @default(cuid())
-  stripeId          String    @unique
-  businessId        String
-  business          Business  @relation(fields: [businessId], references: [id])
-  status            String
-  priceId           String
-  currentPeriodEnd  DateTime
-  createdAt         DateTime  @default(now())
+  id               String   @id @default(cuid())
+  stripeId         String   @unique
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id])
+  status           String
+  priceId          String
+  currentPeriodEnd DateTime
+  createdAt        DateTime @default(now())
 }

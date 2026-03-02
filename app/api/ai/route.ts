@@ -3,11 +3,20 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-// 1. Define the specific shape of the data we are fetching
-// This tells TypeScript: "A membership MUST include the business relation"
-type MembershipWithBusiness = Prisma.MembershipGetPayload<{
-  include: { business: true };
-}>;
+/**
+ * Modern Type Inference: 
+ * We define the type by looking at what findMany returns when including 'business'.
+ * This avoids the 'MembershipGetPayload' error.
+ */
+type MembershipWithBusiness = Prisma.PromiseReturnType<typeof getMemberships>[number];
+
+// Helper function to help TypeScript infer the return type
+async function getMemberships(userId: string) {
+  return await prisma.membership.findMany({
+    where: { userId },
+    include: { business: true },
+  });
+}
 
 export async function GET() {
   try {
@@ -20,24 +29,21 @@ export async function GET() {
       );
     }
 
-    // 2. Fetch the data
-    const memberships = await prisma.membership.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        business: true,
-      },
-    });
+    const memberships = await getMemberships(userId);
 
-    // 3. Map using the explicit type defined above
-    const businesses = memberships.map((m: MembershipWithBusiness) => ({
-      id: m.business.id,
-      name: m.business.name,
-      slug: m.business.slug,
-      createdAt: m.business.createdAt,
-      updatedAt: m.business.updatedAt,
-    }));
+    // Explicitly mapping the data to the format the frontend expects
+    const businesses = memberships.map((m: MembershipWithBusiness) => {
+      // Safety check: Ensure business exists to prevent runtime crashes
+      if (!m.business) return null;
+
+      return {
+        id: m.business.id,
+        name: m.business.name,
+        slug: m.business.slug,
+        createdAt: m.business.createdAt,
+        updatedAt: m.business.updatedAt,
+      };
+    }).filter(Boolean); // Removes any null entries if a business was missing
 
     return NextResponse.json(businesses);
   } catch (error) {

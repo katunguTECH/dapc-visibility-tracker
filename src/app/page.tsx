@@ -1,7 +1,37 @@
+// src/app/page.tsx
+'use client'; // Needed because we use useState and fetch in client component
+
+import { useState } from "react";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
-export default async function LandingPage() {
+export default function LandingPage() {
+  const [query, setQuery] = useState("");        // User input
+  const [result, setResult] = useState("");      // AI result
+  const [loading, setLoading] = useState(false); // Loading state
+
+  const handleSearch = async () => {
+    if (!query) return;
+    setLoading(true);
+    setResult("");
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business: query }),
+      });
+
+      const data = await res.json();
+      setResult(data.output);
+    } catch (err) {
+      console.error(err);
+      setResult("Error fetching analysis. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
@@ -45,11 +75,24 @@ export default async function LandingPage() {
             type="text" 
             placeholder="Search business name or niche..." 
             className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full focus:border-blue-500 focus:outline-none shadow-sm"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
-          <button className="absolute right-3 top-3 px-6 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition">
-            Search
+          <button 
+            className="absolute right-3 top-3 px-6 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition"
+            onClick={handleSearch}
+            disabled={loading}
+          >
+            {loading ? "Searching..." : "Search"}
           </button>
         </div>
+
+        {/* Show AI result */}
+        {result && (
+          <div className="mt-6 p-4 border rounded-md bg-gray-50 text-left whitespace-pre-wrap">
+            {result}
+          </div>
+        )}
       </section>
 
       {/* Action Center / Features */}

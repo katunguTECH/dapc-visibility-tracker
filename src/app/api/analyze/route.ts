@@ -1,22 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { NextResponse } from "next/server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { business } = body;
 
-export async function POST(req: NextRequest) {
-  const { business } = await req.json();
+    // Mock analysis result
+    const result = {
+      business,
+      exposure: Math.floor(Math.random() * 100000),
+      leads: Math.floor(Math.random() * 500),
+      platforms: [
+        { name: "Google", visibility: "High" },
+        { name: "Facebook", visibility: "Medium" },
+        { name: "Instagram", visibility: "Low" }
+      ]
+    };
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: `Analyze this business for its digital footprint and lead potential: ${business}`,
-      },
-    ],
-  });
-
-  const output = response.choices[0].message.content;
-
-  return NextResponse.json({ output });
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to analyze business" },
+      { status: 500 }
+    );
+  }
 }

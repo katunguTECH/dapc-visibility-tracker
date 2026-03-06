@@ -1,27 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { business } = body;
+    const { business } = await req.json();
 
-    // Mock analysis result
-    const result = {
-      business,
-      exposure: Math.floor(Math.random() * 100000),
-      leads: Math.floor(Math.random() * 500),
-      platforms: [
-        { name: "Google", visibility: "High" },
-        { name: "Facebook", visibility: "Medium" },
-        { name: "Instagram", visibility: "Low" }
-      ]
+    if (!business) {
+      return NextResponse.json({ error: "Business name is required" }, { status: 400 });
+    }
+
+    // MOCK ANALYSIS
+    const mockAnalysis = {
+      name: business,
+      seoScore: Math.floor(Math.random() * 100),
+      googleSearchResults: Math.floor(Math.random() * 1000),
+      mapsPresence: Math.random() > 0.5 ? "Listed on Google Maps" : "Not listed",
+      estimatedReach: Math.floor(Math.random() * 10000),
+      topCompetitors: ["Competitor A", "Competitor B", "Competitor C"],
     };
 
-    return NextResponse.json(result);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to analyze business" },
-      { status: 500 }
-    );
+    return NextResponse.json(mockAnalysis);
+  } catch (err) {
+    console.error("API Error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,45 +1,43 @@
-"use client"
+// src/components/Navbar.tsx
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { BarChart3, Eye, Users, Zap } from "lucide-react"
-
-const navItems = [
-  { name: "Dashboard", href: "/", icon: BarChart3 },
-  { name: "Exposure", href: "/exposure", icon: Eye },
-  { name: "Leads", href: "/leads", icon: Users },
-  { name: "Action Center", href: "/actions", icon: Zap },
-]
+import Link from "next/link";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Navbar() {
-  const pathname = usePathname()
-
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex overflow-x-auto no-scrollbar gap-2 py-3">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const active = pathname === item.href
+    <nav
+      style={{
+        width: "100%",
+        borderBottom: "1px solid #eee",
+        padding: "14px 24px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "white",
+      }}
+    >
+      {/* Logo */}
+      <div style={{ fontWeight: "bold", fontSize: "18px" }}>
+        <Link href="/">DAPC</Link>
+      </div>
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-sm font-medium transition
-                ${
-                  active
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                <Icon size={18} />
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
+      {/* Navigation Links */}
+      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+        <Link href="/">Home</Link>
+        <Link href="/exposure">Exposure</Link>
+        <Link href="/leads">Leads</Link>
+
+        {/* Signed out users */}
+        <SignedOut>
+          <Link href="/sign-in">Sign In</Link>
+        </SignedOut>
+
+        {/* Signed in users */}
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
       </div>
     </nav>
-  )
+  );
 }

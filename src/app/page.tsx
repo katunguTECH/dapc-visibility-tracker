@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ComparisonChart from "./ComparisonChart";
+import ComparisonChart from "@/components/ComparisonChart";
 
 export default function BusinessSearch() {
   const [hasResults, setHasResults] = useState(false);

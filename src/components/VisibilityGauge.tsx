@@ -1,20 +1,41 @@
 "use client";
 
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
+import {
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+  ResponsiveContainer,
+} from "recharts";
 
-export default function VisibilityGauge({ score }: any) {
+export default function VisibilityGauge({ score }: { score: number }) {
+  const data = [{ name: "Visibility", value: score }];
+
   return (
-    <div className="w-40 h-40">
-      <CircularProgressbar
-        value={score}
-        text={`${score}%`}
-        styles={buildStyles({
-          textColor: "#1F2937",
-          pathColor: "#2563EB",
-          trailColor: "#E5E7EB",
-        })}
-      />
+    <div className="w-full h-[250px]">
+      <ResponsiveContainer>
+        <RadialBarChart
+          innerRadius="70%"
+          outerRadius="100%"
+          data={data}
+          startAngle={180}
+          endAngle={0}
+        >
+          <PolarAngleAxis
+            type="number"
+            domain={[0, 100]}
+            tick={false}
+          />
+          <RadialBar
+            dataKey="value"
+            cornerRadius={10}
+          />
+        </RadialBarChart>
+      </ResponsiveContainer>
+
+      <div className="text-center -mt-20">
+        <p className="text-4xl font-black">{score}%</p>
+        <p className="text-slate-500 text-sm">Visibility Score</p>
+      </div>
     </div>
   );
 }

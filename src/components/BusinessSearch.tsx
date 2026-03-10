@@ -12,80 +12,102 @@ export default function BusinessSearch() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulating AI Analysis fetching real-time data
+    // Simulate Kenya-wide market analysis
     setTimeout(() => {
       setSearchData({
         user: { name: "DAPC (You)", score: 78, reviews: 150, rating: 4.7 },
         competitors: [
-          { name: "Top Competitor", score: 92, reviews: 342, rating: 4.8 },
-          { name: "Market Leader", score: 85, reviews: 210, rating: 4.6 },
+          { name: "Market Leader", score: 92, reviews: 342, rating: 4.8 },
+          { name: "Top Competitor", score: 85, reviews: 210, rating: 4.6 },
           { name: "Local Challenger", score: 71, reviews: 98, rating: 4.4 },
         ]
       });
       setIsLoading(false);
       setHasResults(true);
-    }, 1200);
+    }, 1500);
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-8">
       {!hasResults ? (
-        <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
-          <form onSubmit={handleSearch} className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Analyze Market Visibility</h2>
-            <div className="flex flex-col gap-2">
+        <div className="max-w-2xl mx-auto py-10">
+          <form onSubmit={handleSearch} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700 ml-1">Business Name</label>
               <input 
                 type="text" 
-                placeholder="Enter your business name..."
-                className="p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                placeholder="Enter business name (e.g. DAPC)..."
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-lg"
                 required
               />
             </div>
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 disabled:bg-slate-300"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-100 disabled:bg-slate-300 flex items-center justify-center gap-2"
             >
-              {isLoading ? "🔍 Scanning Local Citations..." : "Start AI Analysis"}
+              {isLoading ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Analyzing Kenyan Market...
+                </>
+              ) : "Start AI Visibility Audit"}
             </button>
           </form>
         </div>
       ) : (
         <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-          {/* Header Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-100">
-              <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">Your Score</p>
-              <p className="text-4xl font-black">{searchData.user.score}%</p>
-              <p className="text-sm mt-2 opacity-80">Ranked #3 in Nairobi</p>
+          {/* Dashboard Header Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-lg shadow-blue-50">
+              <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">Your Kenya Score</p>
+              <p className="text-4xl font-black mt-1">{searchData.user.score}%</p>
+              <p className="text-sm mt-3 opacity-90 font-medium">Ranked #3 Nationally</p>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Review Gap</p>
-              <p className="text-4xl font-black text-slate-800">-{searchData.competitors[0].reviews - searchData.user.reviews}</p>
-              <p className="text-sm mt-2 text-slate-500">vs. Market Leader</p>
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">National Review Gap</p>
+              <p className="text-4xl font-black text-slate-800 mt-1">-{searchData.competitors[0].reviews - searchData.user.reviews}</p>
+              <p className="text-sm mt-3 text-slate-500 italic">vs. Industry Leader</p>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Avg Rating</p>
-              <p className="text-4xl font-black text-slate-800">{searchData.user.rating}</p>
-              <p className="text-sm mt-2 text-green-500 font-medium">Above Average ★</p>
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Avg Quality Rating</p>
+              <p className="text-4xl font-black text-slate-800 mt-1">{searchData.user.rating}</p>
+              <p className="text-sm mt-3 text-green-600 font-bold flex items-center gap-1">
+                ★ Above Market Avg
+              </p>
             </div>
           </div>
 
-          {/* Graphical Visualization */}
-          <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+          {/* Visual Graph Container */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
              <ComparisonChart />
           </div>
 
-          {/* Action Footer */}
-          <div className="flex items-center justify-between pt-4">
+          {/* Table Breakdown */}
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <h4 className="font-bold text-slate-800 mb-4 px-2">Market Breakdown</h4>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border-l-4 border-blue-600">
+                <span className="font-bold text-slate-900">DAPC (You)</span>
+                <span className="text-blue-600 font-black">78%</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-slate-200">
+                <span className="text-slate-600 font-medium">Top Ranked Competitor</span>
+                <span className="text-slate-800 font-bold">92%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
             <button 
               onClick={() => setHasResults(false)}
-              className="px-6 py-2 text-slate-500 font-semibold hover:text-slate-800 transition-colors"
+              className="text-slate-400 font-bold hover:text-slate-600 transition-colors order-2 md:order-1"
             >
-              ← Reset Search
+              ← Run New National Audit
             </button>
-            <button className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-black transition-all">
-              Save Full Report
+            <button className="w-full md:w-auto bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-black transition-all order-1 md:order-2">
+              Export Growth PDF
             </button>
           </div>
         </div>

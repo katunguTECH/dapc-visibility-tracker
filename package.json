@@ -4,40 +4,28 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npx prisma generate",
-    "format": "prettier --write ."
+    "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.7.5",
-    "@prisma/client": "^5.4.1",
-    "axios": "^1.13.6",
-    "chart.js": "^4.5.1",
-    "dotenv": "^16.3.1",
-    "google-search-results-nodejs": "^2.1.0",
-    "lucide-react": "^0.575.0",
-    "next": "^15.2.6",
-    "openai": "^6.27.0",
-    "react": "^18.3.0",
-    "react-chartjs-2": "^5.3.1",
-    "react-circular-progressbar": "^2.2.0",
-    "react-dom": "^18.3.0",
-    "recharts": "^3.8.0",
-    "stripe": "^14.15.0"
+    "@clerk/nextjs": "^5.0.0",
+    "@prisma/client": "^5.19.1",
+    "google-search-results-nodejs": "^2.0.0",
+    "next": "15.5.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-circular-progressbar": "^2.1.0",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@types/react": "19.2.14",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "15.2.6",
-    "postcss": "^8.4.38",
-    "prisma": "^5.4.1",
-    "tailwindcss": "^3.4.4",
-    "typescript": "^5.4.5"
-  },
-  "engines": {
-    "node": ">=20.0.0"
+    "postcss": "^8.4.47",
+    "prisma": "^5.19.1",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2"
   }
 }

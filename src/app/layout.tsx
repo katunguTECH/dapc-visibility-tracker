@@ -1,4 +1,4 @@
-import { ClerkProvider } from "@clerk/nextjs";
+import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export default function RootLayout({
@@ -7,13 +7,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>
-          <Navbar />
+    <html lang="en">
+      <body className="bg-slate-50">
+
+        <Navbar />
+
+        <main className="max-w-6xl mx-auto px-6 py-10">
           {children}
-        </body>
-      </html>
-    </ClerkProvider>
+        </main>
+
+      </body>
+    </html>
   );
 }

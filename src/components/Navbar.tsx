@@ -6,22 +6,23 @@ import Link from "next/link";
 export default function Navbar() {
   return (
     <header className="w-full bg-white border-b border-slate-200">
+
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
         {/* LOGO */}
-        <Link href="/" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center">
           <Image
             src="/dapc-logo.jpg"
             alt="DAPC - Drive Africa Performance Center"
-            width={160}
+            width={180}
             height={60}
-            className="object-contain"
             priority
+            className="object-contain"
           />
         </Link>
 
-        {/* NAVIGATION */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">
+        {/* NAV LINKS */}
+        <nav className="flex items-center gap-8 text-sm font-semibold text-slate-700">
 
           <Link
             href="/"
@@ -46,17 +47,16 @@ export default function Navbar() {
 
         </nav>
 
-        {/* RIGHT SIDE BUTTON */}
-        <div>
-          <Link
-            href="/signin"
-            className="bg-blue-600 text-white px-5 py-2 rounded-xl font-semibold hover:bg-blue-700 transition"
-          >
-            Sign In
-          </Link>
-        </div>
+        {/* SIGN IN BUTTON */}
+        <Link
+          href="/signin"
+          className="bg-blue-600 text-white px-5 py-2 rounded-xl font-semibold hover:bg-blue-700 transition"
+        >
+          Sign In
+        </Link>
 
       </div>
+
     </header>
   );
 }

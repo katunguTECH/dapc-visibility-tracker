@@ -1,13 +1,16 @@
 "use client";
 
 export default function VisibilityDashboard({ data }: any) {
-
   return (
     <div className="space-y-8">
 
       <h2 className="text-3xl font-bold">
         Visibility Results
       </h2>
+
+      <p className="text-sm text-gray-500">
+        Search Query Used: <span className="font-semibold">{data.usedQuery}</span>
+      </p>
 
       <div className="grid grid-cols-3 gap-6">
 
@@ -18,7 +21,6 @@ export default function VisibilityDashboard({ data }: any) {
 
         <div className="bg-white p-6 rounded-xl shadow">
           <p className="text-sm text-slate-500">Google Ranking</p>
-
           <p className="text-4xl font-bold">
             {data.rankingPosition === -1
               ? "Not Found"
@@ -28,7 +30,9 @@ export default function VisibilityDashboard({ data }: any) {
 
         <div className="bg-white p-6 rounded-xl shadow">
           <p className="text-sm text-slate-500">Customer Rating</p>
-          <p className="text-4xl font-bold">{data.rating} ★</p>
+          <p className="text-4xl font-bold">
+            {data.rating} ★
+          </p>
         </div>
 
       </div>
@@ -39,15 +43,21 @@ export default function VisibilityDashboard({ data }: any) {
           Competitors Ranking
         </h3>
 
-        <ul className="space-y-2">
+        {data.competitors?.length === 0 ? (
+          <p className="text-gray-500">
+            No competitors detected
+          </p>
+        ) : (
+          <ul className="space-y-2">
 
-          {data.competitors?.map((c: any, i: number) => (
-            <li key={i}>
-              {i + 1}. {c.name}
-            </li>
-          ))}
+            {data.competitors.map((c: any, i: number) => (
+              <li key={i}>
+                {i + 1}. {c.name}
+              </li>
+            ))}
 
-        </ul>
+          </ul>
+        )}
 
       </div>
 

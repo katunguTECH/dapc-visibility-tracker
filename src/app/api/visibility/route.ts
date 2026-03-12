@@ -1,68 +1,74 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
 
-  const { business, location } = await req.json();
+  try {
 
-  const searchResponse = await fetch("https://google.serper.dev/search", {
-    method: "POST",
-    headers: {
-      "X-API-KEY": process.env.SERPER_API_KEY!,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      q: `${business} ${location} Kenya`,
-      gl: "ke",
-      hl: "en",
-    }),
-  });
+    const { business, location } = await req.json()
 
-  const searchData = await searchResponse.json();
+    const query = `${business} ${location}`
 
-  const mapsResponse = await fetch("https://google.serper.dev/maps", {
-    method: "POST",
-    headers: {
-      "X-API-KEY": process.env.SERPER_API_KEY!,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      q: business,
-      gl: "ke",
-    }),
-  });
+    const url =
+      `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&hl=en&gl=ke&api_key=${process.env.SERP_API_KEY}`
 
-  const mapsData = await mapsResponse.json();
+    const response = await fetch(url)
 
-  const organic = searchData.organic || [];
+    const data = await response.json()
 
-  const rankingPosition = organic.findIndex((r: any) =>
-    r.title.toLowerCase().includes(business.toLowerCase())
-  );
+    const organic = data.organic_results || []
+    const local = data.local_results || []
 
-  const googleRanking =
-    rankingPosition === -1 ? 0 : 100 - rankingPosition * 10;
+    let rankingPosition = -1
 
-  const competitors = organic.slice(0, 5).map((r: any) => ({
-    name: r.title,
-    link: r.link,
-  }));
+    organic.forEach((r:any,i:number)=>{
 
-  const mapResult = mapsData.places?.[0];
+      if(
+        r.title?.toLowerCase().includes(business.toLowerCase()) ||
+        r.link?.toLowerCase().includes(business.toLowerCase())
+      ){
+        rankingPosition = i
+      }
 
-  const rating = mapResult?.rating || 0;
-  const reviews = mapResult?.reviews || 0;
+    })
 
-  const visibilityScore =
-    googleRanking * 0.4 +
-    (mapResult ? 100 : 0) * 0.3 +
-    Math.min(reviews / 500, 1) * 100 * 0.2 +
-    rating * 20 * 0.1;
+    let visibilityScore = 0
 
-  return NextResponse.json({
-    visibilityScore: Math.round(visibilityScore),
-    rating,
-    reviews,
-    rankingPosition,
-    competitors,
-  });
+    if (rankingPosition === 0) visibilityScore = 100
+    else if (rankingPosition <= 2 && rankingPosition >= 0) visibilityScore = 80
+    else if (rankingPosition <= 5 && rankingPosition >= 0) visibilityScore = 60
+    else if (rankingPosition <= 9 && rankingPosition >= 0) visibilityScore = 40
+    else visibilityScore = 10
+
+    const rating =
+      local[0]?.rating ||
+      data.knowledge_graph?.rating ||
+      0
+
+    return NextResponse.json({
+
+      usedQuery: query,
+
+      visibilityScore,
+
+      rankingPosition,
+
+      rating
+
+    })
+
+  } catch (error) {
+
+    console.log(error)
+
+    return NextResponse.json({
+
+      usedQuery: "",
+      visibilityScore: 0,
+      rankingPosition: -1,
+      rating: 0
+
+    })
+
+  }
+
 }

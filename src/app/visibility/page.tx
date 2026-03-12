@@ -6,10 +6,12 @@ export default function Home() {
 
   const [business, setBusiness] = useState("")
   const [location, setLocation] = useState("")
-  const [data, setData] = useState<any>(null)
+  const [results, setResults] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  async function startAudit() {
+  async function runAudit() {
+
+    console.log("Start Visibility Audit clicked")
 
     if (!business || !location) {
       alert("Enter business and location")
@@ -17,11 +19,10 @@ export default function Home() {
     }
 
     setLoading(true)
-    setData(null)
 
     try {
 
-      const res = await fetch("/api/visibility", {
+      const response = await fetch("/api/visibility", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -32,13 +33,15 @@ export default function Home() {
         })
       })
 
-      const result = await res.json()
+      const data = await response.json()
 
-      setData(result)
+      console.log("API result:", data)
+
+      setResults(data)
 
     } catch (error) {
 
-      console.error(error)
+      console.error("Audit failed:", error)
 
     }
 
@@ -47,30 +50,35 @@ export default function Home() {
   }
 
   return (
-    <div className="p-10 max-w-3xl mx-auto space-y-6">
+    <div className="p-10 space-y-6">
 
       <h1 className="text-3xl font-bold">
         Kenya Market Visibility Audit
       </h1>
 
+      <p className="text-gray-500">
+        Analyze your business visibility across Kenya
+      </p>
+
       <div className="flex gap-3">
 
         <input
-          placeholder="Business"
-          className="border p-2 rounded w-60"
+          className="border p-2 rounded w-64"
+          placeholder="Business name"
           value={business}
-          onChange={(e)=>setBusiness(e.target.value)}
+          onChange={(e) => setBusiness(e.target.value)}
         />
 
         <input
+          className="border p-2 rounded w-64"
           placeholder="Location"
-          className="border p-2 rounded w-60"
           value={location}
-          onChange={(e)=>setLocation(e.target.value)}
+          onChange={(e) => setLocation(e.target.value)}
         />
 
         <button
-          onClick={startAudit}
+          type="button"
+          onClick={runAudit}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           {loading ? "Running..." : "Start Visibility Audit"}
@@ -78,31 +86,31 @@ export default function Home() {
 
       </div>
 
-      {data && (
+      {results && (
 
-        <div className="mt-8 space-y-4">
+        <div className="mt-10 space-y-3">
 
           <h2 className="text-2xl font-bold">
             Visibility Results
           </h2>
 
           <p>
-            <b>Search Query Used:</b> {data.usedQuery}
+            <strong>Search Query Used:</strong> {results.usedQuery}
           </p>
 
           <p>
-            <b>Visibility Score:</b> {data.visibilityScore}%
+            <strong>Visibility Score:</strong> {results.visibilityScore}%
           </p>
 
           <p>
-            <b>Google Ranking:</b>{" "}
-            {data.rankingPosition === -1
+            <strong>Google Ranking:</strong>{" "}
+            {results.rankingPosition === -1
               ? "Not Found"
-              : "#" + (data.rankingPosition + 1)}
+              : "#" + (results.rankingPosition + 1)}
           </p>
 
           <p>
-            <b>Customer Rating:</b> {data.rating} ★
+            <strong>Customer Rating:</strong> {results.rating} ★
           </p>
 
         </div>
@@ -111,5 +119,4 @@ export default function Home() {
 
     </div>
   )
-
 }

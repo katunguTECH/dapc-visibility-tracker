@@ -1,63 +1,98 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
+import { useState } from "react"
+import VisibilityDashboard from "./VisibilityDashboard"
 
 export default function BusinessSearch() {
-  const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [result, setResult] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleStartAudit = async () => {
-    if (!query || !location) return alert('Enter business name and location');
+  const [business, setBusiness] = useState("")
+  const [location, setLocation] = useState("")
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-    setLoading(true);
-    setResult(null);
+  const runAudit = async () => {
+
+    if (!business || !location) return
+
+    setLoading(true)
+    setData(null)
 
     try {
-      const res = await fetch('/api/visibility', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, location })
-      });
 
-      if (!res.ok) throw new Error('Failed to fetch');
+      const res = await fetch("/api/visibility", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          business,
+          location
+        })
+      })
 
-      const data = await res.json();
-      setResult(`Visibility Score: ${data.score}%`);
-    } catch (err: any) {
-      setResult(`Error: ${err.message}`);
-    } finally {
-      setLoading(false);
+      const result = await res.json()
+
+      setData(result)
+
+    } catch (err) {
+
+      console.error("Audit failed", err)
+
     }
-  };
+
+    setLoading(false)
+
+  }
 
   return (
-    <div className="p-4">
-      <h2>Kenya Market Visibility Audit</h2>
-      <input
-        type="text"
-        placeholder="Business Name"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="border p-2 m-2"
-      />
-      <input
-        type="text"
-        placeholder="Location"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        className="border p-2 m-2"
-      />
-      <button
-        onClick={handleStartAudit}
-        className="bg-blue-600 text-white px-4 py-2 m-2"
-        disabled={loading}
-      >
-        {loading ? 'Auditing...' : 'Start Visibility Audit'}
-      </button>
 
-      {result && <p className="mt-4">{result}</p>}
+    <div className="space-y-6">
+
+      <div className="flex flex-col gap-4 max-w-xl">
+
+        <input
+          className="border p-3 rounded-lg"
+          placeholder="Business name (e.g Airtel Kenya)"
+          value={business}
+          onChange={(e) => setBusiness(e.target.value)}
+        />
+
+        <input
+          className="border p-3 rounded-lg"
+          placeholder="City (e.g Nairobi)"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <button
+          onClick={runAudit}
+          disabled={loading}
+          className="bg-black text-white p-3 rounded-lg flex items-center justify-center gap-2"
+        >
+
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              Running Audit...
+            </>
+          ) : (
+            "Start Visibility Audit"
+          )}
+
+        </button>
+
+      </div>
+
+      {loading && (
+        <p className="text-gray-500">
+          Analyzing Google search results...
+        </p>
+      )}
+
+      {data && (
+        <VisibilityDashboard data={data} />
+      )}
+
     </div>
-  );
+  )
 }

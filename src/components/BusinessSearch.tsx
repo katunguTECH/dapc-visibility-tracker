@@ -3,16 +3,12 @@
 import { useState } from "react"
 
 export default function BusinessSearch() {
-
   const [business, setBusiness] = useState("")
   const [location, setLocation] = useState("")
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
   const runAudit = async () => {
-
-    console.log("Button clicked")
-
     if (!business || !location) {
       alert("Please enter a business and location")
       return
@@ -21,38 +17,31 @@ export default function BusinessSearch() {
     setLoading(true)
 
     try {
-
-      const response = await fetch("/api/visibility", {
+      const res = await fetch("/api/visibility", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          business: business,
-          location: location
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ business, location }),
       })
 
-      const data = await response.json()
-
-      console.log("API result:", data)
-
+      const data = await res.json()
+      console.log("API RESULT:", data)
       setResult(data)
-
-    } catch (error) {
-
-      console.error("Audit failed:", error)
-
+    } catch (err) {
+      console.error("Audit error:", err)
+      alert("Error running visibility audit. Check console.")
     }
 
     setLoading(false)
+  }
 
+  const getVisibilityColor = (score: number) => {
+    if (score >= 80) return "bg-green-500"
+    if (score >= 50) return "bg-yellow-500"
+    return "bg-red-500"
   }
 
   return (
-
-    <div className="max-w-2xl mx-auto space-y-6">
-
+    <div className="max-w-xl mx-auto space-y-6 p-4">
       <input
         className="border p-3 rounded w-full"
         placeholder="Business name"
@@ -70,43 +59,53 @@ export default function BusinessSearch() {
       <button
         onClick={runAudit}
         disabled={loading}
-        className="bg-black text-white px-6 py-3 rounded w-full"
+        className="bg-black text-white px-6 py-3 rounded w-full hover:bg-gray-800"
       >
-
         {loading ? "Running Audit..." : "Start Visibility Audit"}
-
       </button>
 
       {result && (
-
-        <div className="border rounded p-4">
-
-          <h2 className="font-bold mb-2">
-            Visibility Results
-          </h2>
+        <div className="border p-4 rounded space-y-3 bg-white shadow-sm">
+          <h2 className="font-bold text-lg mb-2">Visibility Results</h2>
 
           <p>
-            Search Query Used: {result.query}
+            <strong>Search Query Used:</strong>{" "}
+            {result.query || `${business} ${location}`}
+          </p>
+
+          <div className="space-y-1">
+            <p>
+              <strong>Visibility Score:</strong> {result.visibilityScore}%
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div
+                className={`${getVisibilityColor(
+                  result.visibilityScore
+                )} h-4 rounded-full`}
+                style={{ width: `${result.visibilityScore}%` }}
+              />
+            </div>
+          </div>
+
+          <p>
+            <strong>Google Ranking:</strong>{" "}
+            <span
+              className={
+                result.rankingPosition && result.rankingPosition !== "Not Found"
+                  ? "text-green-600 font-bold"
+                  : "text-red-600 font-bold"
+              }
+            >
+              {result.rankingPosition}
+            </span>
           </p>
 
           <p>
-            Visibility Score: {result.visibilityScore}%
+            <strong>Customer Rating:</strong>{" "}
+            <span className="text-yellow-500 font-bold">{result.rating} ★</span>
           </p>
-
-          <p>
-            Google Ranking: {result.rankingPosition}
-          </p>
-
-          <p>
-            Customer Rating: {result.rating} ★
-          </p>
-
         </div>
-
       )}
-
     </div>
-
   )
-
 }

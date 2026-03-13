@@ -20,65 +20,77 @@ export async function POST(req: Request) {
 
     let rankingPosition = -1
 
-    // Detect business ranking
-    organic.forEach((r: any, i: number) => {
+    const businessName = business.toLowerCase()
+    const businessKeyword = businessName.split(" ")[0]
 
-      const title = r.title?.toLowerCase() || ""
-      const snippet = r.snippet?.toLowerCase() || ""
-      const link = r.link?.toLowerCase() || ""
+    // Detect ranking position
+    organic.forEach((result: any, index: number) => {
 
-      const name = business.toLowerCase()
+      const title = (result.title || "").toLowerCase()
+      const snippet = (result.snippet || "").toLowerCase()
+      const link = (result.link || "").toLowerCase()
 
       if (
         rankingPosition === -1 &&
         (
-          title.includes(name) ||
-          snippet.includes(name) ||
-          link.includes(name.replace(" ", ""))
+          title.includes(businessName) ||
+          snippet.includes(businessName) ||
+          link.includes(businessName) ||
+          title.includes(businessKeyword) ||
+          link.includes(businessKeyword)
         )
       ) {
-        rankingPosition = i
+        rankingPosition = index
       }
 
     })
 
     // Extract competitors
-    const competitors = organic.slice(0, 5).map((r: any) => ({
-      name: r.title
+    const competitors = organic.slice(0, 5).map((result: any) => ({
+      name: result.title,
+      link: result.link
     }))
 
-    // Extract rating from Google Maps results
+    // Extract rating from local results (Google Maps)
     let rating = 0
 
     if (local.length > 0) {
-      rating = local[0].rating || 0
+
+      const match = local.find((place: any) =>
+        (place.title || "").toLowerCase().includes(businessKeyword)
+      )
+
+      if (match) {
+        rating = match.rating || 0
+      }
+
     }
 
-    // Visibility scoring logic
+    // Visibility scoring
     let visibilityScore = 10
 
     if (rankingPosition === 0) visibilityScore = 100
-    else if (rankingPosition <= 2 && rankingPosition >= 0) visibilityScore = 80
-    else if (rankingPosition <= 5 && rankingPosition >= 0) visibilityScore = 60
-    else if (rankingPosition <= 9 && rankingPosition >= 0) visibilityScore = 40
-    else if (rankingPosition === -1) visibilityScore = 10
+    else if (rankingPosition >= 1 && rankingPosition <= 2) visibilityScore = 80
+    else if (rankingPosition >= 3 && rankingPosition <= 5) visibilityScore = 60
+    else if (rankingPosition >= 6 && rankingPosition <= 9) visibilityScore = 40
+    else visibilityScore = 10
 
     return NextResponse.json({
       query,
       visibilityScore,
-      rankingPosition,
+      rankingPosition: rankingPosition >= 0 ? rankingPosition + 1 : "Not Found",
       rating,
       competitors
     })
 
   } catch (error) {
 
-    console.error("Visibility API Error:", error)
+    console.error("Visibility API error:", error)
 
     return NextResponse.json({
       query: "",
       visibilityScore: 0,
-      rankingPosition: -1,
+      rankingPosition: "Error",
       rating: 0,
       competitors: []
     })

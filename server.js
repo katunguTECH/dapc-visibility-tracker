@@ -1,30 +1,23 @@
 // server.js
-// Load environment variables
-require("dotenv").config(); // Make sure you have a .env file with SERP_API_KEY
+const express = require("express");
+const bodyParser = require("body-parser");
+const visibilityRouter = require("./src/app/api/visibility/route");
 
-// Optional: fallback if SERP_API_KEY is not in .env
-process.env.SERP_API_KEY = process.env.SERP_API_KEY || "1feeabd5f152d18a90c8ae60cc773703a6c7770efa77877359ee5f5c1f66eabd";
+const app = express();
+const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0"; // listen on all network interfaces
 
-// Import Node.js http module and Next.js
-const http = require("http");
-const next = require("next");
+app.use(bodyParser.json());
 
-// Detect environment
-const dev = process.env.NODE_ENV !== "production";
-const port = process.env.PORT || 3000;
+// Use your API route
+app.use("/api/visibility", visibilityRouter);
 
-// Create Next.js app instance
-const app = next({ dev });
-const handle = app.getRequestHandler();
+// Optional: simple home route
+app.get("/", (req, res) => {
+  res.send("DAPC Visibility Tracker API is running!");
+});
 
-// Prepare Next.js and start server
-app.prepare().then(() => {
-  http
-    .createServer((req, res) => {
-      handle(req, res); // Pass all requests to Next.js
-    })
-    .listen(port, () => {
-      console.log(`Next.js server running on http://localhost:${port}`);
-      console.log(`SERP API Key Loaded: ${!!process.env.SERP_API_KEY}`);
-    });
+// Start the server
+app.listen(PORT, HOST, () => {
+  console.log(`Ready on http://${HOST}:${PORT}`);
 });

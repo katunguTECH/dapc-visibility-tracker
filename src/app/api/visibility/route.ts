@@ -1,74 +1,86 @@
-import { NextRequest, NextResponse } from "next/server"
+// src/app/api/visibility/route.ts
+import { NextResponse } from "next/server";
 
-const SERP_API_KEY = process.env.SERP_API_KEY
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    if (!SERP_API_KEY) {
-      return NextResponse.json(
-        {
-          query: "",
-          visibilityScore: 0,
-          rankingPosition: "#API KEY MISSING",
-          rating: 0,
-        },
-        { status: 200 }
-      )
+    const { businessName, location } = await req.json();
+    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+
+    if (!apiKey) throw new Error("Missing Google API key");
+
+    // ---------------------------
+    // 1️⃣ Google Maps API for ratings, reviews, website
+    // ---------------------------
+    const mapsUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
+      businessName + " " + location
+    )}&key=${apiKey}`;
+
+    const mapsRes = await fetch(mapsUrl);
+    const mapsData = await mapsRes.json();
+    const place = mapsData.results?.[0] || {};
+
+    const rating = place.rating || 0;
+    const reviews = place.user_ratings_total || 0;
+    const website = place.website || "";
+
+    // ---------------------------
+    // 2️⃣ Fuzzy/partial name matching
+    // ---------------------------
+    const placeName = (place.name || "").toLowerCase();
+    const nameMatch = placeName.includes(businessName.toLowerCase());
+
+    // ---------------------------
+    // 3️⃣ Base visibility from Maps rating
+    // ---------------------------
+    let visibilityScore = 10; // default if no match
+    if (nameMatch) {
+      if (rating >= 4.5) visibilityScore = 80;
+      else if (rating >= 4.0) visibilityScore = 70;
+      else if (rating >= 3.5) visibilityScore = 60;
+      else if (rating >= 3.0) visibilityScore = 50;
+      else visibilityScore = 40;
+
+      // ---------------------------
+      // 4️⃣ Social media & website boosts
+      // ---------------------------
+      const socialSites = ["facebook.com", "instagram.com", "linkedin.com", "twitter.com"];
+      const textToCheck = (
+        (place.name || "") + " " + (place.formatted_address || "") + " " + website
+      ).toLowerCase();
+
+      if (website) visibilityScore += 10;
+      socialSites.forEach((site) => {
+        if (textToCheck.includes(site)) visibilityScore += 5;
+      });
+
+      // Cap at 100%
+      visibilityScore = Math.min(visibilityScore, 100);
     }
 
-    const { business, location } = await req.json()
-
-    if (!business || !location) {
-      return NextResponse.json(
-        { error: "Business and location required" },
-        { status: 400 }
-      )
-    }
-
-    const query = `${business} ${location}`
-
-    // Use SerpAPI to get Google search results
-    const url = `https://serpapi.com/search.json?q=${encodeURIComponent(
-      query
-    )}&hl=en&gl=ke&location=${encodeURIComponent(
-      location + ", Kenya"
-    )}&api_key=${SERP_API_KEY}`
-
-    const response = await fetch(url)
-    const data = await response.json()
-
-    // Example: compute visibility score based on organic results & rating
-    let visibilityScore = 0
-    let rankingPosition = "Not Found"
-    let rating = 0
-
-    if (data.organic_results && data.organic_results.length > 0) {
-      const firstResult = data.organic_results[0]
-      rankingPosition = firstResult.position || 1
-      visibilityScore = 100 - (firstResult.position - 1) * 10
-      if (visibilityScore < 0) visibilityScore = 0
-    }
-
-    if (data.local_results && data.local_results.length > 0) {
-      rating = data.local_results[0].rating || 0
-    }
+    // ---------------------------
+    // 5️⃣ Ranking approximation
+    // ---------------------------
+    const ranking =
+      !nameMatch
+        ? "10+"
+        : visibilityScore > 80
+        ? "#1"
+        : visibilityScore > 60
+        ? "#2-3"
+        : "#4-5";
 
     return NextResponse.json({
-      query,
       visibilityScore,
-      rankingPosition,
+      ranking,
       rating,
-    })
-  } catch (err) {
-    console.error("Visibility API error:", err)
+      reviews,
+      website,
+    });
+  } catch (error) {
+    console.error("API Error:", error);
     return NextResponse.json(
-      {
-        query: "",
-        visibilityScore: 0,
-        rankingPosition: "Error",
-        rating: 0,
-      },
+      { error: "Failed to fetch visibility data" },
       { status: 500 }
-    )
+    );
   }
 }

@@ -1,39 +1,20 @@
-"use client";
+import { headers } from "next/headers";
 
-import Image from "next/image";
-import Link from "next/link";
-
-export default function Navbar() {
+export default async function Navbar() {
+  // Keeping the await to satisfy Next.js 15 requirements
+  await headers(); 
+  
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b">
-
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/dapc-logo.jpg"
-            alt="DAPC"
-            width={180}
-            height={60}
-            priority
-          />
-        </Link>
-
-        <nav className="flex gap-8 font-semibold text-sm">
-          <Link href="/">Home</Link>
-          <Link href="/exposure">Exposure</Link>
-          <Link href="/leads">Leads</Link>
-        </nav>
-
-        <Link
-          href="/signin"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
+    <nav className="flex justify-between items-center px-8 py-5 bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+      <div className="text-2xl font-black text-blue-600 tracking-tighter">DAPC</div>
+      <div className="hidden md:flex gap-8 text-slate-500 font-semibold text-sm uppercase tracking-wider">
+        <a href="/" className="hover:text-blue-600 transition-colors">Home</a>
+        <a href="#" className="hover:text-blue-600 transition-colors">Exposure</a>
+        <a href="#" className="hover:text-blue-600 transition-colors">Leads</a>
+        <button className="bg-slate-900 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition-all">
           Sign In
-        </Link>
-
+        </button>
       </div>
-
-    </header>
+    </nav>
   );
 }

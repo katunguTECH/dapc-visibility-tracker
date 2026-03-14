@@ -8,14 +8,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50">
-
+      <body className="antialiased bg-[#F8FAFC]">
         <Navbar />
-
-        <main className="max-w-6xl mx-auto px-6 py-10">
-          {children}
-        </main>
-
+        <main>{children}</main>
       </body>
     </html>
   );

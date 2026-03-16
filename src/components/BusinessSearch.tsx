@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
+import VisibilityGauge from "./VisibilityGauge"
 
 export default function BusinessSearch() {
 
   const [business, setBusiness] = useState("")
   const [location, setLocation] = useState("")
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<any>(null)
+
+  const [result, setResult] = useState<any>(null)
 
   const runAudit = async () => {
 
@@ -23,20 +25,31 @@ export default function BusinessSearch() {
 
       const data = await res.json()
 
-      setResults(data)
+      setResult(data)
 
     } catch (error) {
 
-      console.error("Audit failed", error)
+      console.error("Audit error:", error)
 
     }
 
     setLoading(false)
+
   }
 
   return (
 
-    <div className="space-y-6">
+    <div className="bg-white rounded-xl shadow-lg p-6">
+
+      {/* Header */}
+
+      <h2 className="text-2xl font-bold text-center mb-6">
+        DAPC Visibility Audit
+      </h2>
+
+      <p className="text-center text-gray-500 mb-8">
+        Real-time Kenyan market intelligence
+      </p>
 
       {/* Search Inputs */}
 
@@ -47,7 +60,7 @@ export default function BusinessSearch() {
           placeholder="Business name"
           value={business}
           onChange={(e) => setBusiness(e.target.value)}
-          className="border rounded-lg p-3"
+          className="border rounded-lg p-4 text-lg"
         />
 
         <input
@@ -55,12 +68,12 @@ export default function BusinessSearch() {
           placeholder="City (e.g Nairobi)"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          className="border rounded-lg p-3"
+          className="border rounded-lg p-4 text-lg"
         />
 
         <button
           onClick={runAudit}
-          className="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold hover:bg-blue-700"
         >
           {loading ? "Running Audit..." : "Run Audit"}
         </button>
@@ -69,54 +82,116 @@ export default function BusinessSearch() {
 
       {/* Results */}
 
-      {results && (
+      {result && (
 
-        <div className="space-y-6 mt-6">
+        <div className="mt-10">
 
           {/* Visibility Score */}
 
-          <div className="border rounded-lg p-6">
+          <div className="text-center mb-8">
 
-            <h2 className="text-lg font-semibold mb-2">
+            <h3 className="text-xl font-semibold mb-4">
               Visibility Score
-            </h2>
+            </h3>
 
-            <div className="text-4xl font-bold text-blue-600">
-              {results.visibilityScore}%
+            <VisibilityGauge score={result.visibilityScore} />
+
+          </div>
+
+          {/* Metrics */}
+
+          <div className="grid grid-cols-2 gap-4 text-center mb-8">
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+
+              <p className="text-gray-500">Google Rank</p>
+
+              <p className="text-xl font-bold">
+                {result.googleRank || "10+"}
+              </p>
+
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+
+              <p className="text-gray-500">Trust Rating</p>
+
+              <p className="text-xl font-bold">
+                {result.trustRating || "N/A"}
+              </p>
+
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg col-span-2">
+
+              <p className="text-gray-500">Google Reviews</p>
+
+              <p className="text-xl font-bold">
+                {result.reviews || 0}
+              </p>
+
             </div>
 
           </div>
+
+          {/* Opportunities */}
+
+          {result.opportunities && (
+
+            <div className="mb-8">
+
+              <h3 className="text-lg font-semibold mb-4">
+                Visibility Opportunities
+              </h3>
+
+              <ul className="list-disc ml-6 text-gray-600">
+
+                {result.opportunities.map((item: string, i: number) => (
+
+                  <li key={i}>{item}</li>
+
+                ))}
+
+              </ul>
+
+            </div>
+
+          )}
 
           {/* Competitors */}
 
-          <div className="border rounded-lg p-6">
+          {result.competitors && (
 
-            <h2 className="text-lg font-semibold mb-4">
-              Competitor Visibility
-            </h2>
+            <div>
 
-            <div className="space-y-2">
+              <h3 className="text-lg font-semibold mb-4">
+                Competitor Visibility
+              </h3>
 
-              {results.competitors?.map((c: any, i: number) => (
+              <div className="flex flex-col gap-3">
 
-                <div
-                  key={i}
-                  className="flex justify-between border-b pb-2"
-                >
+                {result.competitors.map((comp: any, i: number) => (
 
-                  <span>{c.name}</span>
+                  <div
+                    key={i}
+                    className="flex justify-between bg-gray-50 p-3 rounded-lg"
+                  >
 
-                  <span className="font-semibold">
-                    {c.score}%
-                  </span>
+                    <span>{comp.name}</span>
 
-                </div>
+                    <span className="font-semibold">
+                      {comp.score}%
+                    </span>
 
-              ))}
+                  </div>
+
+                ))}
+
+              </div>
 
             </div>
 
-          </div>
+          )}
 
         </div>
 
@@ -125,4 +200,5 @@ export default function BusinessSearch() {
     </div>
 
   )
+
 }

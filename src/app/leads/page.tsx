@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 
 export default function LeadsPage() {
-
   const searchParams = useSearchParams()
   const business = searchParams.get("business") || ""
   const location = searchParams.get("location") || "Kenya"
@@ -18,40 +17,26 @@ export default function LeadsPage() {
 
   // Fetch leads
   useEffect(() => {
-
     async function fetchLeads() {
-
       try {
-
         const res = await fetch(
           `/api/leads?business=${business}&location=${location}`
         )
-
         const data = await res.json()
-
         setLeads(data.leads || [])
-
       } catch (err) {
-
         console.error("Failed to fetch leads:", err)
-
       } finally {
-
         setLoading(false)
-
       }
-
     }
 
     if (business) fetchLeads()
-
   }, [business, location])
 
   // Export CSV
   function exportToCSV(leads: any[], business: string) {
-
     const headers = ["Email", "Phone", "WhatsApp", "Quality"]
-
     const rows = leads.map(l => [
       l.email || "",
       l.phone || "",
@@ -75,7 +60,6 @@ export default function LeadsPage() {
 
   // Save Leads
   async function saveLeads() {
-
     if (!user) {
       alert("Please sign in first")
       return
@@ -84,7 +68,6 @@ export default function LeadsPage() {
     setSaving(true)
 
     try {
-
       const res = await fetch("/api/save-leads", {
         method: "POST",
         headers: {
@@ -104,10 +87,46 @@ export default function LeadsPage() {
       } else {
         alert("Failed to save leads")
       }
-
     } catch (err) {
-
       console.error("Save error:", err)
       alert("Error saving leads")
+    } finally {
+      setSaving(false)
+    }
+  }
 
-   
+  // This is the UI part that was missing
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Leads for {business}</h1>
+      
+      <div className="flex gap-4 mb-6">
+        <button 
+          onClick={() => exportToCSV(leads, business)}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Export CSV
+        </button>
+        <button 
+          onClick={saveLeads}
+          disabled={saving}
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          {saving ? "Saving..." : "Save Leads"}
+        </button>
+      </div>
+
+      {loading ? (
+        <p>Loading leads...</p>
+      ) : (
+        <ul className="space-y-2">
+          {leads.map((lead, index) => (
+            <li key={index} className="border p-2 rounded">
+              {lead.email} - {lead.phone}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

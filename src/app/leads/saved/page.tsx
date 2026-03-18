@@ -1,39 +1,28 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 
-export default function LeadsPage() {
-
-  const searchParams = useSearchParams()
-  const business = searchParams.get("business") || ""
-  const location = searchParams.get("location") || "Kenya"
+export default function SavedLeadsPage() {
 
   const { user } = useUser()
-
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
-  // Fetch leads
   useEffect(() => {
 
     async function fetchLeads() {
 
       try {
 
-        const res = await fetch(
-          `/api/leads?business=${business}&location=${location}`
-        )
-
+        const res = await fetch(`/api/user-leads?userId=${user?.id}`)
         const data = await res.json()
 
         setLeads(data.leads || [])
 
       } catch (err) {
 
-        console.error("Failed to fetch leads:", err)
+        console.error("Failed to fetch saved leads:", err)
 
       } finally {
 
@@ -43,71 +32,71 @@ export default function LeadsPage() {
 
     }
 
-    if (business) fetchLeads()
+    if (user) fetchLeads()
 
-  }, [business, location])
+  }, [user])
 
-  // Export CSV
-  function exportToCSV(leads: any[], business: string) {
+  return (
 
-    const headers = ["Email", "Phone", "WhatsApp", "Quality"]
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
 
-    const rows = leads.map(l => [
-      l.email || "",
-      l.phone || "",
-      l.whatsapp || "",
-      l.quality || ""
-    ])
+      <div className="max-w-4xl mx-auto">
 
-    const csvContent =
-      [headers, ...rows]
-        .map(row => row.join(","))
-        .join("\n")
+        <h1 className="text-2xl md:text-3xl font-bold mb-6">
+          Saved Leads
+        </h1>
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
+        {loading && (
+          <p className="text-gray-500">Loading saved leads...</p>
+        )}
 
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${business || "leads"}-leads.csv`
-    a.click()
-  }
+        {!loading && leads.length === 0 && (
+          <p className="text-red-500">
+            No saved leads yet.
+          </p>
+        )}
 
-  // Save Leads
-  async function saveLeads() {
+        <div className="space-y-4">
 
-    if (!user) {
-      alert("Please sign in first")
-      return
-    }
+          {leads.map((lead, index) => (
 
-    setSaving(true)
+            <div
+              key={index}
+              className="bg-white p-4 rounded-xl shadow border"
+            >
 
-    try {
+              <p className="font-semibold text-gray-800">
+                {lead.email}
+              </p>
 
-      const res = await fetch("/api/save-leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          leads,
-          business,
-          userId: user.id
-        })
-      })
+              <p className="text-gray-600">
+                📞 {lead.phone || "N/A"}
+              </p>
 
-      const data = await res.json()
+              {lead.whatsapp && (
+                <a
+                  href={lead.whatsapp}
+                  target="_blank"
+                  className="text-green-600 underline"
+                >
+                  WhatsApp Contact
+                </a>
+              )}
 
-      if (data.success) {
-        alert("Leads saved successfully!")
-      } else {
-        alert("Failed to save leads")
-      }
+              <p className="mt-2 text-sm font-bold">
+                {lead.quality}
+              </p>
 
-    } catch (err) {
+            </div>
 
-      console.error("Save error:", err)
-      alert("Error saving leads")
+          ))}
 
-   
+        </div>
+
+      </div>
+
+    </div>
+
+  )
+
+}

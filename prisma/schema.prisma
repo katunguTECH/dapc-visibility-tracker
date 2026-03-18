@@ -1,66 +1,19 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id              String         @id @default(cuid())
-  clerkId         String         @unique
-  email           String         @unique
-  name            String?
-  
-  // Back-relation for the Business.owner field
-  ownedBusinesses Business[]     @relation("BusinessOwner")
-  
-  // Relation for the BusinessUser (memberships)
-  memberships     BusinessUser[]
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-}
-
-model Business {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  ownerId       String
-  
-  // Added "BusinessOwner" name to disambiguate from the BusinessUser relation
-  owner         User           @relation("BusinessOwner", fields: [ownerId], references: [id])
-  
-  users         BusinessUser[]
-  subscriptions Subscription[]
-  
-  createdAt     DateTime       @default(now())
-  // FIXED: Added updatedAt to match your API route expectations
-  updatedAt     DateTime       @updatedAt
-}
-
-model BusinessUser {
-  id         String   @id @default(cuid())
-  business   Business @relation(fields: [businessId], references: [id])
-  businessId String
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  role       String   @default("member") // "owner" or "member"
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Subscription {
-  id               String   @id @default(cuid())
-  stripeId         String   @unique
-  businessId       String
-  business         Business @relation(fields: [businessId], references: [id])
-  status           String
-  priceId          String
-  currentPeriodEnd DateTime
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model Lead {
+  id        String   @id @default(cuid())
+  userId    String
+  business  String
+  email     String
+  phone     String?
+  whatsapp  String?
+  quality   String?
+  createdAt DateTime @default(now())
 }

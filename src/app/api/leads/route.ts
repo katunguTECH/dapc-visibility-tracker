@@ -1,23 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
 
-let leads: any[] = [];
+export async function GET(request: Request) {
 
-export async function GET() {
-  return NextResponse.json({ leads });
-}
+  const { searchParams } = new URL(request.url)
 
-export async function POST(req: Request) {
+  const business = searchParams.get("business")
+  const location = searchParams.get("location")
 
-  const body = await req.json();
+  const leads = [
 
-  const newLead = {
-    name: body.name,
-    seoScore: body.seoScore,
-    reach: body.reach,
-    createdAt: new Date()
-  };
+    {
+      name: "Marketing Manager",
+      email: "marketing@" + business + ".co.ke",
+      phone: "+254712345678",
+      whatsapp: "https://wa.me/254712345678"
+    },
 
-  leads.push(newLead);
+    {
+      name: "Digital Manager",
+      email: "digital@" + business + ".co.ke",
+      phone: "+254722456789",
+      whatsapp: "https://wa.me/254722456789"
+    },
 
-  return NextResponse.json({ success: true });
+    {
+      name: "Business Development",
+      email: "bd@" + business + ".co.ke",
+      phone: "+254733567890",
+      whatsapp: "https://wa.me/254733567890"
+    }
+
+  ]
+
+  return NextResponse.json({
+    business,
+    location,
+    leads
+  })
+
 }

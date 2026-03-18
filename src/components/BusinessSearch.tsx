@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import VisibilityGauge from "./VisibilityGauge"
 
 export default function BusinessSearch() {
 
+  const router = useRouter()
+
   const [business, setBusiness] = useState("")
   const [location, setLocation] = useState("")
   const [loading, setLoading] = useState(false)
-
   const [result, setResult] = useState<any>(null)
 
   const runAudit = async () => {
@@ -43,7 +45,7 @@ export default function BusinessSearch() {
 
       {/* Header */}
 
-      <h2 className="text-2xl font-bold text-center mb-6">
+      <h2 className="text-2xl font-bold text-center mb-4">
         DAPC Visibility Audit
       </h2>
 
@@ -51,7 +53,7 @@ export default function BusinessSearch() {
         Real-time Kenyan market intelligence
       </p>
 
-      {/* Search Inputs */}
+      {/* Inputs */}
 
       <div className="flex flex-col gap-4">
 
@@ -94,7 +96,7 @@ export default function BusinessSearch() {
               Visibility Score
             </h3>
 
-            <VisibilityGauge score={result.visibilityScore} />
+            <VisibilityGauge score={result.visibilityScore || 0} />
 
           </div>
 
@@ -162,7 +164,7 @@ export default function BusinessSearch() {
 
           {result.competitors && (
 
-            <div>
+            <div className="mb-8">
 
               <h3 className="text-lg font-semibold mb-4">
                 Competitor Visibility
@@ -192,6 +194,19 @@ export default function BusinessSearch() {
             </div>
 
           )}
+
+          {/* Leads Button */}
+
+          <button
+            onClick={() =>
+              router.push(
+                `/leads?business=${encodeURIComponent(business)}&location=${encodeURIComponent(location)}`
+              )
+            }
+            className="w-full bg-green-600 text-white p-4 rounded-lg text-lg font-semibold hover:bg-green-700"
+          >
+            Find Leads for This Business
+          </button>
 
         </div>
 

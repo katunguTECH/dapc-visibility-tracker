@@ -1,44 +1,37 @@
-// src/app/api/visibility/route.ts
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) { // Change POST to GET
+export async function GET(req: Request) {
   try {
-    // Extract parameters from the URL
+    // 1. Extract params from the URL (Correct for GET)
     const { searchParams } = new URL(req.url);
-    const businessName = searchParams.get("business");
+    const business = searchParams.get("business");
     const location = searchParams.get("location");
 
-    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-
-    if (!businessName || !apiKey) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!business) {
+      return NextResponse.json({ error: "Business name is required" }, { status: 400 });
     }
 
-    // ... (keep the rest of your logic exactly the same) ...
-    // Note: Use businessName and location in your mapsUrl below
-    
-    const mapsUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
-      businessName + " " + (location || "")
-    )}&key=${apiKey}`;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_SEARCH_API_KEY;
 
-    const mapsRes = await fetch(mapsUrl);
-    const mapsData = await mapsRes.json();
-    const place = mapsData.results?.[0] || {};
+    if (!apiKey) {
+      console.error("Missing Google API Key");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
 
-    // ... (rest of the calculation logic) ...
+    // 2. Mock Data for Testing (Use this to confirm the UI works first)
+    // Once the UI shows these results, you can swap back to your Google Fetch logic
+    const mockResult = {
+      visibilityScore: Math.floor(Math.random() * 40) + 60, // Random score between 60-100
+      ranking: "2nd Page",
+      rating: 4.5,
+      reviews: 28,
+      status: "success"
+    };
 
-    return NextResponse.json({
-      visibilityScore,
-      ranking,
-      rating,
-      reviews,
-      website,
-    });
+    return NextResponse.json(mockResult);
+
   } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch visibility data" },
-      { status: 500 }
-    );
+    console.error("API Route Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

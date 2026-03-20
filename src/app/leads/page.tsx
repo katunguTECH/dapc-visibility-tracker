@@ -1,132 +1,17 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
-import { useUser } from "@clerk/nextjs"
-
+// src/app/leads/page.tsx
 export default function LeadsPage() {
-  const searchParams = useSearchParams()
-  const business = searchParams.get("business") || ""
-  const location = searchParams.get("location") || "Kenya"
-
-  const { user } = useUser()
-
-  const [leads, setLeads] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  // Fetch leads
-  useEffect(() => {
-    async function fetchLeads() {
-      try {
-        const res = await fetch(
-          `/api/leads?business=${business}&location=${location}`
-        )
-        const data = await res.json()
-        setLeads(data.leads || [])
-      } catch (err) {
-        console.error("Failed to fetch leads:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (business) fetchLeads()
-  }, [business, location])
-
-  // Export CSV
-  function exportToCSV(leads: any[], business: string) {
-    const headers = ["Email", "Phone", "WhatsApp", "Quality"]
-    const rows = leads.map(l => [
-      l.email || "",
-      l.phone || "",
-      l.whatsapp || "",
-      l.quality || ""
-    ])
-
-    const csvContent =
-      [headers, ...rows]
-        .map(row => row.join(","))
-        .join("\n")
-
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${business || "leads"}-leads.csv`
-    a.click()
-  }
-
-  // Save Leads
-  async function saveLeads() {
-    if (!user) {
-      alert("Please sign in first")
-      return
-    }
-
-    setSaving(true)
-
-    try {
-      const res = await fetch("/api/save-leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          leads,
-          business,
-          userId: user.id
-        })
-      })
-
-      const data = await res.json()
-
-      if (data.success) {
-        alert("Leads saved successfully!")
-      } else {
-        alert("Failed to save leads")
-      }
-    } catch (err) {
-      console.error("Save error:", err)
-      alert("Error saving leads")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // This is the UI part that was missing
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Leads for {business}</h1>
+    <div className="max-w-4xl mx-auto py-20 text-center">
+      <h1 className="text-3xl font-bold mb-4">Unlock Lead Intelligence</h1>
+      <p className="text-slate-600 mb-8">You've found 42 potential leads for your business. Subscribe to view their contact details.</p>
       
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => exportToCSV(leads, business)}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Export CSV
-        </button>
-        <button 
-          onClick={saveLeads}
-          disabled={saving}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-        >
-          {saving ? "Saving..." : "Save Leads"}
+      <div className="bg-blue-50 border border-blue-100 p-8 rounded-2xl">
+        <h2 className="text-2xl font-bold text-blue-900 mb-2">Growth Plan</h2>
+        <p className="text-4xl font-black mb-6">KES 2,500<span className="text-sm font-normal">/month</span></p>
+        <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700">
+          Subscribe Now
         </button>
       </div>
-
-      {loading ? (
-        <p>Loading leads...</p>
-      ) : (
-        <ul className="space-y-2">
-          {leads.map((lead, index) => (
-            <li key={index} className="border p-2 rounded">
-              {lead.email} - {lead.phone}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

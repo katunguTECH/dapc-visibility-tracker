@@ -1,19 +1,14 @@
-import { ClerkProvider } from '@clerk/nextjs'
-import './globals.css'
-import Navbar from '@/components/Navbar'
+import WhatsAppButton from "@/components/WhatsAppButton";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="antialiased">
+        <body>
           {children}
+          <WhatsAppButton /> {/* It stays fixed to the bottom right */}
         </body>
       </html>
     </ClerkProvider>
-  )
+  );
 }

@@ -1,16 +1,33 @@
 {
+  "name": "dapc-visibility-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
-    "@clerk/nextjs": "^6.0.0", 
-    "next": "15.5.12",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-icons": "^5.6.0"
-    // ... other deps
+    "@clerk/nextjs": "^6.0.0",
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^17.3.1",
+    "google-search-results-nodejs": "^2.0.0",
+    "next": "15.1.0",
+    "react": "^19.0.0",
+    "react-circular-progressbar": "^2.1.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.4.0",
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0", 
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.6.2"
-    // ... other devDeps
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.7.0"
   }
 }

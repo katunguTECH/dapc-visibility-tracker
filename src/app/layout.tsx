@@ -14,8 +14,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        {/* The body is where Clerk attaches its listeners */}
-        <body className="antialiased">{children}</body>
+        {/* Adding 'suppressHydrationWarning' helps with the blank page issue 
+            caused by browser extensions or Clerk's auth state shifts */}
+        <body suppressHydrationWarning>{children}</body>
       </html>
     </ClerkProvider>
   )

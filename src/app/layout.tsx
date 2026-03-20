@@ -1,10 +1,6 @@
-import "./globals.css"
-import { ClerkProvider } from "@clerk/nextjs"
-
-export const metadata = {
-  title: "DAPC Visibility Tracker",
-  description: "Kenya Market Visibility Intelligence",
-}
+import { ClerkProvider } from '@clerk/nextjs'
+import './globals.css'
+import Navbar from '@/components/Navbar'
 
 export default function RootLayout({
   children,
@@ -14,9 +10,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        {/* Adding 'suppressHydrationWarning' helps with the blank page issue 
-            caused by browser extensions or Clerk's auth state shifts */}
-        <body suppressHydrationWarning>{children}</body>
+        <body className="antialiased">
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   )

@@ -14,7 +14,8 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        {/* The body is where Clerk attaches its listeners */}
+        <body className="antialiased">{children}</body>
       </html>
     </ClerkProvider>
   )

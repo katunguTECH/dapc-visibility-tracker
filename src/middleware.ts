@@ -1,19 +1,25 @@
-// src/middleware.ts
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// ONLY these routes are free to see without an account
+// Define public routes clearly
 const isPublicRoute = createRouteMatcher([
   '/', 
   '/sign-in(.*)', 
   '/sign-up(.*)', 
-  '/api/visibility(.*)' 
+  '/api/visibility(.*)'
 ]);
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    // This will catch anyone trying to go to /leads or /exposure
-    const authObject = await auth();
-    if (!authObject.userId) {
-      return authObject.redirectToSignIn();
-    }
+export default clerkMiddleware((auth, req) => {
+  // If the route is not public, protect it
+  if (!isPublicRoute(req)) {
+    auth().protect();
   }
 });
+
+export const config = {
+  matcher: [
+    // 1. Skip Next.js internals and all static files (images, favicon, etc.)
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // 2. Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
+};

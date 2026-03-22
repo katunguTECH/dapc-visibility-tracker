@@ -1,74 +1,67 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const business = searchParams.get("business")?.trim() || "";
-  const locationInput = searchParams.get("location")?.trim() || "Nairobi";
+  const businessQuery = searchParams.get("business")?.toLowerCase().trim() || "";
+  const location = searchParams.get("location") || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
   try {
-    // 1. PRIMARY SEARCH
-    const searchRes = await fetch(`https://google.serper.dev/search`, {
+    const response = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: business, gl: "ke", location: `${locationInput}, Kenya` })
+      body: JSON.stringify({ q: `${businessQuery} ${location}`, gl: "ke" })
     });
-    const data = await searchRes.json();
 
-    let score = Math.floor(Math.random() * 5) + 10; 
-    let recs = [];
-    let ranking = "Not Found";
-    let rating = "N/A";
-
-    // --- BRAND & SEO (Works) ---
-    const hasBrand = !!(data.knowledgeGraph || data.answerBox || data.organic?.[0]?.sitelinks);
-    if (hasBrand) {
-      score += 35;
-      recs.push(`✅ Brand Authority: Established entity.`);
-    }
-    if (data.organic?.length > 0) {
-      score += Math.min(data.organic.length * 2, 15);
-      recs.push(`✅ Search Reach: Active online presence.`);
-    }
-
-    // --- NEW DIRECT MAPS FETCH ---
-    // We use the specific 'places' endpoint which is more reliable for Kenyan pins
-    const mapRes = await fetch(`https://google.serper.dev/places`, {
-      method: 'POST',
-      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        q: `${business} ${locationInput}`, 
-        gl: "ke" 
-      })
-    });
-    const mapData = await mapRes.json();
+    const data = await response.json();
+    const places = data.places || [];
     
-    // Check 'places' array (the standard for this endpoint)
-    const mapsFound = mapData.places || [];
-
-    if (mapsFound.length > 0) {
-      const top = mapsFound[0];
-      score += 30; // Significant jump for being on the map
-      ranking = top.position ? `#${top.position} in ${locationInput}` : "Verified Location";
-      rating = top.rating ? `${top.rating} ⭐ (${top.reviews || 0})` : "Verified";
-      recs.push(`✅ Local Legend: Visible on Google Maps.`);
-    } else {
-      recs.push(`⚠️ Invisible on Maps: No local pin detected in ${locationInput}.`);
+    // --- THE VALIDATION LOGIC ---
+    // 1. Check if we found ANYTHING
+    if (places.length === 0) {
+      return NextResponse.json({ score: 0, rank: "Not Found", status: "No listings found." });
     }
 
-    return new NextResponse(JSON.stringify({
-      visibilityScore: Math.min(Math.round(score), 99),
-      ranking,
-      rating,
-      recs,
-      timestamp: Date.now()
-    }), { headers: { 'Cache-Control': 'no-store' } });
+    // 2. Check if the first result is actually a match (Anti-Gibberish)
+    const topResult = places[0];
+    const foundName = topResult.title.toLowerCase();
+    
+    // Logic: If search term isn't in the title AND title isn't in the search term, it's a fake match
+    const isRealMatch = foundName.includes(businessQuery) || businessQuery.includes(foundName);
+
+    if (!isRealMatch) {
+      return NextResponse.json({ 
+        score: 5, 
+        rank: "Unranked", 
+        businessName: "Unknown",
+        status: "Business not found. Showing closest local generic result.",
+        details: { googleFound: topResult.title }
+      });
+    }
+
+    // 3. Dynamic Ranking
+    // If the business is specifically searched for, we check its position
+    const rankValue = topResult.position || 1; 
+
+    // 4. Dynamic Scoring based on Profile Completeness
+    let score = 30; // Base points for existing
+    if (topResult.phoneNumber) score += 20;
+    if (topResult.website) score += 20;
+    if (topResult.ratingCount > 10) score += 20;
+    if (topResult.address) score += 10;
+
+    return NextResponse.json({
+      score: Math.min(score, 100),
+      rank: `#${rankValue} in ${location}`,
+      businessName: topResult.title,
+      trust: `${topResult.rating || 0} ⭐ (${topResult.ratingCount || 0})`,
+      verified: !!topResult.cid,
+      address: topResult.address
+    });
 
   } catch (error) {
-    console.error("DEBUG MAPS ERROR:", error);
-    return NextResponse.json({ visibilityScore: 15, ranking: "Error" });
+    return NextResponse.json({ error: "Audit failed" }, { status: 500 });
   }
 }

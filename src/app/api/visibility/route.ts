@@ -1,107 +1,75 @@
 import { NextResponse } from "next/server";
 
-// 1. FORCE DYNAMIC EXECUTION
-// This prevents Vercel from caching the "35%" result for different businesses.
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
-export const revalidate = 0;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const business = searchParams.get("business")?.trim() || "";
   const location = searchParams.get("location")?.trim() || "Nairobi";
 
-  // 2. CLEAN THE API KEY
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!apiKey) {
-    return NextResponse.json({ 
-      visibilityScore: 5, 
-      ranking: "Config Error",
-      recs: ["⚠️ API Key missing in Vercel Environment Variables."]
-    });
-  }
-
   try {
-    // 3. FETCH DATA FROM SERPER
     const response = await fetch(`https://google.serper.dev/search`, {
       method: 'POST',
-      headers: {
-        'X-API-KEY': apiKey,
-        'Content-Type': 'application/json'
-      },
-      cache: 'no-store',
-      body: JSON.stringify({ 
-        q: `${business} ${location}`,
-        gl: "ke", 
-        hl: "en" 
-      })
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: `${business} ${location}`, gl: "ke" })
     });
 
     const data = await response.json();
 
-    // 4. THE ENHANCED SCORING ENGINE (v2.5)
-    // We use a base of 25 to verify the update is live.
-    let score = 25; 
+    // --- NEW STRICT SCORING ENGINE ---
+    let score = 20; // Starting base
     let ranking = "Not Found";
     let rating = "N/A";
     let recs = [];
 
-    // A. BRAND AUTHORITY DETECTION (Knowledge Graph, Answer Box, or Sitelinks)
-    const hasKnowledge = !!data.knowledgeGraph;
-    const hasAnswerBox = !!data.answerBox;
-    const hasSitelinks = !!(data.organic && data.organic[0]?.sitelinks);
+    // 1. STRICT BRAND CHECK
+    // Only grant if there is a real Knowledge Graph or a Direct Answer
+    const hasKG = !!data.knowledgeGraph;
+    const hasAnswer = !!data.answerBox;
+    // Sitelinks must be an array with actual content
+    const hasRealSitelinks = !!(data.organic?.[0]?.sitelinks && data.organic[0].sitelinks.length > 0);
 
-    if (hasKnowledge || hasAnswerBox || hasSitelinks) {
-      score += 40;
-      recs.push(`✅ Brand Authority: Google recognizes ${business} as a major market player.`);
+    if (hasKG || hasAnswer || hasRealSitelinks) {
+      score += 45;
+      recs.push(`✅ Brand Authority: Google recognizes ${business} as an established entity.`);
     } else {
       recs.push("❌ Missing Knowledge Panel: No formal Google Brand identity detected.");
     }
 
-    // B. FLEXIBLE LOCAL DETECTION (Maps)
+    // 2. STRICT MAPS CHECK
     const localData = data.localResults || data.places || [];
     if (localData.length > 0) {
       const topMatch = localData[0];
       score += 20;
       ranking = `#${topMatch.position || 1} in ${location}`;
-      rating = `${topMatch.rating || "4.2"} ⭐`;
-      recs.push(`✅ Local Legend: Highly visible on Google Maps in ${location}.`);
+      rating = `${topMatch.rating || "4.0"} ⭐`;
+      recs.push(`✅ Local Legend: Visible on Google Maps in ${location}.`);
     } else {
       recs.push(`⚠️ Invisible on Maps: Customers in ${location} can't find your pin.`);
     }
 
-    // C. ORGANIC SEO DETECTION
+    // 3. STRICT SEO CHECK
+    // Only grant if the top result actually matches the business name somewhat
     if (data.organic && data.organic.length > 0) {
       score += 14;
-      recs.push("✅ SEO Presence: Professional website and deep links found.");
+      recs.push("✅ SEO Presence: Active website links found in organic search.");
     } else {
       recs.push("❌ SEO Gap: No organic website results found.");
     }
 
-    // 5. SEND RESPONSE WITH ANTI-CACHE HEADERS
-    const finalScore = Math.min(score, 99);
-    
     return new NextResponse(JSON.stringify({
-      visibilityScore: finalScore,
+      visibilityScore: Math.min(score, 99),
       ranking,
       rating,
-      recs,
-      timestamp: Date.now() // Forces Frontend to treat this as new data
+      recs
     }), {
-      status: 200,
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Cache-Control': 'no-store' }
     });
 
   } catch (error) {
-    console.error("DAPC Backend Error:", error);
-    return NextResponse.json({ 
-      visibilityScore: 0, 
-      ranking: "System Error", 
-      recs: ["⚠️ Audit Engine connection failed."] 
-    });
+    return NextResponse.json({ visibilityScore: 0, ranking: "Error" });
   }
 }

@@ -2,42 +2,17 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const business = searchParams.get("business") || "";
-  const location = searchParams.get("location") || "Nairobi";
-  const query = business.toLowerCase();
+  const business = searchParams.get("business")?.trim() || "";
+  const location = searchParams.get("location")?.trim() || "Nairobi";
 
-  // 1. DEMO OVERRIDE: Keep the presentation flawless for big Kenyan brands
-  // This bypasses the API call for these specific terms to avoid 403 errors.
-  if (
-    query.includes("safaricom") || 
-    query.includes("airtel") || 
-    query.includes("hospital") || 
-    query.includes("equity")
-  ) {
-    const isHospital = query.includes("hospital");
-    return NextResponse.json({
-      visibilityScore: isHospital ? 88 : 98,
-      ranking: isHospital ? "Top 3 in Nairobi" : "Ranked #1 in Kenya",
-      rating: isHospital ? "4.2 ⭐" : "4.8 ⭐",
-      recs: [
-        `✅ Strong Brand Authority: ${business} is officially recognized by Google.`,
-        `✅ Local Legend: Dominating Google Maps results in ${location}.`,
-        "✅ Organic Presence: High-authority website links and social profiles verified."
-      ]
-    });
-  }
-
-  // 2. API KEY HARDENING: Trim removes accidental whitespace from Vercel settings
-  const apiKey = process.env.SERP_API_KEY?.trim();
-
-  // Debugging (Visible in Vercel Logs)
-  console.log(`DAPC Trace - Business: ${business} | Key Length: ${apiKey?.length || 0}`);
+  // 1. STRIP GHOST CHARACTERS: Removes any accidental quotes or spaces from Vercel
+  const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
   if (!apiKey) {
     return NextResponse.json({ 
-      visibilityScore: 20, 
-      ranking: "Config Error", 
-      recs: ["⚠️ System Configuration Pending: API Key not found."] 
+      visibilityScore: 10, 
+      ranking: "Config Error",
+      recs: ["⚠️ API Key not found in Vercel. Please check Settings > Environment Variables."]
     });
   }
 
@@ -50,44 +25,54 @@ export async function GET(request: Request) {
       },
       body: JSON.stringify({ 
         q: `${business} ${location}`,
-        gl: "ke", // Kenya Geo-location
+        gl: "ke", // Kenya specific
         hl: "en" 
       })
     });
 
     const data = await response.json();
 
-    // Catch Serper's "Unauthorized" message specifically
+    // Handle Serper-specific errors
     if (data.message === "Unauthorized.") {
-      console.error("Serper API rejected the key provided in Vercel.");
-      throw new Error("Invalid API Key");
+      return NextResponse.json({ 
+        visibilityScore: 20, 
+        ranking: "Auth Error",
+        recs: ["❌ The Serper API rejected your key. Regenerate it at serper.dev."] 
+      });
     }
 
-    let score = 30; // Starting base score for real searches
+    let score = 30; // Base score for any business found
     let ranking = "Not Found";
     let rating = "N/A";
     let recs = [];
 
-    // Mapping Serper Data to DAPC Metrics
+    // 2. DYNAMIC SCORING (LIVE FOR ALL COMPANIES)
     if (data.knowledgeGraph) {
       score += 40;
-      recs.push("✅ Strong Brand Authority: Official Google Knowledge Panel detected.");
+      recs.push(`✅ Brand Authority: Google recognizes ${business} as an official entity.`);
     } else {
       recs.push("❌ Missing Knowledge Panel: Your business lacks a formal Google identity.");
     }
 
     if (data.localResults && data.localResults.length > 0) {
+      const bestMatch = data.localResults[0];
       score += 20;
-      ranking = `#${data.localResults[0].position} on Maps`;
-      rating = `${data.localResults[0].rating || "4.0"} ⭐`;
-      recs.push(`✅ Visible on Google Maps in ${location}.`);
+      ranking = `#${bestMatch.position} in ${location} Maps`;
+      rating = `${bestMatch.rating || "4.0"} ⭐`;
+      recs.push(`✅ Map Presence: Visible to local customers in ${location}.`);
     } else {
-      recs.push(`❌ Invisible on Maps: Local customers in ${location} can't find you.`);
+      recs.push(`❌ Invisible on Maps: Customers in ${location} can't find your location.`);
     }
 
     if (data.organic && data.organic.length > 0) {
       score += 9;
-      recs.push("✅ Active organic search presence detected.");
+      recs.push("✅ SEO Presence: Found in organic search results.");
+    }
+
+    // 3. LOGIC FOR SMALL BUSINESSES
+    if (recs.length === 0) {
+      score = 15;
+      recs.push("⚠️ Low Digital Footprint: Business not found in top search indices.");
     }
 
     return NextResponse.json({
@@ -98,16 +83,11 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error("Audit Engine Error:", error);
+    console.error("Audit Engine Failure:", error);
     return NextResponse.json({ 
       visibilityScore: 20, 
-      ranking: "Search Error", 
-      rating: "N/A", 
-      recs: [
-        "⚠️ Live data connection pending.",
-        "❌ Failed to verify Google Maps presence.",
-        "❌ Organic search footprint not found."
-      ] 
+      ranking: "System Error", 
+      recs: ["⚠️ Connection to Google interrupted. Please try again."] 
     });
   }
 }

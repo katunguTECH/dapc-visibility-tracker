@@ -8,7 +8,7 @@ const dapcPlans = [
     name: "Starter Listing",
     target: "Small or offline businesses",
     price: "1,999",
-    icon: "/icons/starter-cheetah.jpg",
+    icon: "/icons/publiciconsstarter-cheetah.jpg", // Adjusted to match your uploaded filename
     accent: "#60a5fa",
     features: [
       "Proper business set up and visible online",
@@ -21,7 +21,7 @@ const dapcPlans = [
     name: "Local Boost",
     target: "Businesses wanting more walk-ins & calls",
     price: "3,999",
-    icon: "/icons/boost-buffalo.jpg",
+    icon: "/icons/publiciconsboost-buffalo.jpg",
     accent: "#3b82f6",
     features: [
       "Improve local searches and Google Maps",
@@ -34,7 +34,7 @@ const dapcPlans = [
     name: "Growth Engine",
     target: "Businesses ready for consistent monthly leads",
     price: "5,999",
-    icon: "/icons/growthengine-rhino.jpg",
+    icon: "/icons/publiciconsgrowthengine-rhino.jpg",
     accent: "#2563eb",
     popular: true,
     features: [
@@ -48,7 +48,7 @@ const dapcPlans = [
     name: "Market Leader",
     target: "Businesses in competitive industries",
     price: "7,999",
-    icon: "/icons/marketleader-elephant.jpg",
+    icon: "/icons/publiciconsmarketleader-elephant.jpg",
     accent: "#1d4ed8",
     features: [
       "Position ahead of competitors",
@@ -61,7 +61,7 @@ const dapcPlans = [
     name: "Super Active Visibility",
     target: "Ambitious brands seeking maximum exposure",
     price: "10,000",
-    icon: "/icons/superactivevisibility-lion.jpg",
+    icon: "/icons/publiciconssuperactivevisibility-lion.jpg",
     accent: "#1e3a8a",
     features: [
       "Maximum exposure (Local, National, Int'l)",
@@ -107,13 +107,15 @@ export default function SubscribePage() {
               )}
               
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-100 shadow-inner flex-shrink-0 bg-slate-50">
+                {/* ICON CONTAINER */}
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-100 shadow-inner flex-shrink-0 bg-slate-200 relative">
                   <Image 
                     src={plan.icon} 
                     alt={plan.name} 
-                    width={80} 
-                    height={80} 
+                    fill
+                    sizes="80px"
                     className="object-cover"
+                    priority
                   />
                 </div>
                 <div>
@@ -131,7 +133,7 @@ export default function SubscribePage() {
               <ul className="space-y-4 mb-10 flex-grow">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-3 text-slate-600 text-sm">
-                    <span className="text-blue-500 mt-1">✓</span>
+                    <span className="text-blue-500 mt-1 font-bold">✓</span>
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -153,8 +155,8 @@ export default function SubscribePage() {
 
         {/* M-Pesa Payment Section */}
         <section id="payment-section" className="max-w-3xl mx-auto scroll-mt-24">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-            <div className="bg-blue-600 py-6 px-10 text-left">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden text-left">
+            <div className="bg-blue-600 py-6 px-10">
               <h3 className="text-white font-black text-2xl flex items-center gap-3">
                 📱 Direct M-Pesa Payment
               </h3>
@@ -162,7 +164,7 @@ export default function SubscribePage() {
             </div>
             
             <div className="p-10 flex flex-col md:flex-row items-center justify-between gap-12">
-              <div className="text-left space-y-6 flex-1">
+              <div className="space-y-6 flex-1">
                 <div>
                   <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Business Paybill</p>
                   <p className="text-5xl font-black text-blue-900 tracking-tighter">516600</p>
@@ -178,10 +180,8 @@ export default function SubscribePage() {
                 </div>
               </div>
 
-              {/* Visual QR Branding */}
               <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-dashed border-slate-200 text-center flex-shrink-0">
-                <div className="w-32 h-32 bg-white rounded-xl mb-3 flex items-center justify-center shadow-inner relative group">
-                   {/* Placeholder for QR if you have it */}
+                <div className="w-32 h-32 bg-white rounded-xl mb-3 flex items-center justify-center shadow-inner relative">
                    <span className="text-[4rem]">🇰🇪</span>
                 </div>
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scan to Pay</span>

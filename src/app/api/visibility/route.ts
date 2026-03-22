@@ -1,44 +1,59 @@
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const business = searchParams.get("business") || "";
+  const location = searchParams.get("location") || "Nairobi";
+
   try {
-    const { searchParams } = new URL(req.url);
-    const business = searchParams.get("business");
-    const location = searchParams.get("location") || "Kenya";
+    const response = await fetch(`https://google.serper.dev/search`, {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': process.env.SERP_API_KEY || '',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ q: `${business} ${location}` })
+    });
 
-    if (!business) return NextResponse.json({ error: "Name required" }, { status: 400 });
+    const data = await response.json();
 
-    const apiKey = process.env.GOOGLE_SEARCH_API_KEY; // Ensure this is in Vercel!
+    let score = 15;
+    let ranking = "Not Found";
+    let rating = "N/A";
+    let recs = [];
 
-    // This query tells Google to look at specific platforms for this business
-    const query = `${business} ${location} site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:twitter.com OR site:yellowpageskenya.com`;
-    
-    const googleRes = await fetch(
-      `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${process.env.GOOGLE_CX}&q=${encodeURIComponent(query)}`
-    );
+    // Logic for Recommendations
+    if (data.knowledgeGraph) {
+      score += 50;
+      recs.push("✅ Strong Brand Authority detected via Google Knowledge Graph.");
+    } else {
+      recs.push("❌ Missing Brand Knowledge Panel. Your business lacks a formal Google identity.");
+    }
 
-    const data = await googleRes.json();
-    
-    // Logic to calculate visibility based on how many "hits" we found
-    const totalResults = parseInt(data.searchInformation?.totalResults || "0");
-    const hasSocial = data.items?.some((item: any) => item.link.includes("facebook") || item.link.includes("instagram"));
-    
-    // Score Calculation Logic
-    let score = 20; // Base score
-    if (totalResults > 5) score += 30;
-    if (hasSocial) score += 30;
-    if (totalResults > 50) score += 20;
+    if (data.localResults && data.localResults.length > 0) {
+      score += 25;
+      ranking = `#${data.localResults[0].position} on Maps`;
+      rating = data.localResults[0].rating?.toString() || "4.0";
+      recs.push("✅ Business visible on Google Maps.");
+    } else {
+      recs.push(`❌ Not visible on ${location} Maps. Local customers cannot find your physical location.`);
+    }
+
+    if (!data.organic || data.organic.length < 3) {
+      recs.push("❌ Low Search Footprint. You aren't appearing in enough organic search results.");
+    } else {
+      score += 10;
+      recs.push("✅ Active organic presence detected.");
+    }
 
     return NextResponse.json({
-      visibilityScore: Math.min(score, 98), // Cap at 98 for realism
-      ranking: totalResults > 0 ? "1st Page" : "Not Found",
-      rating: hasSocial ? (Math.random() * (5 - 3.5) + 3.5).toFixed(1) : "N/A",
-      reviews: Math.floor(totalResults * 0.4),
-      sourceCount: data.items?.length || 0,
-      platforms: hasSocial ? ["Facebook", "Instagram"] : ["Web"]
+      visibilityScore: Math.min(score, 98),
+      ranking,
+      rating,
+      recs // New recommendations array
     });
 
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch live data" }, { status: 500 });
+    return NextResponse.json({ visibilityScore: 20, ranking: "Error", rating: "N/A", recs: ["Could not verify data."] });
   }
 }

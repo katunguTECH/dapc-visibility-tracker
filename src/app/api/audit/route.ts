@@ -2,18 +2,18 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Helper to check how similar two strings are (0 to 1)
-function getStringSimilarity(str1: string, str2: string) {
-  const s1 = str1.toLowerCase();
-  const s2 = str2.toLowerCase();
-  if (s1 === s2) return 1.0;
-  if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+// Helper: Checks if the search term actually matches the result name
+function isLegitMatch(query: string, resultName: string): boolean {
+  const q = query.toLowerCase().trim();
+  const r = resultName.toLowerCase().trim();
   
-  const words1 = s1.split(/\s+/);
-  const words2 = s2.split(/\s+/);
-  const commonWords = words1.filter(word => word.length > 2 && words2.includes(word));
+  // 1. Direct Inclusion
+  if (r.includes(q) || q.includes(r)) return true;
   
-  return commonWords.length / Math.max(words1.length, words2.length);
+  // 2. Word Overlap (At least one significant word must match)
+  const qWords = q.split(/\s+/).filter(w => w.length > 3);
+  const rWords = r.split(/\s+/);
+  return qWords.some(word => rWords.includes(word));
 }
 
 export async function GET(request: Request) {
@@ -23,79 +23,62 @@ export async function GET(request: Request) {
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
   if (!businessQuery || businessQuery.length < 3) {
-    return NextResponse.json({ score: 0, status: "Please enter a valid business name." });
+    return NextResponse.json({ score: 0, status: "Invalid Input" });
   }
 
   try {
     const response = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        q: businessQuery, 
-        location: `${locationInput}, Kenya`, 
-        gl: "ke" 
-      })
+      body: JSON.stringify({ q: businessQuery, gl: "ke", hl: "en" })
     });
 
     const data = await response.json();
     const topResult = data.places?.[0];
 
-    // --- LOCK 1: EMPTY CHECK ---
-    if (!topResult) {
-      return NextResponse.json({ score: 0, rank: "N/A", status: "No listings found." });
-    }
-
-    // --- LOCK 2: SIMILARITY CHECK ---
-    const similarity = getStringSimilarity(businessQuery, topResult.title);
-    
-    // If similarity is too low (e.g., 'shbbcg' vs 'Nairobi City'), it's a fake match
-    if (similarity < 0.3) {
+    // --- CRITICAL VALIDATION ---
+    if (!topResult || !isLegitMatch(businessQuery, topResult.title)) {
       return NextResponse.json({
         score: 0,
-        rank: "Invalid",
+        rank: "Not Found",
+        trust: "Unverified",
         businessName: "Unknown Entity",
-        status: "⚠️ Match Failed: No business found matching that name.",
-        recs: ["Try a more specific name like 'Java House CBD'."]
+        recs: ["❌ No matching business found for this query."],
+        status: "Match Failed"
       });
     }
 
-    // --- LOCK 3: SCALED SCORING (Strict) ---
-    let score = 10; // Base for passing similarity
+    // --- SCORING (Only for real matches) ---
+    let score = 20; // Base for matching name
     let recs = [];
 
-    // Map Presence
-    if (topResult.address && !topResult.address.toLowerCase().includes("kenya")) {
-        // Only give points if there's a specific street address, not just 'Kenya'
-        score += 30;
-        recs.push("✅ Local Legend: Specific street address verified.");
+    if (topResult.address && !topResult.address.includes("Kenya") || topResult.address.length > 10) {
+      score += 25;
+      recs.push("✅ Local Legend: Verified physical location.");
     }
 
-    // Contact Data
     if (topResult.phoneNumber) {
-      score += 30;
-      recs.push("✅ Contact Ready: Phone number listed.");
+      score += 25;
+      recs.push("✅ Contact Ready: Direct line identified.");
     }
 
-    // Web Presence
     if (topResult.website) {
       score += 29;
-      recs.push("✅ SEO Reach: Professional website found.");
+      recs.push("✅ Search Reach: Professional site detected.");
     }
 
-    // Final result
     return NextResponse.json({
       score: Math.min(score, 99),
       rank: `#${topResult.position || 1} in ${locationInput}`,
       businessName: topResult.title,
       trust: topResult.rating ? `${topResult.rating} ⭐ (${topResult.ratingCount || 0})` : "Verified",
+      recs,
       address: topResult.address,
       phoneNumber: topResult.phoneNumber,
-      website: topResult.website,
-      recs,
-      status: "Verified digital identity found."
+      website: topResult.website
     });
 
   } catch (error) {
-    return NextResponse.json({ score: 0, error: "Audit Engine Error" });
+    return NextResponse.json({ score: 0, status: "Error" });
   }
 }

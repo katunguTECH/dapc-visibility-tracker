@@ -10,7 +10,6 @@ export async function GET(request: Request) {
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
   try {
-    // 1. DUAL-SIGNAL QUERY: Location as a parameter is more powerful than as text
     const response = await fetch(`https://google.serper.dev/search`, {
       method: 'POST',
       headers: { 
@@ -21,7 +20,8 @@ export async function GET(request: Request) {
         q: business, 
         location: `${locationInput}, Kenya`, 
         gl: "ke", 
-        hl: "en"
+        hl: "en",
+        autocorrect: false // Prevents Google from "guessing" a different business
       })
     });
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     let rating = "N/A";
     let recs = [];
 
-    // 2. BRAND & AUTHORITY CHECK
+    // 1. BRAND CHECK
     const hasKG = !!data.knowledgeGraph || !!data.answerBox;
     const topResult = data.organic?.[0];
     const hasSitelinks = !!(topResult?.sitelinks && topResult.sitelinks.length > 0);
@@ -44,25 +44,28 @@ export async function GET(request: Request) {
       recs.push("❌ Missing Knowledge Panel: No verified Google Brand identity detected.");
     }
 
-    // 3. MAPS & LOCAL PACK CHECK (Broadened Detection)
+    // 2. MAPS CHECK (Checking localResults AND the 'places' key)
+    // Serper often puts Kenyan business pins inside 'places'
     const mapsFound = data.localResults || data.places || [];
-    // Backup: Check if an organic result is a Maps URL
+    
+    // Fallback: If no direct map object, check if any URL looks like a Maps link
     const hasMapsLink = data.organic?.some((res: any) => res.link?.includes('google.com/maps'));
 
     if (mapsFound.length > 0 || hasMapsLink) {
       score += 25;
       const topMatch = mapsFound[0];
-      ranking = topMatch ? `#${topMatch.position} in ${locationInput}` : "Visible on Maps";
+      // Capture real Map data if it exists
+      ranking = topMatch?.position ? `#${topMatch.position} in ${locationInput}` : "Verified Location";
       rating = topMatch?.rating ? `${topMatch.rating} ⭐` : "Verified";
       recs.push(`✅ Local Legend: Business is verified and visible on Google Maps.`);
     } else {
       recs.push(`⚠️ Invisible on Maps: Customers in ${locationInput} can't find your physical location.`);
     }
 
-    // 4. ORGANIC SEO CHECK
+    // 3. SEO CHECK
     if (data.organic && data.organic.length > 0) {
       score += 15;
-      recs.push(hasSitelinks ? "✅ SEO Excellence: Professional site with deep links (sitelinks)." : "✅ SEO Presence: Active website found.");
+      recs.push(hasSitelinks ? "✅ SEO Excellence: Professional site with deep links detected." : "✅ SEO Presence: Active website found.");
     } else {
       recs.push("❌ SEO Gap: No organic website results found.");
     }

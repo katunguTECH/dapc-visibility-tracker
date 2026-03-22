@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
+
+// Helper to check how similar two strings are (0 to 1)
+function getStringSimilarity(str1: string, str2: string) {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+  if (s1 === s2) return 1.0;
+  if (s1.includes(s2) || s2.includes(s1)) return 0.8;
+  
+  const words1 = s1.split(/\s+/);
+  const words2 = s2.split(/\s+/);
+  const commonWords = words1.filter(word => word.length > 2 && words2.includes(word));
+  
+  return commonWords.length / Math.max(words1.length, words2.length);
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,104 +22,80 @@ export async function GET(request: Request) {
   const locationInput = searchParams.get("location")?.trim() || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!businessQuery) {
-    return NextResponse.json({ score: 0, status: "No business name provided." });
+  if (!businessQuery || businessQuery.length < 3) {
+    return NextResponse.json({ score: 0, status: "Please enter a valid business name." });
   }
 
   try {
-    // 1. Fetch from Serper Places (The most accurate for local Kenyan businesses)
     const response = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
-      headers: { 
-        'X-API-KEY': apiKey || "", 
-        'Content-Type': 'application/json' 
-      },
+      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         q: businessQuery, 
         location: `${locationInput}, Kenya`, 
-        gl: "ke", 
-        hl: "en" 
+        gl: "ke" 
       })
     });
 
     const data = await response.json();
     const topResult = data.places?.[0];
 
-    // --- GUARD CLAUSE: NO RESULTS ---
+    // --- LOCK 1: EMPTY CHECK ---
     if (!topResult) {
-      return NextResponse.json({ 
-        score: 0, 
-        rank: "N/A", 
-        status: "No matching business found in this area." 
-      });
+      return NextResponse.json({ score: 0, rank: "N/A", status: "No listings found." });
     }
 
-    // --- THE GIBBERISH KILLER (STRICT MATCHING) ---
-    const foundName = topResult.title.toLowerCase();
-    const searchTerm = businessQuery.toLowerCase();
-
-    // Check if the search term is in the title, or vice-versa
-    const isDirectMatch = foundName.includes(searchTerm) || searchTerm.includes(foundName);
+    // --- LOCK 2: SIMILARITY CHECK ---
+    const similarity = getStringSimilarity(businessQuery, topResult.title);
     
-    // Check if at least one word (longer than 3 chars) matches
-    // This handles "Safaricom Shop" vs "Safaricom"
-    const queryWords = searchTerm.split(/\s+/);
-    const hasWordMatch = queryWords.some(word => word.length > 3 && foundName.includes(word));
-
-    if (!isDirectMatch && !hasWordMatch) {
+    // If similarity is too low (e.g., 'shbbcg' vs 'Nairobi City'), it's a fake match
+    if (similarity < 0.3) {
       return NextResponse.json({
         score: 0,
         rank: "Invalid",
         businessName: "Unknown Entity",
-        status: "⚠️ Match Failed: The search term does not match any verified local business.",
-        recs: ["Double-check your spelling or try adding the specific street name."]
+        status: "⚠️ Match Failed: No business found matching that name.",
+        recs: ["Try a more specific name like 'Java House CBD'."]
       });
     }
 
-    // --- DYNAMIC SCORING (Only for Valid Matches) ---
-    let score = 15; // Starting base for a verified name match
+    // --- LOCK 3: SCALED SCORING (Strict) ---
+    let score = 10; // Base for passing similarity
     let recs = [];
 
-    // Map Presence (25 points)
-    if (topResult.address) {
-      score += 25;
-      recs.push("✅ Local Legend: Visible on Google Maps.");
+    // Map Presence
+    if (topResult.address && !topResult.address.toLowerCase().includes("kenya")) {
+        // Only give points if there's a specific street address, not just 'Kenya'
+        score += 30;
+        recs.push("✅ Local Legend: Specific street address verified.");
     }
 
-    // Brand Authority (35 points)
-    // Check for high review count or website presence
-    const reviewCount = topResult.ratingCount || 0;
-    if (reviewCount > 20 || topResult.website) {
-      score += 35;
-      recs.push("✅ Brand Authority: Established entity.");
-    } else {
-      recs.push("❌ Missing Knowledge Panel: No verified Google Brand identity detected.");
+    // Contact Data
+    if (topResult.phoneNumber) {
+      score += 30;
+      recs.push("✅ Contact Ready: Phone number listed.");
     }
 
-    // SEO Reach (24 points)
+    // Web Presence
     if (topResult.website) {
-      score += 24;
-      recs.push("✅ Search Reach: Active online presence.");
-    } else {
-      recs.push("❌ SEO Gap: No professional website detected.");
+      score += 29;
+      recs.push("✅ SEO Reach: Professional website found.");
     }
 
-    return new NextResponse(JSON.stringify({
+    // Final result
+    return NextResponse.json({
       score: Math.min(score, 99),
       rank: `#${topResult.position || 1} in ${locationInput}`,
       businessName: topResult.title,
-      trust: topResult.rating ? `${topResult.rating} ⭐ (${reviewCount})` : "Verified",
-      address: topResult.address || "Nairobi, Kenya",
-      phoneNumber: topResult.phoneNumber || null,
-      website: topResult.website || null,
+      trust: topResult.rating ? `${topResult.rating} ⭐ (${topResult.ratingCount || 0})` : "Verified",
+      address: topResult.address,
+      phoneNumber: topResult.phoneNumber,
+      website: topResult.website,
       recs,
       status: "Verified digital identity found."
-    }), {
-      headers: { 'Cache-Control': 'no-store' }
     });
 
   } catch (error) {
-    console.error("Audit Error:", error);
-    return NextResponse.json({ score: 0, error: "Service temporarily unavailable" }, { status: 500 });
+    return NextResponse.json({ score: 0, error: "Audit Engine Error" });
   }
 }

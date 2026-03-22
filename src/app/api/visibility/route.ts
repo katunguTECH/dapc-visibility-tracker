@@ -1,3 +1,4 @@
+// Version 2.0 - Forced Update 13:30
 import { NextResponse } from "next/server";
 
 // FORCE DYNAMIC: This prevents Next.js from caching the API response

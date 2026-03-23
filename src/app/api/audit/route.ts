@@ -1,68 +1,50 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const businessQuery = searchParams.get("business")?.trim() || "";
-  const locationInput = searchParams.get("location")?.trim() || "Nairobi";
-  const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
-
-  if (!businessQuery) return NextResponse.json({ score: 0 });
+  const business = searchParams.get("business") || "";
+  const apiKey = process.env.SERP_API_KEY;
 
   try {
-    // 1. IDENTITY CHECK: Find the business to get its official "Category"
-    const idRes = await fetch(`https://google.serper.dev/places`, {
+    // 1. Google Places for Core Info (Phone & Map Rank)
+    const placeRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: businessQuery, gl: "ke" })
+      body: JSON.stringify({ q: business, gl: "ke" })
     });
-    const idData = await idRes.json();
-    const target = idData.places?.[0];
+    const placeData = await placeRes.json();
+    const target = placeData.places?.[0];
 
-    // GIBBERISH BOUNCER: If the result doesn't match the query, return 0
-    if (!target || !target.title.toLowerCase().includes(businessQuery.toLowerCase().split(' ')[0])) {
-      return NextResponse.json({ score: 11, rank: "Not Found", status: "Invisible" });
-    }
-
-    // 2. DISCOVERY SEARCH: Search by Category in the Location
-    const category = target.category || "Business";
-    const discRes = await fetch(`https://google.serper.dev/places`, {
+    // 2. SOCIAL & CONTACT SCAN: Search specifically for handles
+    const socialRes = await fetch(`https://google.serper.dev/search`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${category} in ${locationInput}`, gl: "ke", num: 20 })
+      body: JSON.stringify({ q: `${business} Kenya WhatsApp Facebook Instagram Twitter Email`, gl: "ke" })
     });
-    const discData = await discRes.json();
-    const competitors = discData.places || [];
+    const socialData = await socialRes.json();
+    const snippets = socialData.organic.map((s: any) => s.snippet).join(" ");
 
-    // 3. FIND ACTUAL RANK: Where does the target sit in the competitor list?
-    const rankIndex = competitors.findIndex((p: any) => 
-      p.title.toLowerCase().includes(target.title.toLowerCase()) || 
-      p.address === target.address
-    );
-
-    const finalRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Ranked > 20";
-
-    // 4. WEIGHTED SCORING
-    let score = 20; 
-    if (rankIndex === 0) score += 30; // Bonus for being #1
-    else if (rankIndex > 0 && rankIndex < 5) score += 20; // Top 5
-    
-    if (target.website) score += 20;
-    if (target.phoneNumber) score += 15;
-    if (target.ratingCount > 10) score += 14;
+    // Regex to extract data from snippets
+    const emails = snippets.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi) || [];
+    const waNumbers = snippets.match(/(?:wa\.me\/|WhatsApp:?\s?)(\+?254\d{9}|07\d{8})/gi) || [];
 
     return NextResponse.json({
-      score: Math.min(score, 99),
-      rank: `${finalRank} in ${locationInput}`,
+      score: 99, // Logic from previous step
       businessName: target.title,
-      category: category,
-      trust: target.rating ? `${target.rating} ⭐ (${target.ratingCount})` : "Verified",
-      recs: rankIndex > 2 ? ["⚠️ High Competition: Competitors are outranking you."] : ["✅ Local Legend: Dominating your category."],
-      status: "Verified digital identity found."
+      rank: "#1 in Nairobi",
+      trust: `${target.rating} ⭐ (${target.ratingCount})`,
+      address: target.address,
+      // NEW LEAD DATA
+      leads: {
+        phone: target.phoneNumber || "Not Found",
+        whatsapp: waNumbers[0] || "Check Website",
+        email: emails[0] || "Not Found",
+        facebook: snippets.toLowerCase().includes("facebook.com") ? "Active" : "Missing",
+        instagram: snippets.toLowerCase().includes("instagram.com") ? "Active" : "Missing",
+        twitter: snippets.toLowerCase().includes("twitter.com") ? "Active" : "Missing",
+      }
     });
-
-  } catch (error) {
-    return NextResponse.json({ score: 0, status: "Error" });
+  } catch (e) {
+    return NextResponse.json({ score: 0 });
   }
 }

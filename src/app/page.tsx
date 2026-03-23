@@ -10,29 +10,35 @@ import {
   MapPin, 
   Star,
   ChevronRight,
-  Lightbulb
+  MessageCircle,
+  Mail,
+  Share2,
+  Phone
 } from 'lucide-react';
 
-// Sub-component for individual Lead Cards
-const LeadCard = ({ op }: { op: any }) => (
-  <div className="group bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
+// Optimized Lead Card Component for Contact Data
+const LeadCard = ({ icon: Icon, type, title, value, impact, color }: any) => (
+  <div className="group bg-white p-6 rounded-[24px] border border-slate-100 hover:border-blue-500 hover:shadow-xl transition-all duration-300">
     <div className="flex justify-between items-start">
       <div className="flex-1">
-        <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md uppercase tracking-wider">
-          {op.type}
-        </span>
-        <h3 className="text-lg font-bold text-slate-900 mt-2">{op.title}</h3>
-        <p className="text-slate-500 text-sm mt-1 leading-relaxed">{op.description}</p>
-      </div>
-      <div className="bg-slate-50 text-slate-400 p-2 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-        <ChevronRight size={20} />
+        <div className={`flex items-center gap-2 mb-3`}>
+          <div className={`p-1.5 rounded-lg ${color}`}>
+            <Icon size={14} className="text-white" />
+          </div>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            {type}
+          </span>
+        </div>
+        <h3 className="text-lg font-black text-slate-900 leading-tight">{title}</h3>
+        <p className="text-slate-500 text-sm mt-2 font-medium break-all">{value}</p>
       </div>
     </div>
-    <div className="mt-4 flex items-center gap-2 border-t pt-4 border-slate-50">
-      <span className="text-[10px] font-bold text-slate-400 uppercase">Impact:</span>
-      <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">
-        {op.impact} Priority
-      </span>
+    <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
+      <div className="flex items-center gap-1.5">
+        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+        <span className="text-[10px] font-black text-slate-400 uppercase">Impact: {impact}</span>
+      </div>
+      <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-600 transition-transform group-hover:translate-x-1" />
     </div>
   </div>
 );
@@ -58,36 +64,36 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#FDFDFD]">
       {/* NAVIGATION BAR */}
-      <nav className="flex justify-between items-center px-8 py-6 max-w-6xl mx-auto">
-        <div className="font-black text-2xl tracking-tighter text-blue-600 italic">DAPC</div>
-        <div className="hidden md:flex gap-10 text-sm font-bold text-slate-500">
+      <nav className="flex justify-between items-center px-8 py-8 max-w-6xl mx-auto">
+        <div className="font-black text-3xl tracking-tighter text-blue-600 italic">DAPC</div>
+        <div className="hidden md:flex gap-10 text-xs font-black uppercase tracking-widest text-slate-400">
           <a href="#" className="hover:text-blue-600 transition-colors">Home</a>
           <a href="#" className="hover:text-blue-600 transition-colors">Exposure</a>
           <a href="#" className="hover:text-blue-600 transition-colors">Leads</a>
         </div>
-        <button className="text-sm font-bold bg-white border border-slate-200 px-6 py-2.5 rounded-full shadow-sm hover:bg-slate-50 transition-all active:scale-95">
+        <button className="text-xs font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
           Sign In
         </button>
       </nav>
 
       <main className="max-w-4xl mx-auto pt-12 pb-32 px-6">
         {/* HERO SECTION */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.1]">
+        <div className="text-center mb-14">
+          <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tight leading-[0.9] mb-8">
             Stop Guessing Your <br />
-            <span className="text-blue-600">Digital Impact.</span>
+            <span className="text-blue-600 italic">Digital Impact.</span>
           </h1>
-          <p className="mt-8 text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium">
             Get real-time Kenyan market intelligence. Audit your business visibility across Google, Social Media, and local directories in seconds.
           </p>
         </div>
 
         {/* MAIN SEARCH INTERFACE */}
-        <div className="bg-white p-3 rounded-[32px] shadow-[0_20px_50px_rgba(37,99,235,0.1)] border border-blue-50 flex flex-col md:flex-row gap-2 mb-16 ring-8 ring-blue-50/50">
+        <div className="bg-white p-3 rounded-[32px] shadow-[0_30px_60px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row gap-2 mb-20 ring-1 ring-slate-100">
           <input 
-            className="flex-1 px-8 py-5 rounded-[24px] outline-none text-slate-800 font-bold text-lg placeholder:text-slate-300"
+            className="flex-1 px-8 py-6 rounded-[24px] outline-none text-slate-800 font-bold text-xl placeholder:text-slate-300"
             placeholder="Search your business (e.g. Java House)..."
             value={query} 
             onChange={(e) => setQuery(e.target.value)}
@@ -96,7 +102,7 @@ export default function LandingPage() {
           <button 
             onClick={startAudit} 
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-[24px] font-black text-lg flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-blue-200 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-[24px] font-black text-xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" /> : "Run Visibility Audit"}
           </button>
@@ -105,40 +111,34 @@ export default function LandingPage() {
         {/* RESULTS ENGINE */}
         {data && (
           data.score <= 11 ? (
-            /* GIBBERISH / NOT FOUND STATE */
-            <div className="bg-white p-10 rounded-[32px] border-2 border-dashed border-slate-200 text-center animate-in fade-in zoom-in duration-500">
-              <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="text-slate-400" size={32} />
-              </div>
-              <h3 className="text-xl font-black text-slate-900">Identity Not Found</h3>
-              <p className="text-slate-500 mt-2 max-w-sm mx-auto">
-                We couldn't verify a business matching "{query}" in our Kenyan directory. Please check the spelling.
-              </p>
+            <div className="bg-white p-12 rounded-[40px] border-2 border-dashed border-slate-100 text-center animate-in fade-in zoom-in duration-500">
+              <AlertCircle className="text-slate-300 mx-auto mb-4" size={48} />
+              <h3 className="text-2xl font-black text-slate-900">Identity Not Found</h3>
+              <p className="text-slate-500 mt-2 max-w-sm mx-auto font-medium">We couldn't verify a business matching "{query}" in our Kenyan directory.</p>
             </div>
           ) : (
-            /* SUCCESSFUL AUDIT DASHBOARD */
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-10 duration-700">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Score Card */}
-                <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm text-center flex flex-col justify-center">
-                  <span className="text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] mb-2">Visibility Score</span>
-                  <div className="text-8xl font-black text-blue-600 tabular-nums">{data.score}%</div>
-                  <div className="mt-6 inline-flex items-center gap-2 self-center px-5 py-2 bg-blue-50 text-blue-700 rounded-full text-xs font-black uppercase tracking-wider">
+                <div className="bg-white p-12 rounded-[48px] border border-slate-50 shadow-sm text-center ring-1 ring-slate-50">
+                  <span className="text-[10px] uppercase font-black text-slate-300 tracking-[0.3em] mb-4 block">Visibility Score</span>
+                  <div className="text-9xl font-black text-blue-600 tracking-tighter tabular-nums leading-none mb-6">{data.score}%</div>
+                  <div className="inline-flex items-center gap-2 px-6 py-2 bg-blue-50 text-blue-700 rounded-full text-xs font-black uppercase tracking-wider">
                     <TrendingUp size={14} /> {data.rank}
                   </div>
                 </div>
 
                 {/* Info Card */}
-                <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm flex flex-col justify-center">
-                  <h2 className="text-3xl font-black text-slate-900 leading-tight">{data.businessName}</h2>
-                  <div className="mt-6 space-y-4">
+                <div className="bg-white p-12 rounded-[48px] border border-slate-50 shadow-sm flex flex-col justify-center ring-1 ring-slate-50">
+                  <h2 className="text-4xl font-black text-slate-900 leading-[1.1] mb-6">{data.businessName}</h2>
+                  <div className="space-y-5">
                     <div className="flex items-start gap-3 text-slate-500">
-                      <MapPin className="shrink-0 text-blue-600" size={18} />
+                      <MapPin className="shrink-0 text-blue-600 mt-1" size={18} />
                       <p className="text-sm font-bold leading-relaxed">{data.address || "Nairobi, Kenya"}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="flex text-amber-400"><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/></div>
-                      <span className="text-sm font-black text-slate-900">Trust: {data.trust || "Verified"}</span>
+                      <div className="flex text-amber-400"><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/><Star size={16} fill="currentColor"/></div>
+                      <span className="text-sm font-black text-slate-900 tracking-tight">Trust Rating: {data.trust || "Verified"}</span>
                     </div>
                   </div>
                 </div>
@@ -147,61 +147,69 @@ export default function LandingPage() {
               {/* ACTION BUTTON */}
               <button 
                 onClick={() => document.getElementById('leads-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="w-full py-6 bg-slate-900 text-white rounded-[28px] font-black text-xl hover:bg-black transition-all active:scale-[0.98] shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group"
+                className="w-full py-8 bg-slate-900 text-white rounded-[32px] font-black text-2xl hover:bg-black transition-all active:scale-[0.98] shadow-2xl shadow-slate-200 flex items-center justify-center gap-4 group"
               >
                 🚀 Find Leads for {data.businessName} 
-                <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="group-hover:translate-x-2 transition-transform" />
               </button>
 
-              {/* LEADS SECTION ANCHOR */}
-              <div id="leads-section" className="pt-16 border-t border-slate-200">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-2 bg-amber-100 rounded-lg"><Lightbulb className="text-amber-600" size={24} /></div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">Growth Leads</h2>
+              {/* LEADS SECTION */}
+              <div id="leads-section" className="pt-20 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-100"><Zap className="text-white" size={28} /></div>
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">Growth Leads</h2>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <LeadCard op={{
-                     type: "Reputation", 
-                     title: "Review Velocity", 
-                     description: "Your trust rating is below the category average. You need ~12 new positive reviews to hit the Top 3.",
-                     impact: "High"
-                   }} />
-                   <LeadCard op={{
-                     type: "SEO", 
-                     title: "Directory Sync", 
-                     description: "We found inconsistencies in your NAP (Name, Address, Phone) data across 3 Kenyan directories.",
-                     impact: "Medium"
-                   }} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <LeadCard 
+                      icon={MessageCircle}
+                      type="Direct" 
+                      title="WhatsApp & Mobile" 
+                      value={data.leads?.phone || "07XX XXX XXX"}
+                      impact="High"
+                      color="bg-green-500"
+                   />
+                   <LeadCard 
+                      icon={Mail}
+                      type="Email" 
+                      title="Direct Outreach" 
+                      value={data.leads?.email || "Not Found"}
+                      impact="High"
+                      color="bg-blue-500"
+                   />
+                   <LeadCard 
+                      icon={Share2}
+                      type="Social" 
+                      title="Social Footprint" 
+                      value={`FB: ${data.leads?.facebook || '---'} | IG: ${data.leads?.instagram || '---'}`}
+                      impact="Medium"
+                      color="bg-purple-500"
+                   />
                 </div>
               </div>
             </div>
           )
         )}
 
-        {/* DEFAULT FEATURE CARDS (ONLY SHOW WHEN NO DATA) */}
+        {/* DEFAULT FEATURES */}
         {!data && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <div className="bg-white p-8 rounded-3xl border border-slate-100">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6">
-                <ShieldCheck />
-              </div>
-              <h3 className="font-black text-slate-900 text-lg">Local Accuracy</h3>
-              <p className="text-sm text-slate-500 mt-3 leading-relaxed">Tailored specifically for the unique Kenyan business landscape and search habits.</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-16">
+            <div className="group">
+              <ShieldCheck className="text-blue-600 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="font-black text-slate-900 text-xl mb-3">Local Accuracy</h3>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed">Tailored specifically for the unique Kenyan business landscape and search habits.</p>
             </div>
-            <div className="bg-white p-8 rounded-3xl border border-slate-100">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6">
-                <TrendingUp />
-              </div>
-              <h3 className="font-black text-slate-900 text-lg">Competitor Insights</h3>
-              <p className="text-sm text-slate-500 mt-3 leading-relaxed">See how you stack up against the biggest players in your city and category.</p>
+            <div className="group">
+              <TrendingUp className="text-blue-600 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="font-black text-slate-900 text-xl mb-3">Market Rank</h3>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed">See how you stack up against the biggest players in your city and category.</p>
             </div>
-            <div className="bg-white p-8 rounded-3xl border border-slate-100">
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6">
-                <Zap />
-              </div>
-              <h3 className="font-black text-slate-900 text-lg">Lead Generation</h3>
-              <p className="text-sm text-slate-500 mt-3 leading-relaxed">Identify specific digital gaps and turn them into high-converting sales leads.</p>
+            <div className="group">
+              <Zap className="text-blue-600 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="font-black text-slate-900 text-xl mb-3">Lead Gen</h3>
+              <p className="text-sm text-slate-400 font-medium leading-relaxed">Identify specific digital gaps and turn them into high-converting sales leads.</p>
             </div>
           </div>
         )}

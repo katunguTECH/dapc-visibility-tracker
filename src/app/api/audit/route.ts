@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,76 +8,87 @@ export async function GET(request: Request) {
   const locationInput = searchParams.get("location")?.trim() || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!businessQuery) return NextResponse.json({ score: 0, status: "No name provided" });
+  if (!businessQuery || businessQuery.length < 3) {
+    return NextResponse.json({ score: 0, status: "Invalid Input" });
+  }
 
   try {
-    // --- STEP 1: FETCH THE SPECIFIC BUSINESS DATA ---
-    const bizRes = await fetch(`https://google.serper.dev/places`, {
+    // --- STEP 1: IDENTITY CHECK ---
+    // We find the specific business to get its official "Category"
+    const identityRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: businessQuery, location: `${locationInput}, Kenya`, gl: "ke" })
+      body: JSON.stringify({ q: businessQuery, gl: "ke" })
     });
-    const bizData = await bizRes.json();
-    const targetBus = bizData.places?.[0];
+    const identityData = await identityRes.json();
+    const target = identityData.places?.[0];
 
-    // GIBBERISH CHECK: If name doesn't match at all, kill the audit
-    if (!targetBus || !targetBus.title.toLowerCase().includes(businessQuery.toLowerCase().split(' ')[0])) {
-      return NextResponse.json({ score: 0, rank: "N/A", status: "Business not found." });
+    // --- GIBBERISH BOUNCER ---
+    // If the name returned by Google doesn't contain any part of the user's query
+    if (!target || !target.title.toLowerCase().includes(businessQuery.toLowerCase().split(' ')[0])) {
+      return NextResponse.json({
+        score: 0,
+        rank: "N/A",
+        businessName: "Unknown Entity",
+        status: "Match Failed: This business does not appear to exist in the Kenyan registry.",
+        recs: ["Check spelling or try a registered business name."]
+      });
     }
 
-    // --- STEP 2: FIND COMPETITIVE RANKING ---
-    // We use the 'category' Google assigned them (e.g., "Coffee Shop" or "Telecommunications")
-    const category = targetBus.category || "Business";
-    const compRes = await fetch(`https://google.serper.dev/places`, {
+    // --- STEP 2: THE DISCOVERY RANKING ---
+    // Instead of searching the name, we search the CATEGORY in the LOCATION
+    const category = target.category || "Business";
+    const discoveryRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${category} in ${locationInput}`, gl: "ke" })
+      body: JSON.stringify({ 
+        q: `${category} in ${locationInput}`, 
+        gl: "ke",
+        num: 20 // Look at the top 20 competitors
+      })
     });
-    const compData = await compRes.json();
-    const competitors = compData.places || [];
+    const discoveryData = await discoveryRes.json();
+    const competitors = discoveryData.places || [];
 
-    // Find our target business in the competitive list
+    // Find our target in the list of local competitors
     const rankIndex = competitors.findIndex((p: any) => 
-      p.title.toLowerCase().includes(targetBus.title.toLowerCase()) || 
-      p.address === targetBus.address
+      p.title.toLowerCase() === target.title.toLowerCase() || p.address === target.address
     );
 
-    // If not in top 20 of category, rank is low
-    const displayRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Ranked > 20";
+    const finalRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Unranked (>20)";
 
     // --- STEP 3: DYNAMIC SCORING ---
-    let score = 10; // Base match
+    let score = 10; 
     let recs = [];
 
-    // Rank Bonus (0-30 points)
+    // Ranking Weight (30 points)
     if (rankIndex !== -1) {
-      score += Math.max(30 - (rankIndex * 2), 5); // #1 gets 30, #10 gets 10
-      recs.push(rankIndex < 3 ? "✅ Local Legend: Dominating the neighborhood." : "⚠️ Competition: You are visible but others rank higher.");
+      const rankBonus = Math.max(30 - (rankIndex * 3), 5); 
+      score += rankBonus;
+      recs.push(rankIndex < 3 ? "✅ Local Market Leader." : "⚠️ Competition is high in this area.");
     } else {
-      recs.push("❌ Visibility Gap: You don't appear in the top 20 for your category.");
+      recs.push("❌ Visibility Gap: You are invisible to customers searching by category.");
     }
 
-    // Data Completeness (60 points)
-    if (targetBus.address) score += 15;
-    if (targetBus.phoneNumber) score += 15;
-    if (targetBus.website) score += 15;
-    if (targetBus.ratingCount > 50) score += 15;
-    else if (targetBus.ratingCount > 0) score += 5;
+    // Presence Weight (60 points)
+    if (target.address && target.address.length > 15) score += 20;
+    if (target.phoneNumber) score += 20;
+    if (target.website) score += 20;
 
-    return new NextResponse(JSON.stringify({
+    return NextResponse.json({
       score: Math.min(score, 99),
-      rank: `${displayRank} in ${locationInput}`,
-      businessName: targetBus.title,
-      category: targetBus.category,
-      trust: targetBus.rating ? `${targetBus.rating} ⭐ (${targetBus.ratingCount})` : "Verified",
-      address: targetBus.address,
-      phoneNumber: targetBus.phoneNumber,
-      website: targetBus.website,
+      rank: `${finalRank} in ${locationInput}`,
+      businessName: target.title,
+      category: category,
+      trust: target.rating ? `${target.rating} ⭐ (${target.ratingCount})` : "Verified",
+      address: target.address,
+      phoneNumber: target.phoneNumber,
+      website: target.website,
       recs,
-      status: "Verified digital identity found."
-    }), { headers: { 'Cache-Control': 'no-store' } });
+      status: "Verified Kenyan market data retrieved."
+    });
 
   } catch (error) {
-    return NextResponse.json({ score: 0, error: "System error" });
+    return NextResponse.json({ score: 0, status: "API Error" });
   }
 }

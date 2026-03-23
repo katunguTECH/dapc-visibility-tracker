@@ -1,68 +1,38 @@
-"use client";
-import { Phone, MessageSquare, Copy, Globe, MapPin } from "lucide-react";
+import React from 'react';
+import { Lightbulb, ArrowRight, CheckCircle } from 'lucide-react';
 
-export default function LeadsSection({ leads }: { leads: any[] }) {
-  if (!leads.length) return null;
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("Number copied!");
-  };
-
+export default function LeadsSection({ opportunities, businessName }: { opportunities: any[], businessName: string }) {
   return (
-    <div className="mt-12 w-full max-w-4xl animate-in fade-in slide-in-from-bottom-4">
-      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-        🚀 Identified Sales Opportunities
-      </h3>
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4 text-sm font-semibold text-slate-700">Business</th>
-              <th className="px-6 py-4 text-sm font-semibold text-slate-700">Contact Details</th>
-              <th className="px-6 py-4 text-sm font-semibold text-slate-700 text-right">Connect</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {leads.map((lead, i) => (
-              <tr key={i} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="font-bold text-slate-900">{lead.title}</div>
-                  <div className="text-xs text-slate-500 flex items-center mt-1">
-                    <MapPin size={12} className="mr-1" /> {lead.address?.substring(0, 30)}...
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-slate-800">{lead.phoneNumber || "No Phone"}</div>
-                  {lead.website && (
-                    <a href={lead.website} target="_blank" className="text-xs text-blue-600 flex items-center mt-1 hover:underline">
-                      <Globe size={12} className="mr-1" /> Website
-                    </a>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={() => copyToClipboard(lead.phoneNumber)}
-                      className="p-2 hover:bg-slate-100 rounded-md text-slate-600"
-                    >
-                      <Copy size={18} />
-                    </button>
-                    {lead.phoneNumber && (
-                      <a 
-                        href={`https://wa.me/${lead.phoneNumber.replace(/\D/g, '')}`}
-                        target="_blank"
-                        className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-md"
-                      >
-                        <MessageSquare size={18} />
-                      </a>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="mt-12 space-y-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb className="text-amber-500" size={24} />
+        <h2 className="text-2xl font-black text-slate-900">Growth Leads for {businessName}</h2>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {opportunities.map((op) => (
+          <div key={op.id} className="group bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-md uppercase">
+                  {op.type}
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 mt-2">{op.title}</h3>
+                <p className="text-slate-500 text-sm mt-1">{op.description}</p>
+              </div>
+              <div className="bg-blue-50 text-blue-600 p-2 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <ArrowRight size={20} />
+              </div>
+            </div>
+            
+            <div className="mt-4 flex items-center gap-2 border-t pt-4 border-slate-50">
+              <span className="text-xs font-bold text-slate-400">Potential Impact:</span>
+              <span className={`text-xs font-bold ${op.impact === 'High' ? 'text-green-600' : 'text-blue-600'}`}>
+                {op.impact} Growth
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

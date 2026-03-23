@@ -2,26 +2,9 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// THE BOUNCER: Ensures the result actually belongs to the user's query
-function checkReliability(query: string, resultName: string): boolean {
-  const q = query.toLowerCase().trim();
-  const r = resultName.toLowerCase().trim();
-  
-  // 1. Direct match check
-  if (r.includes(q) || q.includes(r)) return true;
-
-  // 2. Token overlap check (Split by spaces)
-  const queryTokens = q.split(/\s+/).filter(t => t.length > 2);
-  const resultTokens = r.split(/\s+/);
-  
-  // If any word from the query (longer than 2 chars) is in the result name, it's likely real
-  return queryTokens.some(token => resultTokens.includes(token));
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const businessQuery = searchParams.get("business")?.trim() || "";
-  const location = searchParams.get("location") || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
   try {
@@ -34,27 +17,41 @@ export async function GET(request: Request) {
     const data = await res.json();
     const topResult = data.places?.[0];
 
-    // --- THE GIBBERISH KILLER ---
-    if (!topResult || !checkReliability(businessQuery, topResult.title)) {
+    // --- THE BOUNCER PROTOCOL ---
+    
+    // 1. Check if the result is a generic geographical location
+    const isGenericLocation = 
+      topResult?.category?.toLowerCase().includes("administrative") || 
+      topResult?.category?.toLowerCase().includes("political") ||
+      topResult?.title?.toLowerCase() === "nairobi" || 
+      topResult?.title?.toLowerCase() === "kenya";
+
+    // 2. Check for "Exact Match" or "Significant Overlap"
+    const queryFirstWord = businessQuery.toLowerCase().split(' ')[0];
+    const resultTitle = topResult?.title?.toLowerCase() || "";
+    const isSignificantMatch = resultTitle.includes(queryFirstWord);
+
+    // If it's a generic city result OR the name doesn't match at all... KILL IT.
+    if (!topResult || isGenericLocation || !isSignificantMatch) {
       return NextResponse.json({
         score: 0,
         rank: "N/A",
-        businessName: "Unknown Entity",
-        status: "Match Failed: No legitimate business found for this query.",
-        recs: ["Please check your spelling or use the official business name."]
+        businessName: "Identity Not Found",
+        status: "Match Failed: No legitimate business matching this query was found.",
+        recs: ["Please check the spelling of your business name."]
       });
     }
 
-    // --- DYNAMIC SCORING (Only runs if reliability check passes) ---
-    let score = 15; // Starting base
-    if (topResult.address && topResult.address.length > 10) score += 25;
+    // --- SCORING (Only for real businesses) ---
+    let score = 15;
+    if (topResult.address && topResult.address.length > 15) score += 25;
     if (topResult.phoneNumber) score += 25;
     if (topResult.website) score += 25;
     if (topResult.ratingCount > 0) score += 9;
 
     return NextResponse.json({
       score: Math.min(score, 99),
-      rank: `#${topResult.position || 1} in ${location}`,
+      rank: `#${topResult.position || 1} in Nairobi`,
       businessName: topResult.title,
       address: topResult.address,
       phoneNumber: topResult.phoneNumber,

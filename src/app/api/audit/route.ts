@@ -1,20 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
-
-// Helper: Checks if the search term actually matches the result name
-function isLegitMatch(query: string, resultName: string): boolean {
-  const q = query.toLowerCase().trim();
-  const r = resultName.toLowerCase().trim();
-  
-  // 1. Direct Inclusion
-  if (r.includes(q) || q.includes(r)) return true;
-  
-  // 2. Word Overlap (At least one significant word must match)
-  const qWords = q.split(/\s+/).filter(w => w.length > 3);
-  const rWords = r.split(/\s+/);
-  return qWords.some(word => rWords.includes(word));
-}
+export const fetchCache = "force-no-store";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -22,63 +9,76 @@ export async function GET(request: Request) {
   const locationInput = searchParams.get("location")?.trim() || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!businessQuery || businessQuery.length < 3) {
-    return NextResponse.json({ score: 0, status: "Invalid Input" });
-  }
+  if (!businessQuery) return NextResponse.json({ score: 0, status: "No name provided" });
 
   try {
-    const response = await fetch(`https://google.serper.dev/places`, {
+    // --- STEP 1: FETCH THE SPECIFIC BUSINESS DATA ---
+    const bizRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: businessQuery, gl: "ke", hl: "en" })
+      body: JSON.stringify({ q: businessQuery, location: `${locationInput}, Kenya`, gl: "ke" })
     });
+    const bizData = await bizRes.json();
+    const targetBus = bizData.places?.[0];
 
-    const data = await response.json();
-    const topResult = data.places?.[0];
-
-    // --- CRITICAL VALIDATION ---
-    if (!topResult || !isLegitMatch(businessQuery, topResult.title)) {
-      return NextResponse.json({
-        score: 0,
-        rank: "Not Found",
-        trust: "Unverified",
-        businessName: "Unknown Entity",
-        recs: ["❌ No matching business found for this query."],
-        status: "Match Failed"
-      });
+    // GIBBERISH CHECK: If name doesn't match at all, kill the audit
+    if (!targetBus || !targetBus.title.toLowerCase().includes(businessQuery.toLowerCase().split(' ')[0])) {
+      return NextResponse.json({ score: 0, rank: "N/A", status: "Business not found." });
     }
 
-    // --- SCORING (Only for real matches) ---
-    let score = 20; // Base for matching name
+    // --- STEP 2: FIND COMPETITIVE RANKING ---
+    // We use the 'category' Google assigned them (e.g., "Coffee Shop" or "Telecommunications")
+    const category = targetBus.category || "Business";
+    const compRes = await fetch(`https://google.serper.dev/places`, {
+      method: 'POST',
+      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: `${category} in ${locationInput}`, gl: "ke" })
+    });
+    const compData = await compRes.json();
+    const competitors = compData.places || [];
+
+    // Find our target business in the competitive list
+    const rankIndex = competitors.findIndex((p: any) => 
+      p.title.toLowerCase().includes(targetBus.title.toLowerCase()) || 
+      p.address === targetBus.address
+    );
+
+    // If not in top 20 of category, rank is low
+    const displayRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Ranked > 20";
+
+    // --- STEP 3: DYNAMIC SCORING ---
+    let score = 10; // Base match
     let recs = [];
 
-    if (topResult.address && !topResult.address.includes("Kenya") || topResult.address.length > 10) {
-      score += 25;
-      recs.push("✅ Local Legend: Verified physical location.");
+    // Rank Bonus (0-30 points)
+    if (rankIndex !== -1) {
+      score += Math.max(30 - (rankIndex * 2), 5); // #1 gets 30, #10 gets 10
+      recs.push(rankIndex < 3 ? "✅ Local Legend: Dominating the neighborhood." : "⚠️ Competition: You are visible but others rank higher.");
+    } else {
+      recs.push("❌ Visibility Gap: You don't appear in the top 20 for your category.");
     }
 
-    if (topResult.phoneNumber) {
-      score += 25;
-      recs.push("✅ Contact Ready: Direct line identified.");
-    }
+    // Data Completeness (60 points)
+    if (targetBus.address) score += 15;
+    if (targetBus.phoneNumber) score += 15;
+    if (targetBus.website) score += 15;
+    if (targetBus.ratingCount > 50) score += 15;
+    else if (targetBus.ratingCount > 0) score += 5;
 
-    if (topResult.website) {
-      score += 29;
-      recs.push("✅ Search Reach: Professional site detected.");
-    }
-
-    return NextResponse.json({
+    return new NextResponse(JSON.stringify({
       score: Math.min(score, 99),
-      rank: `#${topResult.position || 1} in ${locationInput}`,
-      businessName: topResult.title,
-      trust: topResult.rating ? `${topResult.rating} ⭐ (${topResult.ratingCount || 0})` : "Verified",
+      rank: `${displayRank} in ${locationInput}`,
+      businessName: targetBus.title,
+      category: targetBus.category,
+      trust: targetBus.rating ? `${targetBus.rating} ⭐ (${targetBus.ratingCount})` : "Verified",
+      address: targetBus.address,
+      phoneNumber: targetBus.phoneNumber,
+      website: targetBus.website,
       recs,
-      address: topResult.address,
-      phoneNumber: topResult.phoneNumber,
-      website: topResult.website
-    });
+      status: "Verified digital identity found."
+    }), { headers: { 'Cache-Control': 'no-store' } });
 
   } catch (error) {
-    return NextResponse.json({ score: 0, status: "Error" });
+    return NextResponse.json({ score: 0, error: "System error" });
   }
 }

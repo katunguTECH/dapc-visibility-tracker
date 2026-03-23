@@ -1,67 +1,72 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
-export async function GET(request: Request) {
+export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const businessQuery = searchParams.get("business")?.toLowerCase().trim() || "";
-  const location = searchParams.get("location") || "Nairobi";
-  const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
+  const business = searchParams.get("business")?.trim() || "";
+  const location = searchParams.get("location")?.trim() || "Nairobi";
+  const apiKey = process.env.SERP_API_KEY;
+
+  if (!business || business.length < 3) {
+    return NextResponse.json({ score: 0, rank: "N/A", status: "Invalid Input" });
+  }
 
   try {
-    const response = await fetch(`https://google.serper.dev/places`, {
+    // STEP 1: Identity Lookup (Find what this business actually is)
+    const idRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
-      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${businessQuery} ${location}`, gl: "ke" })
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: business, gl: "ke" })
     });
+    const idData = await idRes.json();
+    const target = idData.places?.[0];
 
-    const data = await response.json();
-    const places = data.places || [];
-    
-    // --- THE VALIDATION LOGIC ---
-    // 1. Check if we found ANYTHING
-    if (places.length === 0) {
-      return NextResponse.json({ score: 0, rank: "Not Found", status: "No listings found." });
+    // GIBBERISH FILTER: Strict name match
+    if (!target || !target.title.toLowerCase().includes(business.toLowerCase().split(' ')[0])) {
+      return NextResponse.json({ score: 0, rank: "Not Found", status: "Identity Failed" });
     }
 
-    // 2. Check if the first result is actually a match (Anti-Gibberish)
-    const topResult = places[0];
-    const foundName = topResult.title.toLowerCase();
+    // STEP 2: Discovery Search (The Rank Finder)
+    const category = target.category || "Business";
+    const discRes = await fetch(`https://google.serper.dev/places`, {
+      method: 'POST',
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: `${category} in ${location}`, gl: "ke", num: 20 })
+    });
+    const discData = await discRes.json();
+    const competitors = discData.places || [];
+
+    // Find the index of the target business in the top 20 list
+    const rankIndex = competitors.findIndex(p => 
+      p.title.toLowerCase().includes(target.title.toLowerCase()) || p.address === target.address
+    );
+
+    const displayRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Unranked (>20)";
+
+    // STEP 3: Honest Scoring
+    let score = 10;
+    if (rankIndex === 0) score += 40; // Only #1 gets the big boost
+    else if (rankIndex > 0 && rankIndex < 10) score += 25; 
     
-    // Logic: If search term isn't in the title AND title isn't in the search term, it's a fake match
-    const isRealMatch = foundName.includes(businessQuery) || businessQuery.includes(foundName);
-
-    if (!isRealMatch) {
-      return NextResponse.json({ 
-        score: 5, 
-        rank: "Unranked", 
-        businessName: "Unknown",
-        status: "Business not found. Showing closest local generic result.",
-        details: { googleFound: topResult.title }
-      });
-    }
-
-    // 3. Dynamic Ranking
-    // If the business is specifically searched for, we check its position
-    const rankValue = topResult.position || 1; 
-
-    // 4. Dynamic Scoring based on Profile Completeness
-    let score = 30; // Base points for existing
-    if (topResult.phoneNumber) score += 20;
-    if (topResult.website) score += 20;
-    if (topResult.ratingCount > 10) score += 20;
-    if (topResult.address) score += 10;
+    if (target.website) score += 20;
+    if (target.phoneNumber) score += 15;
+    if (target.ratingCount > 20) score += 14;
 
     return NextResponse.json({
-      score: Math.min(score, 100),
-      rank: `#${rankValue} in ${location}`,
-      businessName: topResult.title,
-      trust: `${topResult.rating || 0} ⭐ (${topResult.ratingCount || 0})`,
-      verified: !!topResult.cid,
-      address: topResult.address
+      score: Math.min(score, 99),
+      rank: `${displayRank} in ${location}`,
+      businessName: target.title,
+      trust: target.rating ? `${target.rating} ⭐ (${target.ratingCount})` : "Verified",
+      address: target.address,
+      website: target.website,
+      phoneNumber: target.phoneNumber,
+      competitors: competitors.slice(0, 3).map((c, i) => ({
+        name: c.title,
+        rank: i + 1,
+        rating: c.rating || "N/A"
+      }))
     });
 
   } catch (error) {
-    return NextResponse.json({ error: "Audit failed" }, { status: 500 });
+    return NextResponse.json({ score: 0, error: "API Timeout" });
   }
 }

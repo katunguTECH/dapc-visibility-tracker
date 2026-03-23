@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { 
+  Search, 
   Loader2, 
   AlertCircle, 
   ShieldCheck, 
@@ -11,7 +12,8 @@ import {
   ChevronRight,
   MessageCircle,
   Mail,
-  Share2
+  Share2,
+  Phone
 } from 'lucide-react';
 
 // SaaS Lead Card Component
@@ -66,7 +68,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFDFD]">
-      {/* NAVIGATION - ORIGINAL SAAS BRANDING */}
+      {/* NAVIGATION BAR - RESTORED DAPC BRANDING */}
       <nav className="flex justify-between items-center px-8 py-8 max-w-6xl mx-auto">
         <div className="font-black text-3xl tracking-tighter text-blue-600 italic">DAPC</div>
         <div className="hidden md:flex gap-10 text-xs font-black uppercase tracking-widest text-slate-400">
@@ -74,13 +76,13 @@ export default function LandingPage() {
           <a href="#" className="hover:text-blue-600 transition-colors">Exposure</a>
           <a href="#" className="hover:text-blue-600 transition-colors">Leads</a>
         </div>
-        <button className="text-xs font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-3 rounded-full hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+        <button className="text-xs font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200">
           Sign In
         </button>
       </nav>
 
       <main className="max-w-4xl mx-auto pt-12 pb-32 px-6">
-        {/* HERO - MASSIVE TYPOGRAPHY */}
+        {/* HERO SECTION - RESTORED AGGRESSIVE TYPOGRAPHY */}
         <div className="text-center mb-14">
           <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tight leading-[0.9] mb-8">
             Stop Guessing Your <br />
@@ -91,7 +93,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* SEARCH INTERFACE */}
+        {/* SEARCH BOX */}
         <div className="bg-white p-3 rounded-[32px] shadow-[0_30px_60px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col md:flex-row gap-2 mb-20 ring-1 ring-slate-100">
           <input 
             className="flex-1 px-8 py-6 rounded-[24px] outline-none text-slate-800 font-bold text-xl placeholder:text-slate-300"
@@ -103,7 +105,7 @@ export default function LandingPage() {
           <button 
             onClick={startAudit} 
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-[24px] font-black text-xl flex items-center justify-center transition-all shadow-xl shadow-blue-100 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-[24px] font-black text-xl flex items-center justify-center transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" /> : "Run Visibility Audit"}
           </button>
@@ -120,6 +122,7 @@ export default function LandingPage() {
           ) : (
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Score Card */}
                 <div className="bg-white p-12 rounded-[48px] border border-slate-50 shadow-sm text-center ring-1 ring-slate-50">
                   <span className="text-[10px] uppercase font-black text-slate-300 tracking-[0.3em] mb-4 block">Visibility Score</span>
                   <div className="text-9xl font-black text-blue-600 tracking-tighter tabular-nums leading-none mb-6">{data.score}%</div>
@@ -128,6 +131,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
+                {/* Info Card */}
                 <div className="bg-white p-12 rounded-[48px] border border-slate-50 shadow-sm flex flex-col justify-center ring-1 ring-slate-50">
                   <h2 className="text-4xl font-black text-slate-900 leading-[1.1] mb-6">{data.businessName}</h2>
                   <div className="space-y-5">
@@ -204,15 +208,13 @@ export default function LandingPage() {
         )}
       </main>
 
-      {/* FLOATING CHAT BUTTON */}
+      {/* FLOATING CONTACT BUTTON - CORRECTED WHATSAPP */}
       <div 
         onClick={() => window.open('https://wa.me/254710440648', '_blank')}
-        className="fixed bottom-10 right-10 z-50 bg-green-500 text-white p-5 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-all flex items-center gap-3 group"
+        className="fixed bottom-8 right-8 z-50 bg-green-500 text-white px-6 py-4 rounded-full shadow-2xl shadow-green-200 cursor-pointer hover:scale-105 transition-all flex items-center gap-3"
       >
-        <MessageCircle size={28} />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 font-black uppercase tracking-widest text-[10px] whitespace-nowrap">
-          Chat with us
-        </span>
+        <MessageCircle size={24} />
+        <span className="font-black uppercase tracking-widest text-[10px]">Chat with us</span>
       </div>
     </div>
   );

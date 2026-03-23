@@ -18,21 +18,23 @@ export async function GET(request: Request) {
     const topResult = data.places?.[0];
 
     // --- THE IDENTITY GUARD ---
-    const queryBase = businessQuery.toLowerCase().slice(0, 4); // Take first 4 chars
+    // 1. Get the first 3 letters of the search and the result
+    const querySeed = businessQuery.toLowerCase().slice(0, 3);
     const resultTitle = topResult?.title?.toLowerCase() || "";
     
-    // Check 1: Does the result title actually contain the start of the query?
-    // Check 2: Is the result just the word "Nairobi" or "Kenya" (Google's fallback)?
+    // 2. Check if the result is just a generic city fallback (Nairobi/Kenya)
     const isFallback = resultTitle === "nairobi" || resultTitle === "kenya";
-    const isMatch = resultTitle.includes(queryBase);
+    
+    // 3. Check if the result title actually starts with or contains the query seed
+    const isLegitMatch = resultTitle.includes(querySeed);
 
-    if (!topResult || isFallback || !isMatch) {
+    if (!topResult || isFallback || !isLegitMatch) {
       return NextResponse.json({
         score: 0,
         rank: "N/A",
-        businessName: "Unknown Entity",
+        businessName: "Identity Verification Failed",
         status: "Match Failed: No legitimate business found for this query.",
-        recs: ["Please ensure the business is registered on Google Maps."]
+        recs: ["Please ensure you are using a registered business name."]
       });
     }
 

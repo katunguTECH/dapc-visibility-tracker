@@ -1,0 +1,26 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F8FAFC"/>
+  
+  <defs>
+    <linearGradient id="paint0_linear" x1="600" y1="0" x2="600" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EFF6FF"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#paint0_linear)"/>
+
+  <text x="600" y="280" text-anchor="middle" font-family="Inter, sans-serif" font-weight="900" font-size="160" letter-spacing="-0.05em" fill="#2563EB" font-style="italic">DAPC</text>
+  
+  <text x="600" y="380" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="60" letter-spacing="-0.02em" fill="#1E293B">Visibility Tracker</text>
+  
+  <g transform="translate(1080, 50) scale(0.5)">
+    <rect width="180" height="120" rx="10" fill="white"/>
+    <rect width="180" height="36" fill="#000000"/>
+    <rect y="42" width="180" height="6" fill="#FFFFFF"/>
+    <rect y="48" width="180" height="24" fill="#BB0000"/>
+    <rect y="72" width="180" height="6" fill="#FFFFFF"/>
+    <rect y="78" width="180" height="36" fill="#006600"/>
+  </g>
+  
+  <text x="600" y="550" text-anchor="middle" font-family="Inter, sans-serif" font-weight="600" font-size="32" fill="#64748B">Kenya's #1 Market Intelligence Engine</text>
+</svg>

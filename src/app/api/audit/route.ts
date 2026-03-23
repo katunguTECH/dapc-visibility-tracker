@@ -5,10 +5,10 @@ export async function GET(request: Request) {
   const business = searchParams.get("business")?.trim() || "";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!business || business.length < 3) return NextResponse.json({ score: 0 });
+  if (!business) return NextResponse.json({ score: 0 });
 
   try {
-    // STEP 1: Identify the Business & its Category
+    // 1. Get the target business details & its CATEGORY
     const idRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
@@ -17,12 +17,9 @@ export async function GET(request: Request) {
     const idData = await idRes.json();
     const target = idData.places?.[0];
 
-    // Bouncer: If it's gibberish or not found
-    if (!target || !target.title.toLowerCase().includes(business.toLowerCase().split(' ')[0])) {
-      return NextResponse.json({ score: 11, rank: "Not Found", status: "Identity Failed" });
-    }
+    if (!target) return NextResponse.json({ score: 11, rank: "Not Found" });
 
-    // STEP 2: Category Discovery (The "Reality Check")
+    // 2. RUN REAL CATEGORY SEARCH (e.g., "Lounge in Nairobi")
     const category = target.category || "Business";
     const discRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
@@ -32,52 +29,46 @@ export async function GET(request: Request) {
     const discData = await discRes.json();
     const competitors = discData.places || [];
 
-    // Find Actual Rank in Category
-    const rankIndex = competitors.findIndex((p: any) => 
-      p.title.toLowerCase().includes(target.title.toLowerCase()) || p.address === target.address
+    // 3. FIND ACTUAL RANK
+    // We look for the target business inside the top 20 category results
+    const actualRankIndex = competitors.findIndex((p: any) => 
+      p.title.toLowerCase().includes(target.title.toLowerCase()) || 
+      (p.address && target.address && p.address.substring(0, 10) === target.address.substring(0, 10))
     );
 
-    // STEP 3: Strict Scoring Algorithm (Enticement Logic)
-    let score = 10;
+    // If they aren't in the top 20, we assign a low rank
+    const finalRank = actualRankIndex !== -1 ? `#${actualRankIndex + 1}` : "Ranked > 20";
+
+    // 4. CALCULATE REALISTIC SCORE
+    let score = 15; // Base
+    if (target.website) score += 20;
+    if (target.phoneNumber) score += 10;
     
-    // Website is a huge factor for professional score
-    if (target.website) score += 25;
-    
-    // Reviews Weighting (Only Safaricom-level brands get max points)
+    // Rank logic: Only the top 3 get high points
+    if (actualRankIndex === 0) score += 40; 
+    else if (actualRankIndex > 0 && actualRankIndex < 5) score += 20;
+    else if (actualRankIndex >= 5) score += 5;
+
+    // Cap small brands to keep them "hungry" for your services
     const reviewCount = target.user_ratings_total || 0;
-    if (reviewCount > 1000) score += 30;
-    else if (reviewCount > 100) score += 15;
-    else if (reviewCount > 10) score += 5;
-
-    // Rank Weighting
-    if (rankIndex === 0) score += 34; // #1 gets the boost
-    else if (rankIndex > 0 && rankIndex < 5) score += 15;
-    else score -= 10; // Penalty for being buried
-
-    // Social & Contact Scan (Simulated for this demo)
-    const hasWhatsApp = target.phoneNumber?.startsWith('07') || target.phoneNumber?.startsWith('+2547');
-    if (hasWhatsApp) score += 5;
-
-    // The Ceiling: Small brands cannot cross 65% easily
-    const isMegaBrand = reviewCount > 1500 && target.website;
-    const finalScore = isMegaBrand ? Math.min(score, 99) : Math.min(score, 65);
+    const isMegaBrand = reviewCount > 2000;
+    const finalScore = isMegaBrand ? Math.min(score, 99) : Math.min(score, 58);
 
     return NextResponse.json({
       score: Math.max(finalScore, 11),
-      rank: rankIndex !== -1 ? `#${rankIndex + 1} in Nairobi` : "Below Top 20",
+      rank: `${finalRank} in Nairobi`,
       businessName: target.title,
       address: target.address,
-      trust: target.rating ? `${target.rating} ⭐ (${reviewCount})` : "Verified",
+      trust: `${target.rating || 0} ⭐ (${reviewCount})`,
       leads: {
         phone: target.phoneNumber || "Not Found",
-        whatsapp: hasWhatsApp ? target.phoneNumber : "Not Found",
-        email: "Scan Website for Email",
-        facebook: "Check Socials",
-        instagram: "Check Socials"
+        whatsapp: target.phoneNumber || "Not Found",
+        email: "Not Found - Scan Website",
+        socials: "Check FB/IG"
       }
     });
 
   } catch (error) {
-    return NextResponse.json({ score: 0, status: "Error" });
+    return NextResponse.json({ score: 0 });
   }
 }

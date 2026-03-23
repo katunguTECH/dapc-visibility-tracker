@@ -8,87 +8,64 @@ export async function GET(request: Request) {
   const locationInput = searchParams.get("location")?.trim() || "Nairobi";
   const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
 
-  if (!businessQuery || businessQuery.length < 3) {
-    return NextResponse.json({ score: 0, status: "Invalid Input" });
-  }
+  if (!businessQuery) return NextResponse.json({ score: 0, status: "Invalid Input" });
 
   try {
-    // --- STEP 1: IDENTITY CHECK ---
-    // We find the specific business to get its official "Category"
-    const identityRes = await fetch(`https://google.serper.dev/places`, {
+    // STEP 1: Identify the Business
+    const idRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: businessQuery, gl: "ke" })
     });
-    const identityData = await identityRes.json();
-    const target = identityData.places?.[0];
+    const idData = await idRes.json();
+    const target = idData.places?.[0];
 
-    // --- GIBBERISH BOUNCER ---
-    // If the name returned by Google doesn't contain any part of the user's query
+    // Validation: Check if the result actually matches the query
     if (!target || !target.title.toLowerCase().includes(businessQuery.toLowerCase().split(' ')[0])) {
-      return NextResponse.json({
-        score: 0,
-        rank: "N/A",
-        businessName: "Unknown Entity",
-        status: "Match Failed: This business does not appear to exist in the Kenyan registry.",
-        recs: ["Check spelling or try a registered business name."]
-      });
+      return NextResponse.json({ score: 0, status: "Match Failed" });
     }
 
-    // --- STEP 2: THE DISCOVERY RANKING ---
-    // Instead of searching the name, we search the CATEGORY in the LOCATION
+    // STEP 2: Find Competitors in the same Category
     const category = target.category || "Business";
-    const discoveryRes = await fetch(`https://google.serper.dev/places`, {
+    const compRes = await fetch(`https://google.serper.dev/places`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        q: `${category} in ${locationInput}`, 
-        gl: "ke",
-        num: 20 // Look at the top 20 competitors
-      })
+      body: JSON.stringify({ q: `${category} in ${locationInput}`, gl: "ke", num: 10 })
     });
-    const discoveryData = await discoveryRes.json();
-    const competitors = discoveryData.places || [];
+    const compData = await compRes.json();
+    const allPlaces = compData.places || [];
 
-    // Find our target in the list of local competitors
-    const rankIndex = competitors.findIndex((p: any) => 
-      p.title.toLowerCase() === target.title.toLowerCase() || p.address === target.address
-    );
+    // Calculate Rank
+    const rankIndex = allPlaces.findIndex((p: any) => p.title === target.title);
+    const finalRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Unranked (>10)";
 
-    const finalRank = rankIndex !== -1 ? `#${rankIndex + 1}` : "Unranked (>20)";
-
-    // --- STEP 3: DYNAMIC SCORING ---
-    let score = 10; 
-    let recs = [];
-
-    // Ranking Weight (30 points)
-    if (rankIndex !== -1) {
-      const rankBonus = Math.max(30 - (rankIndex * 3), 5); 
-      score += rankBonus;
-      recs.push(rankIndex < 3 ? "✅ Local Market Leader." : "⚠️ Competition is high in this area.");
-    } else {
-      recs.push("❌ Visibility Gap: You are invisible to customers searching by category.");
-    }
-
-    // Presence Weight (60 points)
-    if (target.address && target.address.length > 15) score += 20;
+    // Calculate Score
+    let score = 20;
+    if (target.address) score += 20;
     if (target.phoneNumber) score += 20;
     if (target.website) score += 20;
+    if (rankIndex !== -1 && rankIndex < 3) score += 19;
 
     return NextResponse.json({
       score: Math.min(score, 99),
       rank: `${finalRank} in ${locationInput}`,
       businessName: target.title,
       category: category,
-      trust: target.rating ? `${target.rating} ⭐ (${target.ratingCount})` : "Verified",
       address: target.address,
       phoneNumber: target.phoneNumber,
       website: target.website,
-      recs,
-      status: "Verified Kenyan market data retrieved."
+      trust: target.rating ? `${target.rating} ⭐ (${target.ratingCount})` : "Verified",
+      // Map top 3 competitors for the UI
+      competitors: allPlaces.slice(0, 3).map((c: any, i: number) => ({
+        rank: i + 1,
+        title: c.title,
+        rating: c.rating || "N/A",
+        reviews: c.ratingCount || 0,
+        hasWebsite: !!c.website
+      }))
     });
 
   } catch (error) {
-    return NextResponse.json({ score: 0, status: "API Error" });
+    return NextResponse.json({ score: 0, error: "API Error" });
   }
 }

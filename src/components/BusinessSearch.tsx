@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -9,28 +9,14 @@ export default function BusinessSearch() {
   const [location, setLocation] = useState("Nairobi");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [leadsUnlocked, setLeadsUnlocked] = useState(false);
 
   const { isLoaded: sessionLoaded, session } = useSession();
   const { isLoaded: userLoaded, user } = useUser();
   const router = useRouter();
 
-  // Guard: If Clerk isn't loaded yet, don't render the interactive parts
-  // This prevents the "Prerender Error" during npm run build
   if (!sessionLoaded || !userLoaded) {
-    return <div className="p-8 text-center text-slate-400">Loading search engine...</div>;
+    return <div className="p-4 text-center text-slate-400">Loading Engine...</div>;
   }
-
-  const checkSubscription = async (): Promise<boolean> => {
-    if (!user) return false;
-    try {
-      const res = await fetch(`/api/check-subscription?userId=${user.id}`);
-      const data = await res.json();
-      return data.active;
-    } catch (e) {
-      return false;
-    }
-  };
 
   const handleAudit = async () => {
     if (!business) return;
@@ -42,14 +28,7 @@ export default function BusinessSearch() {
       const response = await fetch(url);
       const data = await response.json();
       setResult(data);
-
-      if (!session) {
-        router.push(`/sign-in`);
-      } else {
-        const hasSubscription = await checkSubscription();
-        setLeadsUnlocked(hasSubscription);
-        if (!hasSubscription) router.push("/subscribe");
-      }
+      // NOTE: No router.push here anymore! Results stay on screen.
     } catch (error) {
       console.error("Audit Error:", error);
     } finally {
@@ -79,18 +58,49 @@ export default function BusinessSearch() {
           disabled={loading}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl disabled:opacity-50"
         >
-          {loading ? "Processing..." : "Run Visibility Audit"}
+          {loading ? "Searching Google..." : "Run Visibility Audit"}
         </button>
       </div>
 
-      {result && (
-        <div className="mt-8 p-6 bg-slate-50 rounded-xl border border-slate-100">
-          <div className="grid grid-cols-3 gap-4 mb-4">
-             <div className="text-center">
-                <p className="text-xs font-bold text-blue-600 uppercase">Score</p>
-                <p className="text-3xl font-black">{result.visibilityScore}%</p>
-             </div>
-             {/* Add other result displays here */}
+      {result && !loading && (
+        <div className="animate-in fade-in zoom-in duration-500">
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="p-4 bg-blue-50 rounded-xl text-center border border-blue-100">
+              <p className="text-xs text-blue-600 font-bold uppercase">Visibility Score</p>
+              <p className="text-4xl font-black text-blue-900">{result.visibilityScore}%</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-100">
+              <p className="text-xs text-slate-500 font-bold uppercase">Maps Rank</p>
+              <p className="text-lg font-bold text-slate-900">{result.ranking || "Top 20"}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-100">
+              <p className="text-xs text-slate-500 font-bold uppercase">Public Trust</p>
+              <p className="text-lg font-bold text-slate-900">{result.rating || "High"}</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+            <h4 className="font-black text-slate-900 mb-2 uppercase tracking-tight">Audit Findings</h4>
+            <p className="text-sm text-slate-500 mb-6 font-medium italic">Detailed report for {business} in {location}</p>
+            
+            <div className="space-y-3">
+              {result.recs?.map((rec: string, i: number) => (
+                <div key={i} className="flex items-start gap-3 text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-100">
+                  <span>{rec.includes("✅") ? "✅" : "⚠️"}</span>
+                  <p className="font-semibold">{rec.replace(/[✅❌⚠️]/g, "")}</p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                if (!session) router.push("/sign-in");
+                else router.push("/subscribe");
+              }}
+              className="w-full mt-8 py-5 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-blue-100"
+            >
+              🚀 Unlock Full Competitor Analysis
+            </button>
           </div>
         </div>
       )}

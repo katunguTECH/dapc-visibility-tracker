@@ -1,31 +1,55 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function BusinessSearch() {
   const [business, setBusiness] = useState("");
   const [location, setLocation] = useState("Nairobi");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [leadsUnlocked, setLeadsUnlocked] = useState(false);
+
+  const { session } = useSession();
+  const { user } = useUser();
+  const router = useRouter();
+
+  // Placeholder for subscription check
+  const checkSubscription = async (): Promise<boolean> => {
+    if (!user) return false;
+    const res = await fetch(`/api/check-subscription?userId=${user.id}`);
+    const data = await res.json();
+    return data.active;
+  };
 
   const handleAudit = async () => {
     if (!business) return;
-    
-    // 1. FORCE THE UI TO BLANK
+
     setLoading(true);
-    setResult(null); 
+    setResult(null);
+    setLeadsUnlocked(false);
 
     try {
-      // 2. FETCH WITH CACHE BUSTING
-      const url = `/api/visibility?business=${encodeURIComponent(business)}&location=${encodeURIComponent(location)}&t=${Date.now()}`;
-      const response = await fetch(url, { cache: 'no-store' });
+      // Fetch visibility
+      const url = `/api/visibility?business=${encodeURIComponent(
+        business
+      )}&location=${encodeURIComponent(location)}&t=${Date.now()}`;
+      const response = await fetch(url, { cache: "no-store" });
       const data = await response.json();
-
-      // DEBUG: Open your browser console (F12) to see this!
-      console.log("FRESH API DATA RECEIVED:", data);
-
-      // 3. UPDATE STATE
       setResult(data);
+
+      // Auto-unlock leads if user is subscribed
+      if (!session) {
+        router.push(`/sign-in?redirect_url=/subscribe`);
+      } else {
+        const hasSubscription = await checkSubscription();
+        if (hasSubscription) {
+          setLeadsUnlocked(true);
+        } else {
+          router.push("/subscribe");
+        }
+      }
     } catch (error) {
       console.error("Audit UI Error:", error);
     } finally {
@@ -59,14 +83,12 @@ export default function BusinessSearch() {
         </button>
       </div>
 
-      {/* 4. THE LOADING SKELETON (Shows the user things are happening) */}
       {loading && (
         <div className="py-10 text-center text-slate-400 animate-pulse">
           🔍 Scanning Google for {business}...
         </div>
       )}
 
-      {/* 5. THE DYNAMIC RESULT (Force fresh render with unique key) */}
       {result && !loading && (
         <div key={Date.now()} className="animate-in fade-in zoom-in duration-300">
           <div className="grid grid-cols-3 gap-4 mb-8">
@@ -89,14 +111,22 @@ export default function BusinessSearch() {
             <div className="space-y-3">
               {result.recs?.map((rec: string, i: number) => (
                 <div key={i} className="flex items-start gap-3 text-sm text-slate-600">
-                  <span>{rec.includes('✅') ? '✅' : '⚠️'}</span>
-                  <p>{rec.replace(/[✅❌⚠️]/g, '')}</p>
+                  <span>{rec.includes("✅") ? "✅" : "⚠️"}</span>
+                  <p>{rec.replace(/[✅❌⚠️]/g, "")}</p>
                 </div>
               ))}
             </div>
-            
-            <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-black transition-all">
-              🚀 Find Leads for {business} →
+
+            <button
+              onClick={() => leadsUnlocked && router.push("/dashboard")}
+              disabled={!leadsUnlocked}
+              className={`w-full mt-6 py-4 rounded-xl font-bold transition-all ${
+                leadsUnlocked
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-slate-400 text-slate-200 cursor-not-allowed"
+              }`}
+            >
+              🚀 {leadsUnlocked ? `Find Leads for ${business} →` : "Unlock Leads with Subscription"}
             </button>
           </div>
         </div>

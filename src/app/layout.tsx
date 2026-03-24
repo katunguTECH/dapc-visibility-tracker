@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import { ClerkProvider } from "@clerk/nextjs";
-import "./globals.css"; // ✅ only here
+import "./globals.css"; // ✅ correct path
 
 export const metadata = {
   title: "DAPC Visibility Tracker",

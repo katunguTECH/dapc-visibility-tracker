@@ -1,6 +1,6 @@
-// Good: server component layout
+// src/app/layout.tsx
 import { ClerkProvider } from "@clerk/nextjs";
-import "./globals.css";
+import "./globals.css"; // ✅ only here
 
 export const metadata = {
   title: "DAPC Visibility Tracker",

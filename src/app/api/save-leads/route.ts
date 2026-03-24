@@ -1,33 +1,21 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma"; // ✅ FIXED IMPORT
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
 
-  const body = await request.json()
+    const lead = await prisma.lead.create({
+      data: {
+        business: body.business,
+        location: body.location,
+        score: body.score,
+      },
+    });
 
-  const { leads, business, userId } = body
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" })
+    return NextResponse.json(lead);
+  } catch (error) {
+    console.error("SAVE LEAD ERROR:", error);
+    return NextResponse.json({ error: "Failed to save lead" }, { status: 500 });
   }
-
-  const saved = await Promise.all(
-
-    leads.map((lead: any) =>
-      prisma.lead.create({
-        data: {
-          userId,
-          business,
-          email: lead.email,
-          phone: lead.phone,
-          whatsapp: lead.whatsapp,
-          quality: lead.quality
-        }
-      })
-    )
-
-  )
-
-  return NextResponse.json({ success: true, saved })
-
 }

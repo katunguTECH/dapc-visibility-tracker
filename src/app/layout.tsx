@@ -1,20 +1,23 @@
-// src/app/layout.tsx
 import { ClerkProvider } from "@clerk/nextjs";
-import "./globals.css"; // ✅ correct path
+import "../styles/globals.css";
 
 export const metadata = {
   title: "DAPC Visibility Tracker",
   description: "Kenya Market Intelligence Dashboard",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body>
-        <ClerkProvider>
+    <ClerkProvider>
+      <html lang="en">
+        <body className="antialiased">
           {children}
-        </ClerkProvider>
-      </body>
-    </html>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

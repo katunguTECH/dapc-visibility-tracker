@@ -13,3 +13,14 @@ const config: Config = {
 };
 
 export default config;
+theme: {
+  extend: {},
+},
+safelist: [
+  "rounded-[32px]",
+  "rounded-[24px]",
+  "bg-blue-600",
+  "hover:bg-blue-700",
+  "text-blue-600",
+  "text-slate-950",
+],

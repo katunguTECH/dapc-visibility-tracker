@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+// Good: server component layout
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 

@@ -38,6 +38,7 @@ export default function LandingPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto pt-20 pb-32 px-6">
+        {/* HERO SECTION */}
         <div className="text-center mb-16">
           <h1
             style={{ fontWeight: 900, letterSpacing: "-0.07em", lineHeight: "0.85" }}
@@ -61,20 +62,44 @@ export default function LandingPage() {
 
         {/* FEATURE TILES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* LOCAL ACCURACY */}
           <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
               <ShieldCheck className="text-blue-600 group-hover:text-white" size={30} />
             </div>
             <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Local Accuracy</h3>
-            <p className="text-slate-400 font-bold leading-relaxed">Advanced analysis of the Kenyan search ecosystem.</p>
+            <p className="text-slate-400 font-bold leading-relaxed">
+              Advanced analysis of the Kenyan search ecosystem and local consumer behavior.
+            </p>
           </div>
-          {/* ... Add other tiles similarly ... */}
+
+          {/* DISCOVERY RANK */}
+          <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
+              <TrendingUp className="text-blue-600 group-hover:text-white" size={30} />
+            </div>
+            <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Discovery Rank</h3>
+            <p className="text-slate-400 font-bold leading-relaxed">
+              See where you actually appear when customers search for your category in Nairobi.
+            </p>
+          </div>
+
+          {/* LEAD STRATEGY */}
+          <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
+              <Zap className="text-blue-600 group-hover:text-white" size={30} />
+            </div>
+            <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Lead Strategy</h3>
+            <p className="text-slate-400 font-bold leading-relaxed">
+              Turn low visibility scores into actionable sales leads and digital dominance.
+            </p>
+          </div>
         </div>
       </main>
 
       {/* FLOATING WHATSAPP CTA */}
       <div
-        onClick={() => typeof window !== "undefined" && window.open("https://wa.me/254710440648", "_blank")}
+        onClick={() => typeof window !== "undefined" && window.open("https://wa.me/254722973020", "_blank")}
         className="fixed bottom-10 right-10 z-50 bg-[#25D366] text-white p-6 rounded-full shadow-[0_20px_50px_rgba(37,211,102,0.3)] cursor-pointer hover:scale-110 transition-all flex items-center gap-4 group"
       >
         <MessageCircle size={32} fill="white" className="text-[#25D366]" />

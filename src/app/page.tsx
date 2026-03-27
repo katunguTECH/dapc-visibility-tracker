@@ -1,14 +1,48 @@
 "use client";
 
-import React from "react";
-import { ShieldCheck, TrendingUp, Zap, MessageCircle } from "lucide-react";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import React, { useState } from "react";
+import { ShieldCheck, TrendingUp, Zap, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
+import { SignInButton, SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import BusinessSearch from "../components/BusinessSearch";
 
 export default function LandingPage() {
+  const { user } = useUser();
+  const [isPaying, setIsPaying] = useState(false);
+
+  const handlePayment = async () => {
+    if (!user) {
+      alert("Please sign in to subscribe.");
+      return;
+    }
+
+    setIsPaying(true);
+    try {
+      const res = await fetch("/api/mpesa/stk-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: 2500, // KES 2,500 for the Pro Plan
+          phoneNumber: "254722973020", // The updated subscriber number
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Please check your phone for the M-Pesa PIN prompt.");
+      } else {
+        alert("Payment initialization failed: " + (data.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-blue-100">
-      {/* NAVBAR */}
+      {/* NAVIGATION */}
       <nav className="flex justify-between items-center px-10 py-8 max-w-7xl mx-auto">
         <div
           style={{ fontWeight: 950, fontStyle: "italic", letterSpacing: "-0.07em" }}
@@ -62,39 +96,77 @@ export default function LandingPage() {
 
         {/* FEATURE TILES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* LOCAL ACCURACY */}
           <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
               <ShieldCheck className="text-blue-600 group-hover:text-white" size={30} />
             </div>
             <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Local Accuracy</h3>
-            <p className="text-slate-400 font-bold leading-relaxed">
-              Advanced analysis of the Kenyan search ecosystem and local consumer behavior.
-            </p>
+            <p className="text-slate-400 font-bold leading-relaxed">Advanced analysis of the Kenyan search ecosystem and local consumer behavior.</p>
           </div>
 
-          {/* DISCOVERY RANK */}
           <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
               <TrendingUp className="text-blue-600 group-hover:text-white" size={30} />
             </div>
             <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Discovery Rank</h3>
-            <p className="text-slate-400 font-bold leading-relaxed">
-              See where you actually appear when customers search for your category in Nairobi.
-            </p>
+            <p className="text-slate-400 font-bold leading-relaxed">See where you actually appear when customers search for your category in Nairobi.</p>
           </div>
 
-          {/* LEAD STRATEGY */}
           <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
               <Zap className="text-blue-600 group-hover:text-white" size={30} />
             </div>
             <h3 style={{ fontWeight: 900, letterSpacing: "-0.03em" }} className="text-2xl text-slate-900 mb-4">Lead Strategy</h3>
-            <p className="text-slate-400 font-bold leading-relaxed">
-              Turn low visibility scores into actionable sales leads and digital dominance.
-            </p>
+            <p className="text-slate-400 font-bold leading-relaxed">Turn low visibility scores into actionable sales leads and digital dominance.</p>
           </div>
         </div>
+
+        {/* PRICING SECTION */}
+        <section className="mt-40 mb-20 text-center">
+          <h2 style={{ fontWeight: 900, letterSpacing: '-0.05em' }} className="text-5xl text-slate-950 mb-16">
+            Ready to <span className="text-blue-600 italic">Dominate</span> the Market?
+          </h2>
+
+          <div className="max-w-md mx-auto relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-[45px] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+            
+            <div className="relative bg-white border border-slate-100 p-12 rounded-[40px] shadow-2xl">
+              <div className="inline-block px-4 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+                Most Popular
+              </div>
+              <h3 style={{ fontWeight: 900 }} className="text-3xl text-slate-900 mb-2">Pro Audit Plan</h3>
+              <div className="flex justify-center items-baseline gap-1 mb-8">
+                <span className="text-slate-400 text-xl font-bold">KES</span>
+                <span className="text-6xl font-black tracking-tighter text-slate-950">2,500</span>
+                <span className="text-slate-400 font-bold">/mo</span>
+              </div>
+
+              <ul className="text-left space-y-4 mb-10">
+                {["Full SEO Visibility Audit", "Google Maps Ranking Tracker", "Competitor Gap Analysis", "WhatsApp Lead Integration", "Priority Market Intel Support"].map((feat) => (
+                  <li key={feat} className="flex items-center gap-3 text-slate-500 font-bold text-sm">
+                    <div className="bg-blue-600 rounded-full p-1">
+                      <Zap size={12} className="text-white" fill="white" />
+                    </div>
+                    {feat}
+                  </li>
+                ))}
+              </ul>
+
+              <button 
+                onClick={handlePayment}
+                disabled={isPaying}
+                style={{ fontWeight: 900 }}
+                className="w-full bg-slate-950 hover:bg-blue-600 text-white py-6 rounded-2xl text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2"
+              >
+                {isPaying ? <><Loader2 className="animate-spin" size={16} /> Initializing M-Pesa...</> : "Unlock Full Access"}
+              </button>
+              
+              <p className="mt-6 text-[10px] font-bold text-slate-300 uppercase tracking-tight">
+                Secure Payment via Lipa na M-Pesa
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* FLOATING WHATSAPP CTA */}

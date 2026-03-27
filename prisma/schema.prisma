@@ -7,6 +7,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Existing model for tracking business leads
 model Lead {
   id        String   @id @default(cuid())
   userId    String
@@ -16,4 +17,35 @@ model Lead {
   whatsapp  String?
   quality   String?
   createdAt DateTime @default(now())
+}
+
+// NEW: Model to track M-Pesa STK Push attempts and results
+model Transaction {
+  id                String    @id @default(cuid())
+  userId            String    // Links to the Clerk User ID
+  amount            Float
+  phoneNumber       String    // The 2547... number used for payment
+  
+  // Safaricom Identifiers
+  checkoutRequestId String    @unique // Used to match the Callback to this record
+  merchantRequestId String
+  
+  // Status Tracking
+  status            String    @default("PENDING") // PENDING, COMPLETED, FAILED, CANCELLED
+  mpesaReceipt      String?   @unique // The M-Pesa Code (e.g., RCK2L349JG)
+  resultDesc        String?   // Stores "The service was accepted" or "Request cancelled"
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// NEW: Model to track the actual subscription status of a business
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  plan          String    @default("FREE") // FREE, PRO, ENTERPRISE
+  status        String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  startDate     DateTime?
+  endDate       DateTime?
+  updatedAt     DateTime  @updatedAt
 }

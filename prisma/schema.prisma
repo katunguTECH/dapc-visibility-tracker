@@ -1,48 +1,60 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// Existing model for tracking business leads
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// -----------------------------------------
+// 1. BUSINESS LEADS
+// Tracks businesses that have been audited
+// -----------------------------------------
 model Lead {
   id        String   @id @default(cuid())
-  userId    String
-  business  String
+  userId    String   // The Clerk User ID who generated the lead
+  business  String   // Name of the audited business
   email     String
   phone     String?
   whatsapp  String?
-  quality   String?
+  quality   String?  // 'High', 'Medium', 'Low' based on visibility gap
   createdAt DateTime @default(now())
 }
 
-// NEW: Model to track M-Pesa STK Push attempts and results
+// -----------------------------------------
+// 2. M-PESA TRANSACTIONS
+// Tracks every STK Push attempt and result
+// -----------------------------------------
 model Transaction {
   id                String    @id @default(cuid())
   userId            String    // Links to the Clerk User ID
   amount            Float
   phoneNumber       String    // The 2547... number used for payment
   
-  // Safaricom Identifiers
-  checkoutRequestId String    @unique // Used to match the Callback to this record
+  // Safaricom Identifiers (Critical for Callbacks)
+  checkoutRequestId String    @unique 
   merchantRequestId String
   
   // Status Tracking
-  status            String    @default("PENDING") // PENDING, COMPLETED, FAILED, CANCELLED
+  status            String    @default("PENDING") // PENDING, COMPLETED, FAILED
   mpesaReceipt      String?   @unique // The M-Pesa Code (e.g., RCK2L349JG)
-  resultDesc        String?   // Stores "The service was accepted" or "Request cancelled"
+  resultDesc        String?   // The human-readable response from Safaricom
   
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
 
-// NEW: Model to track the actual subscription status of a business
+// -----------------------------------------
+// 3. SUBSCRIPTIONS
+// Manages long-term access for subscribers
+// -----------------------------------------
 model Subscription {
   id            String    @id @default(cuid())
-  userId        String    @unique
+  userId        String    @unique // One subscription per Clerk User
   plan          String    @default("FREE") // FREE, PRO, ENTERPRISE
   status        String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
   startDate     DateTime?

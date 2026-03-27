@@ -1,14 +1,48 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShieldCheck, TrendingUp, Zap, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
-import { SignInButton, SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
+import { 
+  ShieldCheck, 
+  TrendingUp, 
+  Zap, 
+  MessageCircle, 
+  Loader2 
+} from "lucide-react";
+import { 
+  SignInButton, 
+  SignedIn, 
+  SignedOut, 
+  UserButton, 
+  useUser 
+} from "@clerk/nextjs";
 import BusinessSearch from "../components/BusinessSearch";
+
+// 1. PROFESSIONAL LOADING OVERLAY COMPONENT
+const LoadingOverlay = ({ message }: { message: string }) => (
+  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md transition-all duration-500">
+    <div className="bg-white p-10 rounded-[40px] shadow-2xl flex flex-col items-center border border-slate-100 max-w-sm text-center animate-in fade-in zoom-in duration-300">
+      <div className="relative mb-6">
+        <Loader2 className="animate-spin text-blue-600" size={48} strokeWidth={3} />
+        <div className="absolute inset-0 blur-xl bg-blue-600/20 animate-pulse"></div>
+      </div>
+      <h3 style={{ fontWeight: 900 }} className="text-2xl text-slate-900 mb-2 uppercase tracking-tighter">
+        Awaiting M-Pesa
+      </h3>
+      <p className="text-slate-500 font-bold leading-relaxed text-sm">
+        {message}
+      </p>
+      <div className="mt-8 px-6 py-2 bg-slate-50 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        Do not refresh this page
+      </div>
+    </div>
+  </div>
+);
 
 export default function LandingPage() {
   const { user } = useUser();
   const [isPaying, setIsPaying] = useState(false);
 
+  // 2. MPESA PAYMENT HANDLER
   const handlePayment = async () => {
     if (!user) {
       alert("Please sign in to subscribe.");
@@ -16,32 +50,40 @@ export default function LandingPage() {
     }
 
     setIsPaying(true);
+
     try {
       const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: 2500, // KES 2,500 for the Pro Plan
-          phoneNumber: "254722973020", // The updated subscriber number
+          phoneNumber: "254722973020", // Subscriber number
         }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        alert("Please check your phone for the M-Pesa PIN prompt.");
-      } else {
+      
+      if (!data.success) {
+        setIsPaying(false);
         alert("Payment initialization failed: " + (data.message || "Unknown error"));
       }
+      // Note: If success, we keep isPaying true so the overlay stays visible 
+      // while the user enters their PIN on their phone.
     } catch (error) {
       console.error("Payment error:", error);
-      alert("An error occurred. Please try again.");
-    } finally {
       setIsPaying(false);
+      alert("An error occurred. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-blue-100">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-blue-100 font-sans">
+      
+      {/* LOADING OVERLAY TRIGGER */}
+      {isPaying && (
+        <LoadingOverlay message="Please check your phone for the M-Pesa PIN prompt to complete your DAPC subscription." />
+      )}
+
       {/* NAVIGATION */}
       <nav className="flex justify-between items-center px-10 py-8 max-w-7xl mx-auto">
         <div
@@ -87,7 +129,7 @@ export default function LandingPage() {
         </div>
 
         {/* BUSINESS SEARCH COMPONENT */}
-        <div className="relative max-w-4xl mx-auto group mb-32">
+        <div className="relative max-w-4xl mx-auto group mb-40">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-[35px] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
           <div className="relative bg-white p-8 rounded-2xl shadow-2xl border border-slate-100">
             <BusinessSearch />
@@ -158,7 +200,7 @@ export default function LandingPage() {
                 style={{ fontWeight: 900 }}
                 className="w-full bg-slate-950 hover:bg-blue-600 text-white py-6 rounded-2xl text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2"
               >
-                {isPaying ? <><Loader2 className="animate-spin" size={16} /> Initializing M-Pesa...</> : "Unlock Full Access"}
+                {isPaying ? <Loader2 className="animate-spin" size={16} /> : "Unlock Full Access"}
               </button>
               
               <p className="mt-6 text-[10px] font-bold text-slate-300 uppercase tracking-tight">

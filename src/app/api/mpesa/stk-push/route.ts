@@ -6,11 +6,11 @@ import axios from "axios";
 async function getMpesaToken() {
   const consumerKey = process.env.MPESA_CONSUMER_KEY;
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-  const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
+  const authHeader = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
 
   const response = await axios.get(
     "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-    { headers: { Authorization: `Basic ${auth}` } }
+    { headers: { Authorization: `Basic ${authHeader}` } }
   );
   return response.data.access_token;
 }
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
     const { userId } = await auth(); 
     if (!userId) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
-    const { amount, phoneNumber, planName } = await req.json();
+    const body = await req.json();
+    const { amount, phoneNumber, planName } = body;
 
     const token = await getMpesaToken();
     const timestamp = new Date().toISOString().replace(/[-:T.]/g, "").slice(0, 14);
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
       `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
     ).toString("base64");
 
+    // 1. Initiate STK Push
     const mpesaResponse = await axios.post(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
@@ -35,17 +37,18 @@ export async function POST(req: Request) {
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(amount), // Sandbox prefers integers
+        Amount: Math.round(amount), // FIX: Safaricom Sandbox requires Integers
         PartyA: phoneNumber,
         PartyB: process.env.MPESA_SHORTCODE,
         PhoneNumber: phoneNumber,
         CallBackURL: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`,
-        AccountReference: planName.replace(/\s/g, ""), 
-        TransactionDesc: `DAPC ${planName} Payment`,
+        AccountReference: planName.replace(/\s/g, ""), // Remove spaces for M-Pesa
+        TransactionDesc: `DAPC ${planName}`,
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
+    // 2. Save to Prisma (This fails if you haven't run 'npx prisma db push')
     await prisma.transaction.create({
       data: {
         userId,
@@ -58,12 +61,17 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "STK Push Sent" });
 
   } catch (error: any) {
-    console.error("STK Error:", error.response?.data || error.message);
+    // Check your Vercel Runtime Logs for this specific output
+    console.error("DETAILED_STK_ERROR:", error.response?.data || error.message);
+    
     return NextResponse.json(
-      { success: false, message: error.response?.data?.errorMessage || "Payment failed to initialize" },
+      { 
+        success: false, 
+        message: error.response?.data?.errorMessage || "Payment failed to initialize. Check DB sync." 
+      },
       { status: 500 }
     );
   }

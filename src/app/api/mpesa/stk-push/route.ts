@@ -1,68 +1,79 @@
 import { NextResponse } from "next/server";
-import { getAccessToken, getMpesaPassword } from "@/lib/mpesa";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import axios from "axios";
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-
     const { amount, phoneNumber } = await req.json();
-    
-    // 1. Prepare Safaricom Credentials
-    const token = await getAccessToken();
-    const { password, timestamp } = getMpesaPassword();
 
-    // 2. Format Phone Number (Ensuring it starts with 254)
-    const formattedPhone = phoneNumber.startsWith('0') 
+    // 1. FORMAT PHONE NUMBER (Ensure it starts with 254)
+    const formattedPhone = phoneNumber.startsWith("0") 
       ? `254${phoneNumber.slice(1)}` 
       : phoneNumber;
 
-    // 3. Request STK Push from Safaricom
-    const stkResponse = await fetch("https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        BusinessShortCode: process.env.MPESA_SHORTCODE,
+    // 2. GENERATE ACCESS TOKEN
+    const auth = Buffer.from(
+      `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
+    ).toString("base64");
+
+    const tokenResponse = await axios.get(
+      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    const accessToken = tokenResponse.data.access_token;
+
+    // 3. PREPARE STK PUSH PARAMETERS
+    const shortcode = process.env.MPESA_SHORTCODE || "174379";
+    const passkey = process.env.MPESA_PASSKEY;
+    const timestamp = new Date().toISOString().replace(/[-:T.]/g, "").slice(0, 14);
+    
+    const password = Buffer.from(
+      `${shortcode}${passkey}${timestamp}`
+    ).toString("base64");
+
+    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`;
+
+    // 4. INITIATE STK PUSH
+    const stkResponse = await axios.post(
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      {
+        BusinessShortCode: shortcode,
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
         Amount: amount,
         PartyA: formattedPhone,
-        PartyB: process.env.MPESA_SHORTCODE,
+        PartyB: shortcode,
         PhoneNumber: formattedPhone,
-        CallBackURL: `${process.env.NEXT_PUBLIC_APP_URL}/api/mpesa/callback`,
-        AccountReference: "DAPC_Visibility",
-        TransactionDesc: "Payment for DAPC Market Intelligence",
-      }),
+        CallBackURL: callbackUrl,
+        AccountReference: "DAPC_SUBSCRIPTION",
+        TransactionDesc: "Payment for DAPC Pro Audit",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    return NextResponse.json({ 
+      success: true, 
+      data: stkResponse.data 
     });
 
-    const data = await stkResponse.json();
-
-    // 4. If Safaricom accepts the request, save the PENDING transaction
-    if (data.ResponseCode === "0") {
-      await prisma.transaction.create({
-        data: {
-          userId: userId,
-          amount: parseFloat(amount),
-          phoneNumber: formattedPhone,
-          checkoutRequestId: data.CheckoutRequestID,
-          merchantRequestId: data.MerchantRequestID,
-          status: "PENDING",
-        },
-      });
-
-      return NextResponse.json({ success: true, message: "STK Push initiated" });
-    } else {
-      return NextResponse.json({ success: false, message: data.ResponseDescription }, { status: 400 });
-    }
-
-  } catch (error) {
-    console.error("STK Push Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("M-Pesa API Error Details:", error.response?.data || error.message);
+    
+    // This sends the actual Safaricom error message back to your "Unknown error" popup
+    const errorMessage = error.response?.data?.errorMessage || error.message || "Safaricom API Connection Failed";
+    
+    return NextResponse.json(
+      { success: false, message: errorMessage },
+      { status: 500 }
+    );
   }
 }

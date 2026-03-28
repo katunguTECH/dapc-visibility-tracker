@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server"; 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // Ensure this path is 100% correct
 import axios from "axios";
 
 async function getMpesaToken() {
-  const consumerKey = process.env.MPESA_CONSUMER_KEY;
-  const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-  const authHeader = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
+  try {
+    const consumerKey = process.env.MPESA_CONSUMER_KEY;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+    const authHeader = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
 
-  const response = await axios.get(
-    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-    { headers: { Authorization: `Basic ${authHeader}` } }
-  );
-  return response.data.access_token;
+    const response = await axios.get(
+      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+      { headers: { Authorization: `Basic ${authHeader}` } }
+    );
+    return response.data.access_token;
+  } catch (err) {
+    console.error("Token Generation Failed");
+    throw new Error("M-Pesa Token Error");
+  }
 }
 
 export async function POST(req: Request) {
@@ -22,6 +27,11 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { amount, phoneNumber, planName } = body;
+
+    // Check if prisma is defined before moving forward
+    if (!prisma) {
+      throw new Error("Prisma client is not initialized");
+    }
 
     const token = await getMpesaToken();
     const timestamp = new Date().toISOString().replace(/[-:T.]/g, "").slice(0, 14);
@@ -37,18 +47,19 @@ export async function POST(req: Request) {
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(amount), // FIX: Safaricom Sandbox requires Integers
+        Amount: Math.round(Number(amount)), 
         PartyA: phoneNumber,
         PartyB: process.env.MPESA_SHORTCODE,
         PhoneNumber: phoneNumber,
         CallBackURL: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`,
-        AccountReference: planName.replace(/\s/g, ""), // Remove spaces for M-Pesa
+        AccountReference: planName.replace(/\s/g, ""), 
         TransactionDesc: `DAPC ${planName}`,
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // 2. Save to Prisma (This fails if you haven't run 'npx prisma db push')
+    // 2. Save to DB
+    // Use the lowercase 'prisma' imported from your lib
     await prisma.transaction.create({
       data: {
         userId,
@@ -64,14 +75,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "STK Push Sent" });
 
   } catch (error: any) {
-    // Check your Vercel Runtime Logs for this specific output
-    console.error("DETAILED_STK_ERROR:", error.response?.data || error.message);
-    
+    console.error("DETAILED_STK_ERROR:", error.message);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: error.response?.data?.errorMessage || "Payment failed to initialize. Check DB sync." 
-      },
+      { success: false, message: error.message || "Internal Server Error" },
       { status: 500 }
     );
   }

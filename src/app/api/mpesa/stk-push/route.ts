@@ -8,6 +8,8 @@ export async function POST(req: Request) {
     // 1. FORMAT PHONE NUMBER (Ensure it starts with 254)
     const formattedPhone = phoneNumber.startsWith("0") 
       ? `254${phoneNumber.slice(1)}` 
+      : phoneNumber.startsWith("+") 
+      ? phoneNumber.slice(1) 
       : phoneNumber;
 
     // 2. GENERATE ACCESS TOKEN
@@ -35,7 +37,9 @@ export async function POST(req: Request) {
       `${shortcode}${passkey}${timestamp}`
     ).toString("base64");
 
-    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`;
+    // SANITIZE CALLBACK URL: Strips trailing slashes to prevent "Bad Request"
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "");
+    const callbackUrl = `${baseUrl}/api/mpesa/callback`;
 
     // 4. INITIATE STK PUSH
     const stkResponse = await axios.post(
@@ -49,8 +53,8 @@ export async function POST(req: Request) {
         PartyA: formattedPhone,
         PartyB: shortcode,
         PhoneNumber: formattedPhone,
-        CallBackURL: callbackUrl,
-        AccountReference: "DAPC_SUBSCRIPTION",
+        CallBackURL: callbackUrl, // This is the strict part
+        AccountReference: "DAPC_VISIBILITY",
         TransactionDesc: "Payment for DAPC Pro Audit",
       },
       {
@@ -66,9 +70,9 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
+    // Log the full error for Vercel Runtime Logs
     console.error("M-Pesa API Error Details:", error.response?.data || error.message);
     
-    // This sends the actual Safaricom error message back to your "Unknown error" popup
     const errorMessage = error.response?.data?.errorMessage || error.message || "Safaricom API Connection Failed";
     
     return NextResponse.json(

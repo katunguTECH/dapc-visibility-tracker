@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,63 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// -----------------------------------------
-// 1. BUSINESS LEADS
-// Tracks businesses that have been audited
-// -----------------------------------------
-model Lead {
-  id        String   @id @default(cuid())
-  userId    String   // The Clerk User ID who generated the lead
-  business  String   // Name of the audited business
-  email     String
-  phone     String?
-  whatsapp  String?
-  quality   String?  // 'High', 'Medium', 'Low' based on visibility gap
-  createdAt DateTime @default(now())
-}
-
-// -----------------------------------------
-// 2. M-PESA TRANSACTIONS
-// Tracks every STK Push attempt and result
-// -----------------------------------------
 model Transaction {
-  id                String    @id @default(cuid())
-  userId            String    // Links to the Clerk User ID
-  amount            Float
-  phoneNumber       String    // The 2547... number used for payment
-  
-  // NEW: Stores the specific Animal Tier (e.g., "Starter Listing", "Growth Engine")
-  plan              String    @default("STARTER")
-  
-  // Safaricom Identifiers (Critical for Callbacks)
-  checkoutRequestId String    @unique 
-  merchantRequestId String
-  
-  // Status Tracking
-  status            String    @default("PENDING") // PENDING, COMPLETED, FAILED
-  mpesaReceipt      String?   @unique // The M-Pesa Code (e.g., RCK2L349JG)
-  resultDesc        String?   // The human-readable response from Safaricom
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String   @id @default(cuid())
+  userId             String
+  amount             Float
+  phoneNumber        String
+  plan               String   @default("STARTER") // Stores "Growth Engine", etc.
+  checkoutRequestId  String   @unique
+  merchantRequestId  String
+  status             String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  mpesaReceipt       String?  @unique
+  resultDesc         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
-// -----------------------------------------
-// 3. SUBSCRIPTIONS
-// Manages long-term access for subscribers
-// -----------------------------------------
 model Subscription {
-  id            String    @id @default(cuid())
-  userId        String    @unique // One subscription per Clerk User
-  
-  // Updated to support animal-themed plan names
-  plan          String    @default("FREE") 
-  
-  // NEW: Tracks the amount paid for the active plan
-  amount        Float?   
-  
-  status        String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
-  startDate     DateTime?
-  endDate       DateTime?
-  updatedAt     DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  plan      String    @default("FREE")
+  amount    Float?
+  status    String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  startDate DateTime?
+  endDate   DateTime?
+  updatedAt DateTime  @updatedAt
 }

@@ -3,9 +3,6 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma"; 
 import axios from "axios";
 
-/**
- * Helper: Generates the M-Pesa OAuth Access Token
- */
 async function getMpesaToken() {
   const consumerKey = process.env.MPESA_CONSUMER_KEY;
   const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
@@ -20,58 +17,54 @@ async function getMpesaToken() {
 
 export async function POST(req: Request) {
   try {
-    // 1. Clerk Authentication
     const { userId } = await auth(); 
-    if (!userId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
     let { amount, phoneNumber, planName } = body;
 
-    // 2. DATA SANITIZATION (Fixes the 400/Rejected Error)
-    // Convert +2547... or 07... to 2547...
-    let cleanPhone = phoneNumber.replace(/\+/g, "");
+    // 1. STRICT PHONE SANITIZATION
+    // Safaricom Sandbox ONLY accepts 2547XXXXXXXX or 2541XXXXXXXX
+    let cleanPhone = phoneNumber.replace(/\D/g, ""); // Remove everything except numbers
     if (cleanPhone.startsWith("0")) {
       cleanPhone = "254" + cleanPhone.slice(1);
+    } else if (cleanPhone.startsWith("7") || cleanPhone.startsWith("1")) {
+      cleanPhone = "254" + cleanPhone;
     }
-    // Remove any accidental spaces
-    cleanPhone = cleanPhone.trim();
 
-    // Safaricom Reference rules: No spaces, MAX 12 characters
-    // "Starter Listing" -> "StarterList"
-    const safeRef = planName.replace(/\s/g, "").substring(0, 12);
+    // 2. ACCOUNT REFERENCE (Max 12 chars, no spaces)
+    const safeRef = planName.replace(/[^a-zA-Z0-9]/g, "").substring(0, 12);
 
-    // 3. Prepare M-Pesa Auth
     const token = await getMpesaToken();
     const timestamp = new Date().toISOString().replace(/[-:T.]/g, "").slice(0, 14);
-    const password = Buffer.from(
-      `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
-    ).toString("base64");
+    
+    // Ensure these ENV vars are strings and trimmed
+    const shortCode = process.env.MPESA_SHORTCODE?.trim();
+    const passKey = process.env.MPESA_PASSKEY?.trim();
+    
+    const password = Buffer.from(`${shortCode}${passKey}${timestamp}`).toString("base64");
 
-    // 4. Initiate STK Push
     const mpesaResponse = await axios.post(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
-        BusinessShortCode: process.env.MPESA_SHORTCODE,
+        BusinessShortCode: shortCode,
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(Number(amount)), // Must be an absolute integer
+        Amount: Math.round(Number(amount)), 
         PartyA: cleanPhone,
-        PartyB: process.env.MPESA_SHORTCODE,
+        PartyB: shortCode,
         PhoneNumber: cleanPhone,
         CallBackURL: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`,
         AccountReference: safeRef, 
-        TransactionDesc: `Pay ${safeRef}`,
+        TransactionDesc: `DAPC${safeRef}`,
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // 5. Database Logging (Prisma)
     await prisma.transaction.create({
       data: {
-        userId: userId,
+        userId,
         amount: parseFloat(amount),
         phoneNumber: cleanPhone,
         plan: planName,
@@ -81,20 +74,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "STK Push Sent. Check your phone!" 
-    });
+    return NextResponse.json({ success: true, message: "STK Push Sent!" });
 
   } catch (error: any) {
-    // Log detailed response from Safaricom for debugging
-    console.error("STK_PUSH_FAILED:", error.response?.data || error.message);
-    
+    console.error("SAFARICOM_REJECTION_LOG:", error.response?.data || error.message);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: error.response?.data?.errorMessage || "Safaricom rejected the request. Check phone/shortcode." 
-      },
+      { success: false, message: error.response?.data?.errorMessage || "Safaricom Rejection: Check Credentials" },
       { status: 500 }
     );
   }

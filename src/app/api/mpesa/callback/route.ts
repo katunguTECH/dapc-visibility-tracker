@@ -4,53 +4,38 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const callbackData = body.Body.stkCallback;
-    const { CheckoutRequestID, ResultCode, ResultDesc } = callbackData;
+    const { ResultCode, ResultDesc, CallbackMetadata, CheckoutRequestID } = body.Body.stkCallback;
 
-    const transaction = await prisma.transaction.findUnique({
-      where: { checkoutRequestId: CheckoutRequestID },
-    });
-
-    if (!transaction) return NextResponse.json({ ResultCode: 1, ResultDesc: "Not found" });
+    console.log(`M-Pesa Callback Received for: ${CheckoutRequestID}`);
 
     if (ResultCode === 0) {
-      const metadata = callbackData.CallbackMetadata.Item;
-      const receipt = metadata.find((item: any) => item.Name === "MpesaReceiptNumber")?.Value;
+      // Payment Successful
+      const amount = CallbackMetadata.Item.find((item: any) => item.Name === "Amount")?.Value;
+      const mpesaReceipt = CallbackMetadata.Item.find((item: any) => item.Name === "MpesaReceiptNumber")?.Value;
 
-      // 1. Update Transaction
       await prisma.transaction.update({
         where: { checkoutRequestId: CheckoutRequestID },
-        data: { status: "COMPLETED", mpesaReceipt: receipt, resultDesc: ResultDesc },
+        data: {
+          status: "COMPLETED",
+          mpesaReceiptNumber: mpesaReceipt,
+          updatedAt: new Date(),
+        },
       });
 
-      // 2. Activate Subscription
-      await prisma.subscription.upsert({
-        where: { userId: transaction.userId },
-        update: {
-          status: "ACTIVE",
-          plan: transaction.plan,
-          amount: transaction.amount,
-          startDate: new Date(),
-          endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-        },
-        create: {
-          userId: transaction.userId,
-          status: "ACTIVE",
-          plan: transaction.plan,
-          amount: transaction.amount,
-          startDate: new Date(),
-          endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-        },
-      });
+      return NextResponse.json({ message: "Success" });
     } else {
+      // Payment Failed or Cancelled
       await prisma.transaction.update({
         where: { checkoutRequestId: CheckoutRequestID },
-        data: { status: "FAILED", resultDesc: ResultDesc },
+        data: {
+          status: "FAILED",
+          updatedAt: new Date(),
+        },
       });
+      return NextResponse.json({ message: "Cancelled" });
     }
-
-    return NextResponse.json({ ResultCode: 0, ResultDesc: "Success" });
-  } catch (error) {
-    return NextResponse.json({ ResultCode: 1, ResultDesc: "Internal Error" });
+  } catch (error: any) {
+    console.error("CALLBACK_ERROR:", error.message);
+    return NextResponse.json({ message: "Error" }, { status: 500 });
   }
 }

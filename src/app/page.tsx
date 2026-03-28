@@ -9,15 +9,15 @@ import {
   Loader2 
 } from "lucide-react";
 import { 
-  SignInButton, 
   SignedIn, 
   SignedOut, 
   UserButton, 
-  useUser 
+  useUser,
+  useClerk // 1. Import useClerk for the modal trigger
 } from "@clerk/nextjs";
 import BusinessSearch from "../components/BusinessSearch";
 
-// 1. PROFESSIONAL LOADING OVERLAY COMPONENT
+// PROFESSIONAL LOADING OVERLAY
 const LoadingOverlay = ({ message }: { message: string }) => (
   <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md transition-all duration-500">
     <div className="bg-white p-10 rounded-[40px] shadow-2xl flex flex-col items-center border border-slate-100 max-w-sm text-center animate-in fade-in zoom-in duration-300">
@@ -40,12 +40,13 @@ const LoadingOverlay = ({ message }: { message: string }) => (
 
 export default function LandingPage() {
   const { user } = useUser();
+  const { openSignIn } = useClerk(); // 2. Initialize the sign-in modal function
   const [isPaying, setIsPaying] = useState(false);
 
-  // 2. MPESA PAYMENT HANDLER
   const handlePayment = async () => {
+    // 3. IMPROVED LOGIC: Open modal instead of just alerting
     if (!user) {
-      alert("Please sign in to subscribe.");
+      openSignIn({ afterSignInUrl: "/" }); 
       return;
     }
 
@@ -56,8 +57,8 @@ export default function LandingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: 2500, // KES 2,500 for the Pro Plan
-          phoneNumber: "254722973020", // Subscriber number
+          amount: 2500,
+          phoneNumber: "254722973020", 
         }),
       });
 
@@ -67,8 +68,6 @@ export default function LandingPage() {
         setIsPaying(false);
         alert("Payment initialization failed: " + (data.message || "Unknown error"));
       }
-      // Note: If success, we keep isPaying true so the overlay stays visible 
-      // while the user enters their PIN on their phone.
     } catch (error) {
       console.error("Payment error:", error);
       setIsPaying(false);
@@ -79,7 +78,6 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-900 selection:bg-blue-100 font-sans">
       
-      {/* LOADING OVERLAY TRIGGER */}
       {isPaying && (
         <LoadingOverlay message="Please check your phone for the M-Pesa PIN prompt to complete your DAPC subscription." />
       )}
@@ -101,11 +99,12 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-4">
           <SignedOut>
-            <SignInButton mode="modal">
-              <button className="text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-4 rounded-full hover:bg-blue-600 transition-all shadow-2xl shadow-slate-200">
+             <button 
+               onClick={() => openSignIn()}
+               className="text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-4 rounded-full hover:bg-blue-600 transition-all shadow-2xl shadow-slate-200"
+             >
                 Sign In
               </button>
-            </SignInButton>
           </SignedOut>
           <SignedIn>
             <UserButton afterSignOutUrl="/" />
@@ -114,7 +113,7 @@ export default function LandingPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto pt-20 pb-32 px-6">
-        {/* HERO SECTION */}
+        {/* HERO */}
         <div className="text-center mb-16">
           <h1
             style={{ fontWeight: 900, letterSpacing: "-0.07em", lineHeight: "0.85" }}
@@ -128,7 +127,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* BUSINESS SEARCH COMPONENT */}
+        {/* SEARCH */}
         <div className="relative max-w-4xl mx-auto group mb-40">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-[35px] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
           <div className="relative bg-white p-8 rounded-2xl shadow-2xl border border-slate-100">
@@ -136,7 +135,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* FEATURE TILES */}
+        {/* FEATURES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 transition-colors">
@@ -163,7 +162,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* PRICING SECTION */}
+        {/* PRICING */}
         <section className="mt-40 mb-20 text-center">
           <h2 style={{ fontWeight: 900, letterSpacing: '-0.05em' }} className="text-5xl text-slate-950 mb-16">
             Ready to <span className="text-blue-600 italic">Dominate</span> the Market?
@@ -211,7 +210,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* FLOATING WHATSAPP CTA */}
+      {/* WHATSAPP */}
       <div
         onClick={() => typeof window !== "undefined" && window.open("https://wa.me/254722973020", "_blank")}
         className="fixed bottom-10 right-10 z-50 bg-[#25D366] text-white p-6 rounded-full shadow-[0_20px_50px_rgba(37,211,102,0.3)] cursor-pointer hover:scale-110 transition-all flex items-center gap-4 group"

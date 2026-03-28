@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2, MessageCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, MessageCircle, Zap } from "lucide-react";
 import { SignedIn, SignedOut, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import BusinessSearch from "../components/BusinessSearch";
 
-// ... LoadingOverlay component remains the same ...
+// 1. DEFINE THIS OUTSIDE THE COMPONENT AT THE TOP
+const DAPC_PLANS = [
+  { name: "Starter Listing", price: 1999, description: "For small or offline businesses", icon: "🐆" },
+  { name: "Local Boost", price: 3999, description: "Increase real customer actions", icon: "🐂" },
+  { name: "Growth Engine", price: 5999, description: "Ready for consistent monthly leads", icon: "🦏" },
+  { name: "Market Leader", price: 7999, description: "Position ahead of competitors", icon: "🐘" },
+  { name: "Super Active", price: 10000, description: "Maximum global exposure", icon: "🦁" },
+];
+
+// ... (Keep your LoadingOverlay component here)
 
 export default function LandingPage() {
   const { user } = useUser();
@@ -13,9 +22,9 @@ export default function LandingPage() {
   const [isPaying, setIsPaying] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState(0);
 
-  const handlePayment = async (amount: number, planName: string) => {
+  const handlePayment = async (amount: number) => {
     if (!user) {
-      openSignIn({ afterSignInUrl: "/" });
+      openSignIn();
       return;
     }
 
@@ -28,82 +37,50 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amount,
-          phoneNumber: "254722973020", // Use dynamic number if you have a state for it
+          phoneNumber: "254722973020", 
         }),
       });
 
       const data = await res.json();
       if (!data.success) {
         setIsPaying(false);
-        alert(`Payment initialization failed: ${data.message}`);
+        alert(`Error: ${data.message}`);
       }
     } catch (error) {
       setIsPaying(false);
-      alert("An error occurred. Please check your connection.");
+      alert("Failed to initialize payment.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-900 font-sans">
-      {isPaying && <LoadingOverlay message={`Initializing KES ${selectedAmount.toLocaleString()} payment...`} />}
-
-      {/* NAV SECTION (Same as before) */}
-      <nav className="flex justify-between items-center px-10 py-8 max-w-7xl mx-auto">
-        <div style={{ fontWeight: 950 }} className="text-4xl text-blue-600 italic tracking-tighter">DAPC</div>
-        <div className="flex items-center gap-4">
-          <SignedOut><button onClick={() => openSignIn()} className="text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white px-8 py-4 rounded-full">Sign In</button></SignedOut>
-          <SignedIn><UserButton afterSignOutUrl="/" /></SignedIn>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-900">
+      {/* ... Your Nav ... */}
 
       <main className="max-w-7xl mx-auto py-20 px-6">
-        {/* HERO & SEARCH (Same as before) */}
-        <div className="text-center mb-20">
-            <h1 style={{ fontWeight: 900 }} className="text-7xl md:text-8xl text-slate-950 tracking-tighter leading-none mb-6">
-                Choose Your <span className="text-blue-600 italic">Growth Speed.</span>
-            </h1>
-            <p className="text-slate-500 font-bold">Select a plan to audit your visibility and start generating leads.</p>
-        </div>
+        {/* ... Hero Section ... */}
 
-        {/* PRICING GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {DAPC_PLANS.map((plan) => (
-            <div key={plan.name} className="bg-white p-10 rounded-[45px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all flex flex-col justify-between group">
+            <div key={plan.name} className="bg-white p-10 rounded-[45px] border border-slate-100 shadow-xl flex flex-col justify-between">
               <div>
                 <div className="text-5xl mb-6">{plan.icon}</div>
-                <h3 style={{ fontWeight: 900 }} className="text-2xl text-slate-950 uppercase tracking-tighter mb-2">{plan.name}</h3>
-                <p className="text-slate-400 font-bold text-sm mb-6 leading-relaxed">{plan.description}</p>
-                
+                <h3 className="font-black text-2xl mb-2">{plan.name}</h3>
+                <p className="text-slate-400 font-bold text-sm mb-6">{plan.description}</p>
                 <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-slate-400 font-bold text-lg">KES</span>
-                  <span className="text-5xl font-black text-slate-950 tracking-tighter">{plan.price.toLocaleString()}</span>
-                  <span className="text-slate-400 font-bold">/mo</span>
+                  <span className="text-slate-400 font-bold">KES</span>
+                  <span className="text-5xl font-black">{plan.price.toLocaleString()}</span>
                 </div>
               </div>
-
               <button 
-                onClick={() => handlePayment(plan.price, plan.name)}
-                style={{ fontWeight: 900 }}
-                className="w-full py-5 rounded-2xl bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-900 text-[10px] uppercase tracking-[0.2em] transition-all"
+                onClick={() => handlePayment(plan.price)}
+                className="w-full py-5 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest hover:bg-blue-600 transition-all"
               >
                 Select {plan.name}
               </button>
             </div>
           ))}
         </div>
-
-        {/* FOOTER INFO */}
-        <div className="text-center bg-blue-600 text-white p-12 rounded-[50px] shadow-2xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-4">Official Payment Details</p>
-            <h2 style={{ fontWeight: 900 }} className="text-3xl mb-2">Paybill: 516600</h2>
-            <p className="text-xl opacity-80">Account: 0675749001</p>
-        </div>
       </main>
-
-      {/* WHATSAPP (Floating) */}
-      <div onClick={() => window.open("https://wa.me/254722973020")} className="fixed bottom-10 right-10 z-50 bg-[#25D366] text-white p-6 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-all">
-        <MessageCircle size={32} />
-      </div>
     </div>
   );
 }

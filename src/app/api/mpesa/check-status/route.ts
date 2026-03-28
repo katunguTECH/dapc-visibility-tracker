@@ -12,5 +12,6 @@ export async function GET(req: Request) {
     select: { status: true }
   });
 
+  // If the status is COMPLETED, the modal stops spinning
   return NextResponse.json({ status: transaction?.status || "PENDING" });
 }

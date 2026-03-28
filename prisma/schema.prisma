@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------
@@ -35,6 +35,9 @@ model Transaction {
   amount            Float
   phoneNumber       String    // The 2547... number used for payment
   
+  // NEW: Stores the specific Animal Tier (e.g., "Starter Listing", "Growth Engine")
+  plan              String    @default("STARTER")
+  
   // Safaricom Identifiers (Critical for Callbacks)
   checkoutRequestId String    @unique 
   merchantRequestId String
@@ -55,7 +58,13 @@ model Transaction {
 model Subscription {
   id            String    @id @default(cuid())
   userId        String    @unique // One subscription per Clerk User
-  plan          String    @default("FREE") // FREE, PRO, ENTERPRISE
+  
+  // Updated to support animal-themed plan names
+  plan          String    @default("FREE") 
+  
+  // NEW: Tracks the amount paid for the active plan
+  amount        Float?   
+  
   status        String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
   startDate     DateTime?
   endDate       DateTime?

@@ -29,14 +29,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     let { amount, phoneNumber, planName } = body;
 
-    // 2. DATA SANITIZATION (Fixes the 400 Error)
-    // Convert 07... or +254... to 2547...
+    // 2. DATA SANITIZATION (Fixes the 400/Rejected Error)
+    // Convert +2547... or 07... to 2547...
     let cleanPhone = phoneNumber.replace(/\+/g, "");
     if (cleanPhone.startsWith("0")) {
       cleanPhone = "254" + cleanPhone.slice(1);
     }
+    // Remove any accidental spaces
+    cleanPhone = cleanPhone.trim();
 
-    // Safaricom Reference rules: No spaces, max 12 characters
+    // Safaricom Reference rules: No spaces, MAX 12 characters
+    // "Starter Listing" -> "StarterList"
     const safeRef = planName.replace(/\s/g, "").substring(0, 12);
 
     // 3. Prepare M-Pesa Auth
@@ -54,19 +57,18 @@ export async function POST(req: Request) {
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: Math.round(Number(amount)), // Must be integer
+        Amount: Math.round(Number(amount)), // Must be an absolute integer
         PartyA: cleanPhone,
         PartyB: process.env.MPESA_SHORTCODE,
         PhoneNumber: cleanPhone,
         CallBackURL: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mpesa/callback`,
         AccountReference: safeRef, 
-        TransactionDesc: `DAPC ${safeRef}`,
+        TransactionDesc: `Pay ${safeRef}`,
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // 5. Database Logging
-    // This will work because your 'npx prisma db push' was successful
+    // 5. Database Logging (Prisma)
     await prisma.transaction.create({
       data: {
         userId: userId,
@@ -81,7 +83,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: "STK Push Sent. Check your phone for the PIN prompt." 
+      message: "STK Push Sent. Check your phone!" 
     });
 
   } catch (error: any) {
@@ -91,7 +93,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { 
         success: false, 
-        message: error.response?.data?.errorMessage || "Safaricom rejected the request. Please check phone format." 
+        message: error.response?.data?.errorMessage || "Safaricom rejected the request. Check phone/shortcode." 
       },
       { status: 500 }
     );

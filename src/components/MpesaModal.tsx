@@ -1,95 +1,67 @@
 "use client";
 import { useState } from "react";
 
-interface MpesaModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  planName: string;
-  amount: number;
-}
-
-export default function MpesaModal({ isOpen, onClose, planName, amount }: MpesaModalProps) {
+export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSTKPush = async () => {
+  const handlePayment = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
-      alert("Please enter a valid Safaricom phone number first.");
+      alert("Please enter a valid Safaricom number.");
       return;
     }
 
-    setStatus("loading");
-
+    setLoading(true);
     try {
-      const response = await fetch("/api/mpesa/stk-push", {
+      const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: phoneNumber, // This is the value from the input field
-          amount: amount,
-          planName: planName,
-        }),
+        body: JSON.stringify({ phoneNumber, amount, planName }),
       });
 
-      if (response.ok) {
-        setStatus("success");
-        alert("Request sent! Enter your M-Pesa PIN on your phone now.");
+      const data = await res.json();
+      if (res.ok) {
+        alert("Prompt sent to your phone!");
         onClose();
       } else {
-        setStatus("error");
-        const errData = await response.json();
-        alert(`Error: ${errData.error || "Payment failed"}`);
+        alert("Error: " + (data.message || "Failed"));
       }
-    } catch (error) {
-      setStatus("error");
-      alert("Network error. Please try again.");
+    } catch (err) {
+      alert("Server Connection Error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative border-4 border-gray-50">
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-black font-black">
-          ✕
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
+        <h2 className="text-xl font-black uppercase italic mb-2">M-Pesa Checkout</h2>
+        <p className="text-gray-500 font-bold text-xs mb-6 uppercase">{planName} - KES {amount}</p>
+        
+        <div className="mb-6">
+          <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Phone Number</label>
+          <input
+            type="tel"
+            placeholder="0712345678"
+            className="w-full p-4 bg-gray-50 border-2 rounded-2xl font-black text-lg focus:border-green-500 outline-none"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        <button 
+          onClick={handlePayment}
+          disabled={loading}
+          className="w-full py-5 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all"
+        >
+          {loading ? "Processing..." : "Pay Now"}
         </button>
         
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-black text-gray-900 uppercase italic tracking-tight">Confirm Payment</h3>
-          <p className="text-gray-500 font-bold mt-2">
-            {planName} — <span className="text-green-600">KES {amount.toLocaleString()}</span>
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="relative">
-            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 ml-2">
-              Safaricom Number (Required)
-            </label>
-            <input
-              type="tel"
-              required
-              placeholder="e.g. 0712345678"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full px-6 py-5 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:border-green-500 focus:ring-4 focus:ring-green-50/50 outline-none font-black text-xl transition-all placeholder:text-gray-300"
-            />
-          </div>
-
-          <button
-            onClick={handleSTKPush}
-            disabled={status === "loading"}
-            className="w-full py-6 bg-gray-900 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-green-600 active:scale-95 disabled:opacity-50 transition-all shadow-xl shadow-gray-200"
-          >
-            {status === "loading" ? "Processing..." : "Pay with M-Pesa"}
-          </button>
-          
-          <p className="text-[9px] text-center text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
-            A secure M-Pesa prompt will be sent to this number. <br />
-            Enter your PIN to complete the audit.
-          </p>
-        </div>
+        <button onClick={onClose} className="w-full mt-4 text-gray-400 font-bold text-[10px] uppercase">Cancel</button>
       </div>
     </div>
   );

@@ -1,124 +1,50 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MpesaModal from "./MpesaModal";
 
 const plans = [
-  { 
-    name: "Starter Listing", 
-    price: 1999, 
-    description: "For small or offline businesses", 
-    icon: "/icons/starter-cheetah.jpg" 
-  },
-  { 
-    name: "Local Boost", 
-    price: 3999, 
-    description: "Increase real customer actions", 
-    icon: "/icons/boost-buffalo.jpg" 
-  },
-  { 
-    name: "Growth Engine", 
-    price: 5999, 
-    description: "Ready for consistent monthly leads", 
-    icon: "/icons/growthengine-rhino.jpg" 
-  },
-  { 
-    name: "Market Leader", 
-    price: 7999, 
-    description: "Position ahead of competitors", 
-    icon: "/icons/marketleader-elephant.jpg" 
-  },
-  { 
-    name: "Super Active", 
-    price: 10000, 
-    description: "Maximum global exposure", 
-    icon: "/icons/superactivevisibility-lion.jpg" 
-  }
+  { name: "Starter Listing", price: 1999, description: "For small businesses", icon: "/icons/starter-cheetah.jpg" },
+  { name: "Local Boost", price: 3999, description: "Increase actions", icon: "/icons/boost-buffalo.jpg" },
+  { name: "Growth Engine", price: 5999, description: "Monthly leads", icon: "/icons/growthengine-rhino.jpg" },
+  { name: "Market Leader", price: 7999, description: "Lead competitors", icon: "/icons/marketleader-elephant.jpg" },
+  { name: "Super Active", price: 10000, description: "Global exposure", icon: "/icons/superactivevisibility-lion.jpg" }
 ];
 
 export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Debugging: Confirms the component is active in your browser console
-  useEffect(() => {
-    console.log("Pricing Component: Ready for User Input");
-  }, []);
-
   const handleSelectPlan = (plan: any) => {
-    console.log("Opening Payment Modal for:", plan.name);
     setSelectedPlan(plan);
     setIsModalOpen(true);
   };
 
   return (
-    <section id="pricing" className="relative py-24 bg-white z-[50] isolate">
-      <div className="container mx-auto px-6 relative z-[60]">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-4xl font-black text-gray-900 mb-4 uppercase italic tracking-tight">
-            Choose Your Growth Speed
-          </h2>
-          <p className="text-gray-500 font-bold">
-            Select a plan to begin your visibility audit.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+    <section className="py-20 bg-white relative z-10">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {plans.map((plan) => (
-            <div 
-              key={plan.name} 
-              className="group p-8 border-2 border-gray-100 rounded-[2.5rem] flex flex-col items-center bg-white hover:border-green-500 transition-all duration-300 shadow-sm hover:shadow-xl"
-            >
-              <div className="relative mb-6">
-                <img 
-                  src={plan.icon} 
-                  alt={plan.name} 
-                  className="w-24 h-24 rounded-full object-cover border-4 border-gray-50 shadow-inner group-hover:scale-110 transition-transform"
-                />
-              </div>
-
-              <h3 className="text-lg font-black text-gray-900 text-center mb-2 leading-tight">
-                {plan.name}
-              </h3>
-              
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-4 h-8">
-                {plan.description}
-              </p>
-
-              <div className="mt-auto w-full text-center">
-                <p className="text-xs font-black text-gray-400 uppercase mb-1">KES</p>
-                <p className="text-3xl font-black text-gray-900 mb-6">
-                  {plan.price.toLocaleString()}
-                </p>
-                
-                <button 
-                  type="button"
-                  // relative z-[9999] ensures this button sits on top of any Clerk overlays
-                  className="relative z-[9999] pointer-events-auto w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelectPlan(plan);
-                  }}
-                >
-                  Select {plan.name}
-                </button>
-              </div>
+            <div key={plan.name} className="p-6 border rounded-[2rem] flex flex-col items-center">
+              <img src={plan.icon} className="w-20 h-20 rounded-full mb-4" alt={plan.name} />
+              <h3 className="font-black text-center text-sm mb-4">{plan.name}</h3>
+              <p className="text-2xl font-black mb-6">KES {plan.price.toLocaleString()}</p>
+              <button 
+                onClick={() => handleSelectPlan(plan)}
+                className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-[10px]"
+              >
+                Select Plan
+              </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* THIS IS THE PART THAT ASKS FOR THE NUMBER.
-          key={Date.now()} kills any old 'frozen' state.
-          The modal itself MUST have the <input> field.
-      */}
-      {isModalOpen && selectedPlan && (
+      {isModalOpen && (
         <MpesaModal 
-          key={Date.now()} 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          planName={selectedPlan.name}
-          amount={selectedPlan.price}
+          planName={selectedPlan?.name}
+          amount={selectedPlan?.price}
         />
       )}
     </section>

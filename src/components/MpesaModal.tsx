@@ -3,37 +3,35 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function MpesaModal({ isOpen, onClose, planName, amount, onPaymentSuccess }: any) {
-  // These are the only 3 states we need
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [status, setStatus] = useState("idle"); // MUST BE "idle"
+  const [status, setStatus] = useState("idle"); 
   const [loading, setLoading] = useState(false);
 
-  // Force reset when modal opens
+  // Reset state whenever the modal is opened
   useEffect(() => {
     if (isOpen) {
       setStatus("idle");
-      setLoading(false);
       setPhoneNumber("");
+      setLoading(false);
     }
   }, [isOpen]);
 
-  const handleStkPush = async () => {
+  const handlePay = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevents page refresh
+    if (phoneNumber.length < 10) return alert("Enter a valid phone number");
+    
     setLoading(true);
     try {
-      const res = await axios.post("/api/mpesa/stk-push", {
-        amount,
-        phoneNumber,
-        planName,
-      });
+      const res = await axios.post("/api/mpesa/stk-push", { amount, phoneNumber, planName });
       if (res.data.success) {
-        setStatus("awaiting"); // ONLY move to awaiting after SUCCESS
+        setStatus("awaiting");
       } else {
-        alert("Safaricom Error: " + res.data.message);
+        alert("Error: " + res.data.message);
         setStatus("idle");
       }
-    } catch (error) {
-      alert("Connection failed. Try again.");
+    } catch (e) {
       setStatus("idle");
+      alert("Failed to send push.");
     } finally {
       setLoading(false);
     }
@@ -42,53 +40,63 @@ export default function MpesaModal({ isOpen, onClose, planName, amount, onPaymen
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl relative">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] p-4">
+      <div className="bg-white p-8 rounded-[2.5rem] max-w-sm w-full shadow-2xl relative">
         
-        {/* SECTION 1: THE INPUT (Only visible if status is idle) */}
+        {/* SECTION 1: THE INPUT FORM */}
         {status === "idle" && (
-          <div className="flex flex-col items-center text-center">
-            <h2 className="text-2xl font-black text-gray-900 mb-2">M-Pesa Payment</h2>
-            <p className="text-gray-500 text-sm mb-6">Confirm {planName} for KES {amount}</p>
+          <form onSubmit={handlePay} className="flex flex-col gap-4 text-center">
+            <h2 className="text-2xl font-black text-gray-900">M-Pesa Payment</h2>
+            <p className="text-gray-500 text-sm">Enter number for {planName}</p>
             
-            <input
-              type="text"
-              placeholder="07XXXXXXXX"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full border-2 border-gray-100 rounded-2xl p-4 mb-4 text-center text-xl font-bold focus:border-green-500 outline-none"
-            />
-            
-            <button
-              onClick={handleStkPush}
-              disabled={loading || phoneNumber.length < 10}
-              className="w-full bg-green-600 text-white font-black py-4 rounded-2xl hover:bg-green-700 disabled:bg-gray-200 transition-all"
+            <div className="text-left">
+              <label htmlFor="phone" className="block text-[10px] font-bold text-gray-400 uppercase ml-1 mb-1">
+                Phone Number
+              </label>
+              <input 
+                id="phone"
+                name="phone"
+                type="tel" 
+                autoComplete="tel"
+                required
+                className="w-full border-2 border-gray-100 p-4 rounded-2xl text-lg font-bold outline-none focus:border-green-500 transition-all" 
+                placeholder="0712345678"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            </div>
+
+            <button 
+              type="submit"
+              disabled={loading}
+              className="bg-green-600 text-white font-black py-4 rounded-2xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 uppercase text-xs tracking-widest"
             >
-              {loading ? "Processing..." : "Pay Now"}
+              {loading ? "Processing..." : "Send M-Pesa Prompt"}
             </button>
-          </div>
+          </form>
         )}
 
-        {/* SECTION 2: THE WAITING SCREEN (Only visible if status is awaiting) */}
+        {/* SECTION 2: THE AWAITING SCREEN */}
         {status === "awaiting" && (
-          <div className="flex flex-col items-center text-center py-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-6"></div>
-            <h2 className="text-xl font-black text-gray-900">Check Your Phone</h2>
-            <p className="text-gray-500 text-sm mt-2">Enter your M-Pesa PIN to complete subscription.</p>
+          <div className="text-center py-6 flex flex-col items-center">
+            <div className="animate-spin h-12 w-12 border-4 border-green-600 border-t-transparent rounded-full mb-6"></div>
+            <h2 className="text-xl font-black text-gray-900">Awaiting M-Pesa PIN</h2>
+            <p className="text-gray-500 text-sm px-4">Check your phone and enter your PIN to complete the <strong>{planName}</strong> subscription.</p>
             
             <div className="mt-8 p-4 bg-gray-50 rounded-2xl w-full text-left">
-              <p className="text-[10px] font-bold text-gray-400 uppercase">Manual Backup</p>
-              <p className="text-sm text-gray-700">Paybill: 516600</p>
-              <p className="text-sm text-gray-700">Account: 0675749001</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Manual Payment Backup</p>
+              <p className="text-sm text-gray-700">Paybill: <strong>516600</strong></p>
+              <p className="text-sm text-gray-700">Account: <strong>0675749001</strong></p>
             </div>
           </div>
         )}
 
         <button 
-          onClick={onClose}
-          className="w-full mt-6 text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-gray-600"
+          type="button"
+          onClick={onClose} 
+          className="mt-6 text-gray-400 w-full text-[10px] font-bold uppercase tracking-widest hover:text-gray-600"
         >
-          Cancel
+          Close and Return
         </button>
       </div>
     </div>

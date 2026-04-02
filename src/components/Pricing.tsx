@@ -39,15 +39,15 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Debugging: This will show in your browser console if the script is alive
+  // Check if the component is loading correctly in the browser
   useEffect(() => {
-    console.log("Pricing Component Mounted & Active");
+    console.log("Pricing Engine: Online");
   }, []);
 
   const handleSelectPlan = (plan: any) => {
-    console.log("Plan Clicked:", plan.name);
+    console.log("Plan Selected:", plan.name);
     setSelectedPlan(plan);
-    setIsModalOpen(true);
+    setIsModalOpen(true); // This triggers the phone number input modal
   };
 
   return (
@@ -58,7 +58,7 @@ export default function Pricing() {
             Choose Your Growth Speed
           </h2>
           <p className="text-gray-500 font-bold">
-            Select a plan from our official rate card to unlock full visibility auditing.
+            Select a plan from our official rate card.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export default function Pricing() {
                 
                 <button 
                   type="button"
-                  // Use a massive z-index and pointer-events-auto to bypass Clerk/Loader overlays
+                  // Massive z-index ensures this is the top-most clickable item
                   className="relative z-[99999] pointer-events-auto w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
@@ -108,17 +108,16 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* FORCE RESET: key={Date.now()} 
-          This ensures the MpesaModal is killed and reborn every time a plan is clicked.
-          This stops the "Awaiting PIN" screen from showing up by accident.
+      {/* This is the part that asks for your phone number. 
+          The key={Date.now()} ensures it pops up fresh every time.
       */}
-      {isModalOpen && (
+      {isModalOpen && selectedPlan && (
         <MpesaModal 
           key={Date.now()} 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          planName={selectedPlan?.name}
-          amount={selectedPlan?.price}
+          planName={selectedPlan.name}
+          amount={selectedPlan.price}
         />
       )}
     </section>

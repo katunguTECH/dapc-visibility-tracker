@@ -40,7 +40,7 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: amount,
-          phoneNumber: "254722973020", 
+          phoneNumber: "phoneNumber", 
           planName: planName, // Critical: Passes the plan type to the backend
         }),
       });
@@ -168,7 +168,7 @@ export default function LandingPage() {
 
       {/* FLOATING WHATSAPP BUTTON */}
       <div 
-        onClick={() => window.open("https://wa.me/254722973020")} 
+        onClick={() => window.open("https://wa.me/phoneNumber")} 
         className="fixed bottom-10 right-10 z-[110] bg-[#25D366] text-white p-6 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-transform"
       >
         <MessageCircle size={32} />

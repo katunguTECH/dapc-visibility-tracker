@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MpesaModal from "./MpesaModal";
 
 const plans = [
@@ -39,21 +39,26 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Debugging: This will show in your browser console if the script is alive
+  useEffect(() => {
+    console.log("Pricing Component Mounted & Active");
+  }, []);
+
   const handleSelectPlan = (plan: any) => {
-    console.log("Plan selected:", plan.name);
+    console.log("Plan Clicked:", plan.name);
     setSelectedPlan(plan);
     setIsModalOpen(true);
   };
 
   return (
-    <section id="pricing" className="relative py-24 bg-white z-10">
-      <div className="container mx-auto px-6 relative z-20">
+    <section id="pricing" className="relative py-24 bg-white z-[50] isolate">
+      <div className="container mx-auto px-6 relative z-[60]">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-4xl font-black text-gray-900 mb-4 uppercase italic tracking-tight">
             Choose Your Growth Speed
           </h2>
           <p className="text-gray-500 font-bold">
-            Select a plan to unlock your full visibility audit.
+            Select a plan from our official rate card to unlock full visibility auditing.
           </p>
         </div>
 
@@ -87,8 +92,8 @@ export default function Pricing() {
                 
                 <button 
                   type="button"
-                  // CRITICAL: Higher z-index and forced pointer-events to bypass Clerk/Overlay issues
-                  className="relative z-[9999] pointer-events-auto w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
+                  // Use a massive z-index and pointer-events-auto to bypass Clerk/Loader overlays
+                  className="relative z-[99999] pointer-events-auto w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -103,9 +108,9 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* THE KEY RESET: key={Date.now()} 
-          This forces React to completely destroy and recreate the Modal 
-          every time it opens, ensuring it always starts at Step 1 (Phone Input).
+      {/* FORCE RESET: key={Date.now()} 
+          This ensures the MpesaModal is killed and reborn every time a plan is clicked.
+          This stops the "Awaiting PIN" screen from showing up by accident.
       */}
       {isModalOpen && (
         <MpesaModal 

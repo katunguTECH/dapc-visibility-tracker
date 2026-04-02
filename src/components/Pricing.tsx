@@ -39,15 +39,15 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Check if the component is loading correctly in the browser
+  // Debugging: Confirms the component is active in your browser console
   useEffect(() => {
-    console.log("Pricing Engine: Online");
+    console.log("Pricing Component: Ready for User Input");
   }, []);
 
   const handleSelectPlan = (plan: any) => {
-    console.log("Plan Selected:", plan.name);
+    console.log("Opening Payment Modal for:", plan.name);
     setSelectedPlan(plan);
-    setIsModalOpen(true); // This triggers the phone number input modal
+    setIsModalOpen(true);
   };
 
   return (
@@ -58,7 +58,7 @@ export default function Pricing() {
             Choose Your Growth Speed
           </h2>
           <p className="text-gray-500 font-bold">
-            Select a plan from our official rate card.
+            Select a plan to begin your visibility audit.
           </p>
         </div>
 
@@ -92,8 +92,8 @@ export default function Pricing() {
                 
                 <button 
                   type="button"
-                  // Massive z-index ensures this is the top-most clickable item
-                  className="relative z-[99999] pointer-events-auto w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
+                  // relative z-[9999] ensures this button sits on top of any Clerk overlays
+                  className="relative z-[9999] pointer-events-auto w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -108,8 +108,9 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* This is the part that asks for your phone number. 
-          The key={Date.now()} ensures it pops up fresh every time.
+      {/* THIS IS THE PART THAT ASKS FOR THE NUMBER.
+          key={Date.now()} kills any old 'frozen' state.
+          The modal itself MUST have the <input> field.
       */}
       {isModalOpen && selectedPlan && (
         <MpesaModal 

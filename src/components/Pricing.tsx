@@ -2,7 +2,6 @@
 import { useState } from "react";
 import MpesaModal from "./MpesaModal";
 
-// Define your plans exactly as they appear in your UI
 const plans = [
   { 
     name: "Starter Listing", 
@@ -54,7 +53,7 @@ export default function Pricing() {
             Choose Your Growth Speed
           </h2>
           <p className="text-gray-500 font-bold">
-            Select a plan from our official rate card to unlock full visibility auditing.
+            Select a plan to unlock your full visibility audit.
           </p>
         </div>
 
@@ -88,7 +87,7 @@ export default function Pricing() {
                 
                 <button 
                   type="button"
-                  // Using z-[9999] and pointer-events-auto to bypass any invisible ghost layers
+                  // CRITICAL: Higher z-index and forced pointer-events to bypass Clerk/Overlay issues
                   className="relative z-[9999] pointer-events-auto w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-green-600 active:scale-95 transition-all shadow-lg cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
@@ -104,9 +103,9 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* CRITICAL FIX: Using key={Date.now()} 
-          This FORCES the MpesaModal to completely reset every time it opens.
-          It deletes the old "Awaiting PIN" state and starts fresh at the "Enter Phone" screen.
+      {/* THE KEY RESET: key={Date.now()} 
+          This forces React to completely destroy and recreate the Modal 
+          every time it opens, ensuring it always starts at Step 1 (Phone Input).
       */}
       {isModalOpen && (
         <MpesaModal 

@@ -50,7 +50,8 @@ export default function Pricing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSelectPlan = (plan: any) => {
-    console.log("Button Clicked for:", plan.name); // Check this in Browser Console
+    // Debugging log to verify the click is working in the browser console
+    console.log("Plan selected:", plan.name); 
     setSelectedPlan(plan);
     setIsModalOpen(true);
   };
@@ -59,17 +60,22 @@ export default function Pricing() {
     <section className="relative py-12 md:py-24 bg-white w-full overflow-visible">
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-12 md:mb-20">
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight">Choose Your Growth Speed</h2>
-          <p className="text-gray-500 mt-4 text-lg font-medium">Select a plan from our official rate card.</p>
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+            Choose Your Growth Speed
+          </h2>
+          <p className="text-gray-500 mt-4 text-lg font-medium">
+            Select a plan from our official rate card.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 max-w-7xl mx-auto">
+        {/* Grid layout optimized for 5 plans across different screen sizes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 max-w-7xl mx-auto items-stretch">
           {plans.map((plan) => (
             <div 
               key={plan.name}
               className={`bg-white rounded-[2.5rem] p-8 md:p-10 border-2 ${plan.color} flex flex-col items-center text-center transition-all duration-300 hover:shadow-2xl relative`}
             >
-              <div className="w-24 h-24 mb-6 rounded-full overflow-hidden flex items-center justify-center bg-gray-50 border border-gray-100">
+              <div className="w-24 h-24 mb-6 rounded-full overflow-hidden flex items-center justify-center bg-gray-50 border border-gray-100 shadow-inner">
                 <img 
                   src={plan.icon} 
                   alt={plan.name} 
@@ -92,7 +98,9 @@ export default function Pricing() {
               <ul className="text-left w-full space-y-4 mb-10 flex-grow">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start text-gray-500 font-semibold text-sm">
-                    <span className="bg-green-100 text-green-600 rounded-full p-1 mr-3 mt-0.5 text-[10px] shrink-0">✔</span> 
+                    <span className="bg-green-100 text-green-600 rounded-full p-1 mr-3 mt-0.5 text-[10px] shrink-0">
+                      ✔
+                    </span> 
                     {feature}
                   </li>
                 ))}
@@ -110,9 +118,12 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* --- MODAL MOUNTING POINT --- */}
+      {/* CRITICAL: Adding 'key' forces a fresh re-render of the modal every time. 
+          This prevents the "Awaiting M-Pesa Prompt" screen from being stuck.
+      */}
       {isModalOpen && (
         <MpesaModal 
+          key={selectedPlan?.name || "modal"} 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           planName={selectedPlan?.name}

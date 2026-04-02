@@ -3,31 +3,30 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
-  // Use explicit status strings: 'INPUT', 'SENDING', 'AWAITING_PIN'
+  // Explicitly start at 'INPUT' every time the component loads
   const [status, setStatus] = useState<'INPUT' | 'SENDING' | 'AWAITING_PIN'>('INPUT');
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // FORCE RESET whenever the modal opens or the plan changes
+  // FORCE RESET: This ensures that if a user closes and re-opens, they start at Step 1
   useEffect(() => {
     if (isOpen) {
-      console.log("Modal Reset Triggered for:", planName);
       setStatus('INPUT');
       setPhoneNumber("");
       setLoading(false);
     }
-  }, [isOpen, planName]);
+  }, [isOpen]);
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clean and Format
+    // Format the number to 254... format for Safaricom
     let clean = phoneNumber.replace(/\D/g, "");
     if (clean.startsWith("0")) clean = "254" + clean.slice(1);
     else if (clean.startsWith("7") || clean.startsWith("1")) clean = "254" + clean;
 
     if (clean.length !== 12) {
-      alert("Please enter a valid number (e.g. 0712345678)");
+      alert("Please enter a valid Safaricom number (e.g. 0712345678)");
       return;
     }
 
@@ -35,6 +34,7 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
     setStatus('SENDING'); 
 
     try {
+      // We pass the 'clean' phoneNumber typed by the user to the API
       const res = await axios.post("/api/mpesa/stk-push", { 
         amount: Math.round(amount), 
         phoneNumber: clean, 
@@ -48,7 +48,8 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
         setStatus('INPUT');
       }
     } catch (err) {
-      alert("Connection Error. Please try again.");
+      console.error("Payment Error:", err);
+      alert("Connection Error. Please check your internet and try again.");
       setStatus('INPUT');
     } finally {
       setLoading(false);
@@ -58,10 +59,10 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100000] p-4 backdrop-blur-md">
       <div className="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl border border-gray-100">
         
-        {/* STEP 1: THE INPUT FIELD (MUST SHOW FIRST) */}
+        {/* STEP 1: THE PHONE INPUT */}
         {status === 'INPUT' && (
           <form onSubmit={handlePay} className="flex flex-col gap-6">
             <div className="text-center">
@@ -70,7 +71,7 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Your Number</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Enter M-Pesa Number</label>
               <input 
                 required
                 autoFocus
@@ -87,20 +88,20 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
               disabled={loading}
               className="bg-green-600 text-white font-black py-5 rounded-2xl uppercase text-[11px] tracking-[0.2em] shadow-lg shadow-green-100 active:scale-95 transition-all"
             >
-              {loading ? "Initializing..." : "Send Payment Prompt"}
+              {loading ? "Processing..." : "Send Prompt to My Phone"}
             </button>
           </form>
         )}
 
-        {/* STEP 2: SENDING STATE */}
+        {/* STEP 2: SENDING TO SAFARICOM */}
         {status === 'SENDING' && (
           <div className="text-center py-10 flex flex-col items-center">
             <div className="animate-spin h-12 w-12 border-4 border-green-600 border-t-transparent rounded-full mb-6"></div>
-            <p className="font-black text-gray-900 uppercase text-xs tracking-widest italic">Requesting Prompt...</p>
+            <p className="font-black text-gray-900 uppercase text-xs tracking-widest italic">Requesting STK Push...</p>
           </div>
         )}
 
-        {/* STEP 3: SUCCESS STATE */}
+        {/* STEP 3: AWAITING PIN ON CUSTOMER PHONE */}
         {status === 'AWAITING_PIN' && (
           <div className="text-center flex flex-col items-center">
             <div className="h-16 w-16 bg-green-50 rounded-full flex items-center justify-center mb-6">
@@ -108,7 +109,7 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
             </div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight italic">CHECK YOUR PHONE</h2>
             <p className="text-gray-500 text-sm mt-2 mb-8 font-medium">
-              Enter your PIN on the prompt sent to <strong>{phoneNumber}</strong>.
+              A prompt has been sent to <strong>{phoneNumber}</strong>. Please enter your M-Pesa PIN.
             </p>
             
             <div className="w-full bg-gray-50 p-5 rounded-2xl text-left border border-gray-100">

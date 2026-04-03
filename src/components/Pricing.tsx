@@ -15,8 +15,10 @@ export default function Pricing() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSelectPlan = (plan: any) => {
+    // 1. Set the plan data
     setSelectedPlan(plan);
-    setIsModalOpen(true); // Open the input prompt
+    // 2. Open the Modal (This is the POPUP)
+    setIsModalOpen(true); 
   };
 
   return (
@@ -24,14 +26,15 @@ export default function Pricing() {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {plans.map((plan) => (
-            <div key={plan.name} className="p-6 border-2 rounded-[2rem] flex flex-col items-center bg-white">
+            <div key={plan.name} className="p-6 border-2 rounded-[2rem] flex flex-col items-center bg-white shadow-sm">
               <img src={plan.icon} className="w-20 h-20 rounded-full mb-4" alt={plan.name} />
-              <h3 className="font-black text-center text-sm mb-4">{plan.name}</h3>
+              <h3 className="font-black text-center text-sm mb-2">{plan.name}</h3>
               <p className="text-2xl font-black mb-6">KES {plan.price.toLocaleString()}</p>
+              
               <button 
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
-                className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition-all"
+                className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition-all cursor-pointer"
               >
                 Select Plan
               </button>
@@ -40,6 +43,7 @@ export default function Pricing() {
         </div>
       </div>
 
+      {/* THE POPUP UI */}
       {isModalOpen && selectedPlan && (
         <MpesaModal 
           isOpen={isModalOpen}

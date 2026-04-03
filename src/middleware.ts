@@ -6,8 +6,8 @@ const isPublicRoute = createRouteMatcher(["/", "/api/mpesa/(.*)"]);
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) return NextResponse.next();
 
-  const isProtected = createRouteMatcher(["/dashboard(.*)", "/exposure(.*)"]);
-  if (isProtected(req)) await auth.protect();
+  const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/exposure(.*)"]);
+  if (isProtectedRoute(req)) await auth.protect();
 });
 
 export const config = {

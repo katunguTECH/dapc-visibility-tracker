@@ -1,79 +1,154 @@
+// src/app/page.tsx
 "use client";
 
 import { useState } from "react";
-import Pricing from "../components/Pricing";
 import MpesaModal from "../components/MpesaModal";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 
-export default function HomePage() {
+const subscriptionPlans = [
+  {
+    name: "Starter Listing",
+    price: 1999,
+    description: "For small businesses getting started",
+    icon: "/icons/starter-cheetah.png",
+  },
+  {
+    name: "Local Boost",
+    price: 3999,
+    description: "Increase visibility & customer actions",
+    icon: "/icons/boost-buffalo.png",
+  },
+  {
+    name: "Growth Engine",
+    price: 5999,
+    description: "Generate consistent monthly leads",
+    icon: "/icons/growthengine-rhino.png",
+  },
+  {
+    name: "Market Leader",
+    price: 7999,
+    description: "Dominate competitors in your area",
+    icon: "/icons/marketleader-elephant.png",
+  },
+  {
+    name: "Super Active",
+    price: 10000,
+    description: "Maximum exposure & premium insights",
+    icon: "/icons/supervisibility-lion.png",
+  },
+];
+
+export default function Home() {
   const [businessName, setBusinessName] = useState("");
-  const [location, setLocation] = useState("");
+  const [city, setCity] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showMpesa, setShowMpesa] = useState(false);
 
-  const router = useRouter();
-
-  const handleRunAudit = () => {
-    if (!businessName || !location) {
-      alert("Please enter both Business Name and Location.");
-      return;
-    }
-    router.push(`/audit?business=${encodeURIComponent(businessName)}&location=${encodeURIComponent(location)}`);
+  // Dummy realistic scoring logic
+  const generateScore = (name: string) => {
+    if (!name || name.trim().length < 3) return 10 + Math.floor(Math.random() * 10);
+    return 60 + Math.floor(Math.random() * 35);
   };
 
-  const handleSubscribe = (plan: any) => {
-    setSelectedPlan(plan);
-    setIsModalOpen(true);
+  const handleRunAudit = () => {
+    if (!businessName) return alert("Enter a business name to run audit");
   };
 
   return (
-    <main className="min-h-screen bg-white flex flex-col items-center px-6 py-16">
-      {/* Hero Section */}
-      <section className="text-center w-full max-w-xl mb-16">
-        <h1 className="text-5xl font-extrabold mb-4 animate-fade-in">DAPC</h1>
-        <p className="text-3xl font-bold mb-8 animate-fade-in delay-150">Is Your Business Visible Online?</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      {/* DAPC Logo */}
+      <div className="flex justify-center mb-8">
+        <Image src="/dapc-logo.png" alt="DAPC Logo" width={200} height={60} />
+      </div>
 
-        {/* Inputs inline with shadow */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-4 justify-center animate-fade-in delay-300">
-          <input
-            type="text"
-            placeholder="Business Name (e.g., Airtel)"
-            className="w-full sm:w-64 p-4 border-2 border-gray-300 rounded-lg text-black shadow-md focus:border-green-600 focus:ring-2 focus:ring-green-200 transition-all"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Location (e.g., Nairobi)"
-            className="w-full sm:w-48 p-4 border-2 border-gray-300 rounded-lg text-black shadow-md focus:border-green-600 focus:ring-2 focus:ring-green-200 transition-all"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-          <button
-            onClick={handleRunAudit}
-            className="bg-green-600 hover:bg-black text-white font-bold py-4 px-6 rounded-xl shadow-lg uppercase transition-all transform hover:scale-105"
-          >
-            Run Audit
-          </button>
+      {/* Header */}
+      <h1 className="text-4xl font-bold text-center mb-4">Is Your Business Visible Online?</h1>
+
+      {/* Search Form */}
+      <div className="flex justify-center mb-8 gap-4">
+        <input
+          type="text"
+          placeholder="Business Name (e.g., Safaricom)"
+          className="p-2 border rounded w-64"
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="City (e.g., Nairobi)"
+          className="p-2 border rounded w-48"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
+        <button
+          onClick={handleRunAudit}
+          className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition-all animate-pulse"
+        >
+          Run Audit
+        </button>
+      </div>
+
+      {/* Audit Results */}
+      {businessName && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="p-6 bg-white rounded shadow">
+            <h2 className="text-2xl font-semibold">
+              {businessName} {city ? `— ${city}` : ""}
+            </h2>
+            <p className="mt-2 font-medium">
+              Visibility Score: {generateScore(businessName)}/100
+            </p>
+            <ul className="mt-2 space-y-1">
+              <li>🌐 Website: 20/20</li>
+              <li>🔍 Search: 20/20</li>
+              <li>📍 Maps: 18/20</li>
+              <li>📱 Social: 18/20</li>
+              <li>⚙️ SEO: 18/20</li>
+            </ul>
+            <button
+              onClick={() => setShowMpesa(true)}
+              className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Unlock Full Pro Audit
+            </button>
+          </div>
         </div>
-
-        <p className="mt-4 text-gray-600 text-sm animate-fade-in delay-450">
-          Unlock Full Pro Audit
-        </p>
-      </section>
+      )}
 
       {/* Subscription Plans */}
-      <Pricing onSubscribe={handleSubscribe} />
+      <div className="max-w-5xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {subscriptionPlans.map((plan) => (
+          <div
+            key={plan.name}
+            className="bg-white p-6 rounded shadow flex flex-col items-center"
+          >
+            <Image src={plan.icon} alt={plan.name} width={80} height={80} />
+            <h3 className="text-xl font-bold mt-4">{plan.name}</h3>
+            <p className="mt-2 text-gray-600">{plan.description}</p>
+            <p className="mt-2 font-semibold">KES {plan.price.toLocaleString()}</p>
+            <button
+              onClick={() => {
+                setSelectedPlan(plan);
+                setShowMpesa(true);
+              }}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Subscribe
+            </button>
+          </div>
+        ))}
+      </div>
 
-      {/* M-Pesa Modal */}
-      {isModalOpen && selectedPlan && (
-        <MpesaModal 
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          planName={selectedPlan.name}
-          amount={selectedPlan.price}
+      {/* MPesa Modal */}
+      {showMpesa && selectedPlan && (
+        <MpesaModal
+          plan={selectedPlan}
+          onClose={() => {
+            setShowMpesa(false);
+            setSelectedPlan(null);
+          }}
         />
       )}
-    </main>
+    </div>
   );
 }

@@ -1,39 +1,50 @@
+// src/components/Pricing.tsx
 "use client";
 
+import { useState } from "react";
+import MpesaModal from "./MpesaModal";
+
 const plans = [
-  { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
-  { name: "Local Boost", price: 3999, icon: "/icons/boost-buffalo.jpg" },
-  { name: "Growth Engine", price: 5999, icon: "/icons/growthengine-rhino.jpg" },
-  { name: "Market Leader", price: 7999, icon: "/icons/marketleader-elephant.jpg" },
-  { name: "Super Active", price: 10000, icon: "/icons/superactivevisibility-lion.jpg" }
+  { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.png" },
+  { name: "Local Boost", price: 3999, icon: "/icons/boost-buffalo.png" },
+  { name: "Growth Engine", price: 5999, icon: "/icons/growthengine-rhino.png" },
+  { name: "Market Leader", price: 7999, icon: "/icons/marketleader-elephant.png" },
+  { name: "Super Active", price: 10000, icon: "/icons/supervisibility-lion.png" },
 ];
 
-export default function Pricing({ onSubscribe }: { onSubscribe: (plan: any) => void }) {
-  return (
-    <section id="pricing" className="w-full py-24 bg-gray-50">
-      <div className="container mx-auto px-6">
-        <h2 className="text-center text-3xl font-bold mb-12 animate-fade-in">Subscription Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className="p-6 border-2 rounded-[2rem] flex flex-col items-center bg-white shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 cursor-pointer animate-fade-in delay-150"
-            >
-              <img src={plan.icon} className="w-24 h-24 rounded-full mb-4" alt={plan.name} />
-              <h3 className="font-black text-center text-sm mb-2">{plan.name}</h3>
-              <p className="text-2xl font-black mb-6">KES {plan.price.toLocaleString()}</p>
+export default function Pricing() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
-              <button
-                type="button"
-                onClick={() => onSubscribe(plan)}
-                className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-[10px] hover:bg-green-600 transition-all shadow-md"
-              >
-                Subscribe
-              </button>
-            </div>
-          ))}
+  const handleSubscribe = (plan: any) => {
+    setSelectedPlan(plan);
+    setIsModalOpen(true);
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {plans.map((plan) => (
+        <div key={plan.name} className="border p-4 rounded-lg text-center">
+          <img src={plan.icon} alt={plan.name} className="mx-auto h-16 mb-2" />
+          <h3 className="font-bold">{plan.name}</h3>
+          <p>KES {plan.price}</p>
+          <button
+            onClick={() => handleSubscribe(plan)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2"
+          >
+            Subscribe
+          </button>
         </div>
-      </div>
-    </section>
+      ))}
+
+      {selectedPlan && (
+        <MpesaModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          planName={selectedPlan.name}
+          amount={selectedPlan.price}
+        />
+      )}
+    </div>
   );
 }

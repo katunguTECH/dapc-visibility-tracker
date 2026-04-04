@@ -1,72 +1,67 @@
+// src/components/MpesaModal.tsx
 "use client";
+
 import { useState } from "react";
 
-export default function MpesaModal({ isOpen, onClose, planName, amount }: any) {
+interface MpesaModalProps {
+  plan: { name: string; price: number };
+  onClose: () => void;
+}
+
+export default function MpesaModal({ plan, onClose }: MpesaModalProps) {
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
 
-  if (!isOpen) return null;
+  const handlePay = async () => {
+    if (!phone) return alert("Enter phone number");
+    setStatus("Sending STK Push...");
 
-  const handleSTKPush = async () => {
-    if (!phone || phone.length < 10) {
-      alert("Please enter a valid Safaricom number.");
-      return;
-    }
-
-    setLoading(true);
     try {
       const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: phone, amount, planName }),
+        body: JSON.stringify({ phoneNumber: phone, amount: plan.price, planName: plan.name }),
       });
-
       const data = await res.json();
 
-      if (res.ok && data.message.includes("successfully")) {
-        alert("STK Push sent! Check your phone to complete the payment.");
-        onClose();
+      if (data.ResponseCode === "0") {
+        setStatus("STK Push sent! Check your phone to complete the payment.");
       } else {
-        alert("Error: " + (data.message || "STK Push failed"));
+        setStatus("Payment failed. Try again.");
       }
     } catch (err) {
-      console.error("STK Push error:", err);
-      alert("API Error. Please check your connection or try again.");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setStatus("Payment failed. Try again.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-      <div className="bg-white w-full max-w-sm rounded-[2rem] p-10 shadow-2xl relative border-2 border-gray-100">
-        <h2 className="text-xl font-black uppercase italic mb-2 text-black">M-Pesa Number</h2>
-        <p className="text-gray-400 font-bold text-[10px] uppercase mb-8">{planName} — KES {amount}</p>
-        
-        <div className="mb-8">
-          <label className="block text-[10px] font-black uppercase text-gray-400 mb-2 ml-1">Safaricom Number</label>
-          <input
-            type="tel"
-            autoFocus
-            required
-            className="w-full p-5 bg-gray-50 border-2 border-gray-100 rounded-2xl font-black text-xl outline-none focus:border-green-500 text-black placeholder:text-gray-300"
-            placeholder="0712345678"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded shadow w-96">
+        <h2 className="text-xl font-bold mb-4">Subscribe: {plan.name}</h2>
+        <p>Amount: KES {plan.price.toLocaleString()}</p>
+        <input
+          type="tel"
+          placeholder="2547XXXXXXXX"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="mt-2 p-2 border rounded w-full"
+        />
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={handlePay}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Pay with M-Pesa
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+          >
+            Cancel
+          </button>
         </div>
-
-        <button 
-          onClick={handleSTKPush}
-          disabled={loading}
-          className="w-full py-5 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all disabled:opacity-50 shadow-lg"
-        >
-          {loading ? "Requesting..." : "Send Payment Prompt"}
-        </button>
-        
-        <button onClick={onClose} className="w-full mt-4 text-gray-400 font-bold text-[10px] uppercase hover:text-red-500">
-          Cancel Transaction
-        </button>
+        {status && <p className="mt-2">{status}</p>}
       </div>
     </div>
   );

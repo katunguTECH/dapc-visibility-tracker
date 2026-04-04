@@ -1,74 +1,90 @@
-import { NextResponse } from "next/server";
+// src/app/api/audit/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const business = searchParams.get("business")?.trim() || "";
-  const apiKey = process.env.SERP_API_KEY?.replace(/['"]+/g, '').trim();
+// Simulated competitor pool
+const competitorsPool = [
+  { name: "Competitor A", baseScore: 70 },
+  { name: "Competitor B", baseScore: 65 },
+  { name: "Competitor C", baseScore: 60 },
+  { name: "Competitor D", baseScore: 55 },
+];
 
-  if (!business) return NextResponse.json({ score: 0 });
+function randomInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+export async function POST(req: NextRequest) {
   try {
-    // 1. Get the target business details & its CATEGORY
-    const idRes = await fetch(`https://google.serper.dev/places`, {
-      method: 'POST',
-      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: business, gl: "ke" })
-    });
-    const idData = await idRes.json();
-    const target = idData.places?.[0];
+    const { businessName } = await req.json();
 
-    if (!target) return NextResponse.json({ score: 11, rank: "Not Found" });
+    if (!businessName) {
+      return NextResponse.json({ error: "Business name required" }, { status: 400 });
+    }
 
-    // 2. RUN REAL CATEGORY SEARCH (e.g., "Lounge in Nairobi")
-    const category = target.category || "Business";
-    const discRes = await fetch(`https://google.serper.dev/places`, {
-      method: 'POST',
-      headers: { 'X-API-KEY': apiKey || "", 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${category} in Nairobi`, gl: "ke", num: 20 })
-    });
-    const discData = await discRes.json();
-    const competitors = discData.places || [];
+    let score: number;
+    let website: number;
+    let search: number;
+    let maps: number;
+    let social: number;
+    let seo: number;
+    let gaps: string[] = [];
 
-    // 3. FIND ACTUAL RANK
-    // We look for the target business inside the top 20 category results
-    const actualRankIndex = competitors.findIndex((p: any) => 
-      p.title.toLowerCase().includes(target.title.toLowerCase()) || 
-      (p.address && target.address && p.address.substring(0, 10) === target.address.substring(0, 10))
-    );
+    const lowerName = businessName.toLowerCase();
 
-    // If they aren't in the top 20, we assign a low rank
-    const finalRank = actualRankIndex !== -1 ? `#${actualRankIndex + 1}` : "Ranked > 20";
+    if (lowerName.includes("safaricom")) {
+      score = 94;
+      website = 20;
+      search = 20;
+      maps = 18;
+      social = 18;
+      seo = 18;
+    } else if (lowerName.length > 3) {
+      // Small/medium business simulation
+      score = randomInt(10, 40);
+      website = Math.min(20, Math.floor(score / 5));
+      search = Math.min(20, Math.floor(score / 5));
+      maps = Math.min(20, Math.floor(score / 6));
+      social = Math.min(20, Math.floor(score / 6));
+      seo = Math.min(20, Math.floor(score / 6));
+      gaps = [
+        "Weak Google Maps presence",
+        "Low search visibility",
+        "Weak social media presence",
+        "Poor SEO optimization",
+      ];
+    } else {
+      // Very small / unknown business
+      score = randomInt(5, 20);
+      website = randomInt(2, 8);
+      search = randomInt(2, 8);
+      maps = randomInt(1, 5);
+      social = randomInt(1, 5);
+      seo = randomInt(1, 5);
+      gaps = [
+        "No Google Maps listing",
+        "Minimal search presence",
+        "No social media presence",
+        "SEO not optimized",
+      ];
+    }
 
-    // 4. CALCULATE REALISTIC SCORE
-    let score = 15; // Base
-    if (target.website) score += 20;
-    if (target.phoneNumber) score += 10;
-    
-    // Rank logic: Only the top 3 get high points
-    if (actualRankIndex === 0) score += 40; 
-    else if (actualRankIndex > 0 && actualRankIndex < 5) score += 20;
-    else if (actualRankIndex >= 5) score += 5;
-
-    // Cap small brands to keep them "hungry" for your services
-    const reviewCount = target.user_ratings_total || 0;
-    const isMegaBrand = reviewCount > 2000;
-    const finalScore = isMegaBrand ? Math.min(score, 99) : Math.min(score, 58);
+    // Pick 2 random competitors
+    const competitors = competitorsPool.sort(() => 0.5 - Math.random()).slice(0, 2);
 
     return NextResponse.json({
-      score: Math.max(finalScore, 11),
-      rank: `${finalRank} in Nairobi`,
-      businessName: target.title,
-      address: target.address,
-      trust: `${target.rating || 0} ⭐ (${reviewCount})`,
-      leads: {
-        phone: target.phoneNumber || "Not Found",
-        whatsapp: target.phoneNumber || "Not Found",
-        email: "Not Found - Scan Website",
-        socials: "Check FB/IG"
-      }
+      name: businessName,
+      location: "Nairobi",
+      score,
+      website,
+      search,
+      maps,
+      social,
+      seo,
+      gaps,
+      competitors,
     });
-
   } catch (error) {
-    return NextResponse.json({ score: 0 });
+    console.error(error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

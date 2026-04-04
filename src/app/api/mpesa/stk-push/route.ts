@@ -1,63 +1,55 @@
-import { NextResponse } from "next/server";
-
+// src/app/api/mpesa/stk-push/route.ts
 export async function POST(req: Request) {
   try {
-    let { phoneNumber, amount, planName } = await req.json();
+    const { phoneNumber, amount, planName } = await req.json();
 
     if (!phoneNumber || !amount) {
-      return NextResponse.json({ error: "Missing phone or amount" }, { status: 400 });
+      return new Response(JSON.stringify({ success: false, message: "Missing phone number or amount" }), { status: 400 });
     }
 
-    phoneNumber = phoneNumber.replace(/\D/g, "");
-    if (phoneNumber.startsWith("0")) phoneNumber = "254" + phoneNumber.slice(1);
-    else if (phoneNumber.startsWith("7")) phoneNumber = "254" + phoneNumber;
+    let phone = phoneNumber.replace(/\D/g, "");
+    if (phone.startsWith("0")) phone = "254" + phone.slice(1);
+    else if (phone.startsWith("7")) phone = "254" + phone;
 
-    const tokenRes = await fetch(
-      MPESA_ENV === "sandbox"
-        ? "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
-        : "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-      {
-        headers: {
-          Authorization:
-            "Basic " + Buffer.from(MPESA_CONSUMER_KEY + ":" + MPESA_CONSUMER_SECRET).toString("base64"),
-        },
-      }
-    );
+    const consumerKey = process.env.MPESA_CONSUMER_KEY!;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
+    const shortcode = process.env.MPESA_SHORTCODE!;
+    const passkey = process.env.MPESA_PASSKEY!;
+    const env = process.env.MPESA_ENV || "sandbox";
+
+    // 1. Get token
+    const tokenRes = await fetch(`${env === "sandbox" ? "https://sandbox.safaricom.co.ke" : "https://api.safaricom.co.ke"}/oauth/v1/generate?grant_type=client_credentials`, {
+      headers: { Authorization: "Basic " + Buffer.from(consumerKey + ":" + consumerSecret).toString("base64") },
+    });
     const tokenData = await tokenRes.json();
-    const accessToken = tokenData.access_token;
+    const token = tokenData.access_token;
 
-    const stkPushRes = await fetch(
-      MPESA_ENV === "sandbox"
-        ? "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-        : "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          BusinessShortCode: MPESA_SHORTCODE,
-          Password: Buffer.from(MPESA_SHORTCODE + MPESA_PASSKEY + new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")).toString("base64"),
-          Timestamp: new Date().toISOString().slice(0, 19).replace(/[-:T]/g, ""),
-          TransactionType: "CustomerPayBillOnline",
-          Amount: amount,
-          PartyA: phoneNumber,
-          PartyB: MPESA_SHORTCODE,
-          PhoneNumber: phoneNumber,
-          CallBackURL: "https://dapc.co.ke/api/mpesa/callback", // your public callback
-          AccountReference: planName,
-          TransactionDesc: `Subscription payment for ${planName}`,
-        }),
-      }
-    );
+    // 2. Send STK Push
+    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    const password = Buffer.from(shortcode + passkey + timestamp).toString("base64");
 
-    const stkData = await stkPushRes.json();
-    console.log("STK Push response:", stkData);
+    const stkRes = await fetch(`${env === "sandbox" ? "https://sandbox.safaricom.co.ke" : "https://api.safaricom.co.ke"}/mpesa/stkpush/v1/processrequest`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        BusinessShortCode: shortcode,
+        Password: password,
+        Timestamp: timestamp,
+        TransactionType: "CustomerPayBillOnline",
+        Amount: amount,
+        PartyA: phone,
+        PartyB: shortcode,
+        PhoneNumber: phone,
+        CallBackURL: "https://dapc.co.ke/api/mpesa/callback",
+        AccountReference: planName,
+        TransactionDesc: planName,
+      }),
+    });
 
-    return NextResponse.json(stkData);
-  } catch (error) {
-    console.error("STK Push error:", error);
-    return NextResponse.json({ error: "Payment failed. Try again." }, { status: 500 });
+    const data = await stkRes.json();
+    if (data.ResponseCode === "0") return new Response(JSON.stringify({ success: true, data }), { status: 200 });
+    else return new Response(JSON.stringify({ success: false, data }), { status: 400 });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
   }
 }

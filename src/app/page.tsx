@@ -23,15 +23,13 @@ export default function LandingPage() {
   const { isLoaded, userId } = useAuth();
   const { user } = useUser();
   const router = useRouter();
-
   const [business, setBusiness] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [canAudit, setCanAudit] = useState(false);
+  const [canAudit, setCanAudit] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
-  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
 
-  // ✅ Check free audit availability
+  // Check if user can perform audit (1 free audit)
   useEffect(() => {
     if (!isLoaded || !userId) return;
 
@@ -74,7 +72,6 @@ export default function LandingPage() {
       });
       setLoading(false);
 
-      // Increment free audit count
       if (userId && canAudit) {
         axios.post(`/api/user/increment-audit/${userId}`).catch(console.error);
         setCanAudit(false);
@@ -89,10 +86,8 @@ export default function LandingPage() {
       return router.push("/sign-in");
     }
 
-    const phoneNumber = prompt(`Enter your Safaricom M-Pesa number for ${planName} (2547XXXXXXXX):`);
+    const phoneNumber = prompt(`Enter your Safaricom M-Pesa number for ${planName}:`);
     if (!phoneNumber) return;
-
-    setPaymentMessage("Initiating payment...");
 
     try {
       const res = await fetch("/api/mpesa/stk-push", {
@@ -100,45 +95,23 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, phoneNumber, amount, planName }),
       });
-
       const data = await res.json();
-
-      if (res.ok && data.CheckoutRequestID) {
-        setPaymentMessage(`✅ Payment initiated! Check your phone for the STK push.`);
-      } else {
-        setPaymentMessage(`❌ Payment failed: ${data.error || data.message}`);
-      }
-    } catch (err: any) {
+      alert(data.message || "STK Push sent. Complete payment on your phone.");
+    } catch (err) {
       console.error(err);
-      setPaymentMessage(`❌ Payment initiation error: ${err.message || err}`);
+      alert("Payment initiation failed.");
     }
-
-    // Auto-hide message after 10 seconds
-    setTimeout(() => setPaymentMessage(null), 10000);
   };
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      {/* Payment modal */}
-      {paymentMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-white border shadow-lg p-4 rounded-xl z-50 max-w-md w-full text-center animate-in fade-in duration-500">
-          {paymentMessage}
-        </div>
-      )}
-
-      {/* Header / Logo */}
+      {/* Header */}
       <header className="flex flex-col items-center mb-12 border-b pb-8">
-        <img 
-          src="/dapc-logo.jpg" 
-          alt="DAPC Logo" 
-          className="h-24 w-auto mb-4 object-contain" 
-        />
-        <h1 className="text-4xl font-black text-gray-900 text-center">
-          Is Your Business Visible Online?
-        </h1>
+        <img src="/dapc-logo.jpg" alt="DAPC Logo" className="h-24 w-auto mb-4 object-contain" />
+        <h1 className="text-4xl font-black text-gray-900 text-center">Is Your Business Visible Online?</h1>
       </header>
 
-      {/* Search / Audit */}
+      {/* Audit Input */}
       <div className="mb-12 flex justify-center">
         <div className="w-full max-w-2xl flex gap-3">
           <input
@@ -146,23 +119,26 @@ export default function LandingPage() {
             value={business}
             onChange={(e) => setBusiness(e.target.value)}
             placeholder="Enter your business name..."
-            className="border-2 border-gray-200 p-4 w-full rounded-2xl"
+            className="border-2 border-blue-100 p-4 w-full rounded-2xl outline-none shadow-sm focus:border-blue-500"
           />
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold"
+            className={`flex items-center justify-center min-w-[160px] px-8 py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95 ${
+              loading ? "bg-gray-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
           >
             {loading ? "Analyzing..." : "Run Audit"}
           </button>
         </div>
       </div>
 
+      {/* Free audit / subscription message */}
       {userId && <p className="text-center text-red-500 mb-6">{statusMessage}</p>}
 
-      {/* Audit Results Dashboard */}
+      {/* Audit Results */}
       {searchResult && (
-        <div className="mb-16 p-8 bg-white rounded-[2.5rem] shadow-2xl">
+        <div className="mb-16 p-8 bg-white border-2 border-blue-50 rounded-[2.5rem] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
               <h2 className="text-3xl font-black text-gray-800">{searchResult.name}</h2>
@@ -190,7 +166,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="bg-red-50 p-6 rounded-3xl border-l-8 border-red-500 mb-8">
+          <div className="bg-red-50 p-6 rounded-3xl border-l-8 border-red-500 mb-10">
             <h3 className="font-black text-red-800 mb-4 text-lg">⚠️ Critical Gaps Detected:</h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {searchResult.gaps.map((gap: string) => (
@@ -201,17 +177,16 @@ export default function LandingPage() {
             </ul>
           </div>
 
-          {/* Competitor Comparison */}
-          <div className="mb-8">
-            <h3 className="font-black text-gray-800 mb-4 text-lg">🧑‍💼 Competitor Comparison</h3>
-            <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {searchResult.competitors.map((comp: any) => (
-                <li key={comp.name} className="bg-gray-50 p-4 rounded-xl shadow-sm">
-                  <p className="font-bold">{comp.name}</p>
-                  <p>Score: {comp.score}/100</p>
-                </li>
+          <div className="mb-10">
+            <h3 className="text-xl font-black mb-4">🏆 Competitor Comparison</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {searchResult.competitors.map((c: any) => (
+                <div key={c.name} className="bg-gray-50 p-4 rounded-xl shadow-sm text-center">
+                  <p className="font-bold">{c.name}</p>
+                  <p className="text-blue-600 font-black">{c.score}/100</p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       )}
@@ -219,14 +194,22 @@ export default function LandingPage() {
       {/* Subscription Plans */}
       <h2 className="text-4xl font-black text-center mb-4 text-gray-900">Subscription Plans</h2>
       <p className="text-center text-gray-500 mb-12">Choose a plan to fix your visibility gaps and dominate your local market.</p>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-20">
-        {plans.map(plan => (
+        {plans.map((plan) => (
           <div key={plan.name} className="group p-8 bg-white border border-gray-100 rounded-[2rem] shadow-lg hover:shadow-2xl transition-all flex flex-col items-center text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-blue-600 transform -translate-y-full group-hover:translate-y-0 transition-transform"></div>
-            <img src={`/icons/${plan.icon}.jpg`} alt={plan.name} className="h-32 w-32 object-contain mb-6 transform group-hover:scale-110 transition-transform duration-500"/>
+            
+            <img 
+              src={`/icons/${plan.icon}.jpg`} 
+              alt={plan.name} 
+              className="h-32 w-32 object-contain mb-6 transform group-hover:scale-110 transition-transform duration-500" 
+            />
+            
             <h3 className="text-xl font-black text-gray-900 mb-2">{plan.name}</h3>
             <p className="text-gray-500 text-xs mb-6 h-10 leading-relaxed">{plan.description}</p>
             <p className="text-3xl font-black text-blue-600 mb-8">KES {plan.amount.toLocaleString()}</p>
+            
             <button
               onClick={() => handlePay(plan.name, plan.amount)}
               className={`mt-auto w-full py-4 rounded-2xl font-black text-sm tracking-wide transition-all shadow-md active:scale-95 ${

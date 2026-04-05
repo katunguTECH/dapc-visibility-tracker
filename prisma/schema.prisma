@@ -7,28 +7,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  email         String?
+  phoneNumber   String?
+
+  // 🎯 Freemium tracking
+  auditCount    Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // 🔗 Relations
+  transactions  Transaction[]
+  subscription  Subscription?
+}
+
 model Transaction {
   id                 String   @id @default(cuid())
+
+  // 🔗 Link to User
   userId             String
+  user               User     @relation(fields: [userId], references: [id])
+
   amount             Float
   phoneNumber        String
-  plan               String   @default("STARTER") // Stores "Growth Engine", etc.
+  plan               String   @default("STARTER")
+
   checkoutRequestId  String   @unique
   merchantRequestId  String
+
   status             String   @default("PENDING") // PENDING, COMPLETED, FAILED
   mpesaReceipt       String?  @unique
   resultDesc         String?
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
 
 model Subscription {
   id        String    @id @default(cuid())
+
+  // 🔗 Link to User (1-to-1)
   userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+
   plan      String    @default("FREE")
   amount    Float?
+
   status    String    @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
+
   startDate DateTime?
   endDate   DateTime?
+
+  createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }

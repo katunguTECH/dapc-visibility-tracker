@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 
 const plans = [
   { name: "Starter Listing", amount: 1999, icon: "starter-cheetah", description: "For small businesses getting started" },
@@ -21,41 +20,18 @@ const mockCompetitors = [
 
 export default function LandingPage() {
   const { isLoaded, userId } = useAuth();
-  const { user } = useUser();
   const router = useRouter();
   const [business, setBusiness] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [canAudit, setCanAudit] = useState(true);
-  const [statusMessage, setStatusMessage] = useState("");
 
-  // Check if user can perform audit (1 free audit)
-  useEffect(() => {
-    if (!isLoaded || !userId) return;
-
-    axios.get(`/api/user/status/${userId}`)
-      .then(res => {
-        setCanAudit(res.data.canAudit);
-        setStatusMessage(res.data.message);
-      })
-      .catch(err => console.error(err));
-  }, [isLoaded, userId]);
-
-  const handleSearch = async () => {
-    if (!business) return alert("Enter a business name");
-
-    if (!userId && !canAudit) {
-      return alert("Sign in to perform more visibility checks.");
-    }
-
-    if (!canAudit) {
-      return router.push("/subscribe");
-    }
+  const handleSearch = () => {
+    if (!business) return alert("Please enter a business name");
 
     setLoading(true);
     setSearchResult(null);
 
-    // Simulate audit
+    // Simulate audit delay
     setTimeout(() => {
       const score = Math.floor(Math.random() * 40) + 10;
       setSearchResult({
@@ -71,19 +47,14 @@ export default function LandingPage() {
         competitors: mockCompetitors,
       });
       setLoading(false);
-
-      if (userId && canAudit) {
-        axios.post(`/api/user/increment-audit/${userId}`).catch(console.error);
-        setCanAudit(false);
-        setStatusMessage("You have used your free audit. Subscribe for more.");
-      }
     }, 1500);
   };
 
   const handlePay = async (planName: string, amount: number) => {
     if (!isLoaded || !userId) {
-      alert("Please sign in to pay.");
-      return router.push("/sign-in");
+      alert("Please sign in to your DAPC account to proceed with payment.");
+      router.push("/sign-in");
+      return;
     }
 
     const phoneNumber = prompt(`Enter your Safaricom M-Pesa number for ${planName}:`);
@@ -93,10 +64,10 @@ export default function LandingPage() {
       const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, phoneNumber, amount, planName }),
+        body: JSON.stringify({ phoneNumber, amount, planName, userId }),
       });
       const data = await res.json();
-      alert(data.message || "STK Push sent. Complete payment on your phone.");
+      alert(data.message || "STK Push sent successfully. Check your phone.");
     } catch (err) {
       console.error(err);
       alert("Payment initiation failed.");
@@ -108,21 +79,24 @@ export default function LandingPage() {
       {/* Header */}
       <header className="flex flex-col items-center mb-12 border-b pb-8">
         <img src="/dapc-logo.jpg" alt="DAPC Logo" className="h-24 w-auto mb-4 object-contain" />
-        <h1 className="text-4xl font-black text-gray-900 text-center">Is Your Business Visible Online?</h1>
+        <h1 className="text-4xl font-black text-gray-900 text-center">
+          Is Your Business Visible Online?
+        </h1>
       </header>
 
-      {/* Audit Input */}
+      {/* Search Input */}
       <div className="mb-12 flex justify-center">
         <div className="w-full max-w-2xl flex gap-3">
           <input
             type="text"
             value={business}
             onChange={(e) => setBusiness(e.target.value)}
-            placeholder="Enter your business name..."
-            className="border-2 border-blue-100 p-4 w-full rounded-2xl outline-none shadow-sm focus:border-blue-500"
+            disabled={loading}
+            placeholder="Enter your business name (e.g. Safari Park Hotel)..."
+            className="border-2 border-blue-100 p-4 w-full rounded-2xl outline-none shadow-sm focus:border-blue-500 transition-all disabled:bg-gray-50"
           />
-          <button
-            onClick={handleSearch}
+          <button 
+            onClick={handleSearch} 
             disabled={loading}
             className={`flex items-center justify-center min-w-[160px] px-8 py-4 rounded-2xl font-bold shadow-lg transition-all active:scale-95 ${
               loading ? "bg-gray-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700 text-white"
@@ -133,12 +107,9 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Free audit / subscription message */}
-      {userId && <p className="text-center text-red-500 mb-6">{statusMessage}</p>}
-
       {/* Audit Results */}
-      {searchResult && (
-        <div className="mb-16 p-8 bg-white border-2 border-blue-50 rounded-[2.5rem] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {searchResult && !loading && (
+        <div className="mb-16 p-8 bg-white border-2 border-blue-50 rounded-[2.5rem] shadow-2xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
               <h2 className="text-3xl font-black text-gray-800">{searchResult.name}</h2>
@@ -151,7 +122,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
-            {[
+            {[ 
               { label: 'Website', val: searchResult.website, icon: '🌐' },
               { label: 'Search', val: searchResult.search, icon: '🔍' },
               { label: 'Maps', val: searchResult.maps, icon: '📍' },
@@ -166,7 +137,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="bg-red-50 p-6 rounded-3xl border-l-8 border-red-500 mb-10">
+          <div className="bg-red-50 p-6 rounded-3xl border-l-8 border-red-500">
             <h3 className="font-black text-red-800 mb-4 text-lg">⚠️ Critical Gaps Detected:</h3>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {searchResult.gaps.map((gap: string) => (
@@ -175,18 +146,6 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-          </div>
-
-          <div className="mb-10">
-            <h3 className="text-xl font-black mb-4">🏆 Competitor Comparison</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {searchResult.competitors.map((c: any) => (
-                <div key={c.name} className="bg-gray-50 p-4 rounded-xl shadow-sm text-center">
-                  <p className="font-bold">{c.name}</p>
-                  <p className="text-blue-600 font-black">{c.score}/100</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -212,11 +171,9 @@ export default function LandingPage() {
             
             <button
               onClick={() => handlePay(plan.name, plan.amount)}
-              className={`mt-auto w-full py-4 rounded-2xl font-black text-sm tracking-wide transition-all shadow-md active:scale-95 ${
-                userId ? "bg-green-600 hover:bg-green-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
-              }`}
+              className="mt-auto w-full py-4 rounded-2xl font-black text-sm tracking-wide transition-all shadow-md active:scale-95 bg-green-600 hover:bg-green-700 text-white"
             >
-              {userId ? "Pay with M-Pesa" : "Sign In to Pay"}
+              Pay with M-Pesa
             </button>
           </div>
         ))}

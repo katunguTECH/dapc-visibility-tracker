@@ -3,54 +3,62 @@
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import axios from "axios";
 
+// Subscription plans with icons
 const plans = [
-  { name: "Starter Listing", amount: 1999, icon: "starter-cheetah.jpg", description: "For small businesses getting started" },
-  { name: "Local Boost", amount: 3999, icon: "boost-buffalo.jpg", description: "Increase visibility & customer actions" },
-  { name: "Growth Engine", amount: 5999, icon: "growthengine-rhino.jpg", description: "Generate consistent monthly leads" },
-  { name: "Market Leader", amount: 7999, icon: "marketleader-elephant.jpg", description: "Dominate competitors in your area" },
-  { name: "Super Active", amount: 10000, icon: "superactivevisibility-lion.jpg", description: "Maximum exposure & premium insights" },
+  { name: "Starter Listing", amount: 1999, icon: "starter-cheetah" },
+  { name: "Local Boost", amount: 3999, icon: "boost-buffalo" },
+  { name: "Growth Engine", amount: 5999, icon: "growthengine-rhino" },
+  { name: "Market Leader", amount: 7999, icon: "marketleader-elephant" },
+  { name: "Super Active", amount: 10000, icon: "superactivevisibility-lion" },
 ];
 
 export default function LandingPage() {
   const { isLoaded, userId } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
 
   const [business, setBusiness] = useState("");
   const [searchResult, setSearchResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [canAudit, setCanAudit] = useState(false);
+  const [canAudit, setCanAudit] = useState(true); // default true for non-logged-in
   const [statusMessage, setStatusMessage] = useState("");
 
+  // ✅ Check if user can perform free audit
   useEffect(() => {
     if (!isLoaded || !userId) return;
 
-    axios.get(`/api/user/status/${userId}`)
-      .then(res => {
+    axios
+      .get(`/api/user/status/${userId}`)
+      .then((res) => {
         setCanAudit(res.data.canAudit);
         setStatusMessage(res.data.message);
       })
-      .catch(err => console.error(err));
+      .catch(console.error);
   }, [isLoaded, userId]);
 
+  // Run visibility audit
   const handleSearch = async () => {
-    if (!business) return alert("Enter a business name");
+    if (!business) return alert("Enter your business name");
 
     if (!userId && !canAudit) {
-      return alert("Sign in to perform more visibility checks.");
+      alert("Sign in to perform more visibility checks.");
+      return router.push("/sign-in");
     }
 
     if (!canAudit) {
-      return router.push("/subscribe");
+      router.push("/subscribe");
+      return;
     }
 
     setLoading(true);
     setSearchResult(null);
 
+    // Simulate audit delay
     setTimeout(() => {
       const score = Math.floor(Math.random() * 40) + 10;
+
       setSearchResult({
         name: business,
         location: "Nairobi",
@@ -64,11 +72,13 @@ export default function LandingPage() {
           "Weak Google Maps presence",
           "Low search visibility",
           "Weak social media presence",
-          "Poor SEO optimization"
+          "Poor SEO optimization",
         ],
       });
+
       setLoading(false);
 
+      // Increment free audit for logged-in users
       if (userId && canAudit) {
         axios.post(`/api/user/increment-audit/${userId}`).catch(console.error);
         setCanAudit(false);
@@ -77,9 +87,10 @@ export default function LandingPage() {
     }, 1500);
   };
 
+  // Handle STK Push payment
   const handlePay = async (planName: string, amount: number) => {
     if (!isLoaded || !userId) {
-      alert("Please sign in to pay.");
+      alert("Sign in to pay.");
       return router.push("/sign-in");
     }
 
@@ -102,21 +113,15 @@ export default function LandingPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header / Logo */}
+      {/* Header */}
       <header className="flex flex-col items-center mb-12 border-b pb-8">
-        <Image
-          src="/dapc-logo.jpg"
-          alt="DAPC Logo"
-          width={200}
-          height={100}
-          className="mb-4 object-contain"
-        />
+        <img src="/dapc-logo.jpg" alt="DAPC Logo" className="h-24 mb-4 object-contain" />
         <h1 className="text-4xl font-black text-center">
           Is Your Business Visible Online?
         </h1>
       </header>
 
-      {/* Audit Section */}
+      {/* Audit Input */}
       <div className="mb-12 flex justify-center">
         <div className="w-full max-w-2xl flex gap-3">
           <input
@@ -136,9 +141,12 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {userId && <p className="text-center text-red-500 mb-6">{statusMessage}</p>}
+      {/* Free audit / subscription message */}
+      {userId && statusMessage && (
+        <p className="text-center text-red-500 mb-6">{statusMessage}</p>
+      )}
 
-      {/* Audit Results */}
+      {/* Audit Result */}
       {searchResult && (
         <div className="mb-16 p-8 bg-white rounded-3xl shadow-lg">
           <h2 className="text-3xl font-black">{searchResult.name}</h2>
@@ -149,26 +157,22 @@ export default function LandingPage() {
 
       {/* Subscription Plans */}
       <h2 className="text-3xl font-black mb-4 text-center">Subscription Plans</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        {plans.map(plan => (
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-20">
+        {plans.map((plan) => (
           <div
             key={plan.name}
-            className="group p-6 bg-white rounded-[2rem] shadow-lg hover:shadow-2xl transition-all flex flex-col items-center text-center relative overflow-hidden"
+            className="p-6 bg-white rounded-3xl shadow-md text-center relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-full h-2 bg-blue-600 transform -translate-y-full group-hover:translate-y-0 transition-transform"></div>
-            <Image
-              src={`/icons/${plan.icon}`}
+            <img
+              src={`/icons/${plan.icon}.jpg`}
               alt={plan.name}
-              width={120}
-              height={120}
-              className="mb-4 rounded-full group-hover:scale-110 transform transition-transform duration-500"
+              className="h-32 w-32 object-contain mb-4 mx-auto"
             />
-            <h3 className="text-xl font-black text-gray-900 mb-2">{plan.name}</h3>
-            <p className="text-gray-500 text-xs mb-2 h-10 leading-relaxed">{plan.description}</p>
-            <p className="text-3xl font-black text-blue-600 mb-4">KES {plan.amount.toLocaleString()}</p>
+            <h3 className="text-xl font-bold">{plan.name}</h3>
+            <p className="text-blue-600 text-2xl mb-4">KES {plan.amount.toLocaleString()}</p>
             <button
               onClick={() => handlePay(plan.name, plan.amount)}
-              className="mt-auto w-full py-3 rounded-2xl font-black text-white bg-green-600 hover:bg-green-700 transition-all active:scale-95"
+              className="bg-green-600 text-white py-3 px-6 rounded-xl font-bold"
             >
               Pay with M-Pesa
             </button>

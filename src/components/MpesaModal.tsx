@@ -1,76 +1,71 @@
 "use client";
 import { useState } from "react";
+import { useUser, useSignIn } from "@clerk/nextjs";
 
-interface MpesaModalProps {
-  isOpen: boolean;        // Add this
-  onClose: () => void;
-  planName: string;       // Changed from plan object
-  amount: number;         // Changed from plan object
-  onPaymentSuccess?: () => void; // Add this to match your page
-}
+export default function MpesaModal({ amount, planName }: { amount: string, planName: string }) {
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useSignIn();
 
-export default function MpesaModal({ isOpen, onClose, planName, amount, onPaymentSuccess }: MpesaModalProps) {
-  const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState("");
-
-  // Don't render anything if the modal is closed
-  if (!isOpen) return null;
-
-  const handlePay = async () => {
-    if (!phone) return alert("Enter phone number");
-    setStatus("Sending STK Push...");
-
-    try {
-      const res = await fetch("/api/mpesa/stk-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Use planName and amount directly
-        body: JSON.stringify({ phoneNumber: phone, amount: amount, planName: planName }),
-      });
-      const data = await res.json();
-
-      if (data.ResponseCode === "0") {
-        setStatus("STK Push sent! Check your phone.");
-        if (onPaymentSuccess) onPaymentSuccess(); // Trigger the success logic
-      } else {
-        setStatus("Payment failed. Try again.");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("Payment failed. Try again.");
+  const handleOpen = () => {
+    if (!isSignedIn) {
+      alert("Please sign in to subscribe to a plan.");
+      openSignIn?.({});
+      return;
     }
+    setIsOpen(true);
+  };
+
+  const processPayment = () => {
+    let cleanNumber = phoneNumber.replace(/\D/g, ""); // Remove non-digits
+    
+    // Formatting Logic
+    if (cleanNumber.startsWith("0")) {
+      cleanNumber = "254" + cleanNumber.substring(1);
+    } else if (cleanNumber.startsWith("7") || cleanNumber.startsWith("1")) {
+      cleanNumber = "254" + cleanNumber;
+    }
+
+    if (cleanNumber.length !== 12) {
+      alert("Please enter a valid M-Pesa number (e.g., 0712345678)");
+      return;
+    }
+
+    alert(`Initiating STK Push for ${planName} to ${cleanNumber}...`);
+    // Here you would call your backend API with cleanNumber and amount
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-2xl shadow-xl w-96">
-        <h2 className="text-xl font-bold mb-4">Subscribe: {planName}</h2>
-        <p className="text-gray-600">Amount: KES {amount.toLocaleString()}</p>
-        
-        <input
-          type="tel"
-          placeholder="2547XXXXXXXX"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="mt-4 p-3 border rounded-xl w-full focus:ring-2 focus:ring-green-500 outline-none"
-        />
-        
-        <div className="mt-6 flex flex-col gap-2">
-          <button
-            onClick={handlePay}
-            className="bg-green-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors"
-          >
-            Pay with M-Pesa
-          </button>
-          <button
-            onClick={onClose}
-            className="text-gray-500 px-4 py-2 hover:text-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
+    <>
+      <button onClick={handleOpen} className="w-full bg-blue-700 text-white py-3 rounded-xl font-black text-xs hover:bg-black transition">
+        Select Plan
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100">
+            <h3 className="text-2xl font-black text-slate-900 mb-2">M-Pesa Payment</h3>
+            <p className="text-slate-500 font-medium mb-8">Confirming payment for <span className="text-blue-700 font-bold">{planName}</span></p>
+            
+            <div className="space-y-4 mb-8">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone Number</label>
+              <input 
+                type="text" 
+                placeholder="07XX XXX XXX" 
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-lg font-bold outline-none focus:border-blue-700"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button onClick={() => setIsOpen(false)} className="flex-1 py-4 font-bold text-slate-400">Cancel</button>
+              <button onClick={processPayment} className="flex-1 bg-[#24A148] text-white py-4 rounded-xl font-black shadow-lg">Pay KES {amount}</button>
+            </div>
+          </div>
         </div>
-        {status && <p className="mt-4 text-sm text-center text-blue-600 font-medium">{status}</p>}
-      </div>
-    </div>
+      )}
+    </>
   );
 }

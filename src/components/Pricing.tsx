@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import MpesaModal from "./MpesaModal";
 import Image from "next/image";
@@ -13,39 +12,27 @@ const plans = [
 ];
 
 export default function Pricing() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
-  const handleSubscribe = (plan: any) => {
-    setSelectedPlan(plan);
-    setIsModalOpen(true);
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
       {plans.map((plan) => (
-        <div key={plan.name} className="border border-slate-200 p-8 rounded-3xl text-center bg-white hover:shadow-xl transition-all group">
-          <div className="w-20 h-20 mx-auto mb-4 relative">
-            <Image src={plan.icon} alt={plan.name} fill className="rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+        <div key={plan.name} className="border p-6 rounded-3xl text-center bg-white shadow-sm">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <Image src={plan.icon} alt={plan.name} fill className="rounded-full object-cover" />
           </div>
-          <h3 className="font-black text-sm uppercase tracking-tight text-slate-900">{plan.name}</h3>
-          <p className="text-xl font-black text-blue-700 my-4">KES {plan.price.toLocaleString()}</p>
-          <button
-            onClick={() => handleSubscribe(plan)}
-            className="w-full bg-slate-900 text-white px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition"
+          <h3 className="font-bold text-sm mb-2">{plan.name}</h3>
+          <p className="text-blue-700 font-black mb-4">KES {plan.price.toLocaleString()}</p>
+          <button 
+            onClick={() => setSelectedPlan(plan)}
+            className="w-full bg-blue-700 text-white py-2 rounded-xl text-xs font-bold"
           >
             Subscribe
           </button>
         </div>
       ))}
-
       {selectedPlan && (
-        <MpesaModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          planName={selectedPlan.name}
-          amount={selectedPlan.price}
-        />
+        <MpesaModal isOpen={!!selectedPlan} onClose={() => setSelectedPlan(null)} planName={selectedPlan.name} amount={selectedPlan.price} />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
-import { Check, Search as SearchIcon, ArrowRight } from "lucide-react";
+import { Check, Search as SearchIcon } from "lucide-react";
 import MpesaModal from "../components/MpesaModal";
 
 const pricingPlans = [
@@ -13,16 +13,16 @@ const pricingPlans = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Professional Nav */}
-      <nav className="flex items-center justify-between px-10 py-4 bg-white border-b sticky top-0 z-50">
+    <div className="min-h-screen bg-white text-slate-900 font-sans">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between px-8 py-4 border-b sticky top-0 bg-white/80 backdrop-blur-md z-50">
         <Image src="/dapc-logo.jpg" alt="DAPC Logo" width={140} height={40} priority />
         <div className="flex items-center gap-6">
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="text-sm font-bold text-slate-600 hover:text-blue-700 transition">Login</button>
+              <button className="text-sm font-semibold hover:text-blue-700 transition">Login</button>
             </SignInButton>
-            <button className="bg-blue-700 text-white px-6 py-2.5 rounded-full text-sm font-black hover:bg-black transition">
+            <button className="bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition">
               Get Started
             </button>
           </SignedOut>
@@ -31,65 +31,60 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <header className="py-24 px-6 text-center bg-white border-b">
-        <div className="inline-block bg-blue-50 text-blue-700 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-          Kenya Market Intelligence
-        </div>
-        <h1 className="text-6xl font-black text-slate-900 mb-6 tracking-tight">
-          Is Your Business <span className="text-blue-700">Visible Online?</span>
+      <main className="max-w-6xl mx-auto px-6 py-20 text-center">
+        <h2 className="text-blue-700 font-bold uppercase tracking-widest text-xs mb-4">Kenya Market Intelligence</h2>
+        <h1 className="text-5xl md:text-6xl font-black text-slate-900 leading-tight mb-6">
+          Is Your Business <br/> <span className="text-blue-700">Visible Online?</span>
         </h1>
-        <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-10">
+        <p className="text-lg text-slate-500 max-w-2xl mx-auto mb-10">
           Audit your digital footprint across Nairobi instantly with our AI-driven tracker.
         </p>
         
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto flex gap-2 p-2 bg-white rounded-2xl shadow-xl border border-slate-100">
+        {/* Search Functionality */}
+        <div className="max-w-xl mx-auto flex gap-2 p-2 bg-white rounded-2xl shadow-2xl border border-slate-100 mb-24">
           <input 
             type="text" 
-            placeholder="Search business name..." 
-            className="flex-1 px-6 outline-none text-lg text-slate-800"
+            placeholder="Search your business name..." 
+            className="flex-1 px-4 py-3 outline-none text-slate-800"
           />
-          <button className="bg-blue-700 text-white px-8 py-4 rounded-xl font-black flex items-center gap-2 hover:bg-blue-800 transition">
-            Run Free Audit <ArrowRight size={18} />
+          <button className="bg-blue-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-800 transition">
+            <SearchIcon size={18} /> Run Free Audit
           </button>
         </div>
-      </header>
 
-      {/* Pricing Grid */}
-      <section className="py-24 px-10 max-w-[1400px] mx-auto">
-        <h2 className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-16">Monthly Investment</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+        {/* Pricing Grid */}
+        <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
           {pricingPlans.map((plan, i) => (
-            <div key={i} className="bg-white rounded-[2.5rem] border border-slate-200 p-8 flex flex-col items-center hover:shadow-2xl transition-all group">
-              <div className="relative w-24 h-24 mb-6">
-                <Image src={plan.icon} alt={plan.name} fill className="rounded-full object-cover border-4 border-slate-50 group-hover:border-blue-100 transition-colors" />
+            <div key={i} className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col hover:border-blue-400 hover:shadow-xl transition-all group">
+              <div className="relative w-20 h-20 mx-auto mb-6">
+                <Image 
+                  src={plan.icon} 
+                  alt={plan.name} 
+                  fill 
+                  className="rounded-full object-cover border-2 border-slate-50 group-hover:border-blue-100"
+                />
               </div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">{plan.name}</h3>
-              <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-[10px] font-bold text-slate-400">KES</span>
-                <span className="text-3xl font-black text-blue-700">{plan.price}</span>
-                <span className="text-[10px] font-bold text-slate-400">/mo</span>
-              </div>
-              <ul className="w-full space-y-4 mb-10 flex-1 text-left">
-                {plan.features.map((feature, fIdx) => (
-                  <li key={fIdx} className="flex items-start gap-3 text-[11px] font-bold text-slate-500">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>{feature}</span>
+              <h3 className="font-bold text-slate-900 mb-1 uppercase text-xs tracking-tighter">{plan.name}</h3>
+              <p className="text-2xl font-black text-blue-700 mb-6">
+                KES {plan.price}<span className="text-[10px] text-slate-400 font-normal">/mo</span>
+              </p>
+              <ul className="text-left space-y-3 mb-8 flex-1">
+                {plan.features.map((f, fi) => (
+                  <li key={fi} className="text-[11px] font-bold text-slate-500 flex gap-2">
+                    <Check size={14} className="text-blue-600 shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              <div className="w-full">
-                <MpesaModal amount={plan.price.replace(',', '')} planName={plan.name} />
-              </div>
+              <MpesaModal amount={plan.price.replace(',', '')} planName={plan.name} />
             </div>
           ))}
         </div>
-      </section>
+      </main>
 
       {/* Footer */}
-      <footer className="py-16 bg-white border-t text-center">
-        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6">© 2026 DAPC AFRICA • Market Intelligence</p>
-        <div className="flex justify-center gap-10 text-[10px] font-black uppercase tracking-widest text-slate-400">
+      <footer className="py-12 border-t bg-slate-50 px-8 text-center">
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026 DAPC AFRICA • Market Intelligence</p>
+        <div className="flex justify-center gap-8 mt-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">
           <a href="#" className="hover:text-blue-700 transition">Legal</a>
           <a href="#" className="hover:text-blue-700 transition">Security</a>
           <a href="#" className="hover:text-blue-700 transition">Support</a>

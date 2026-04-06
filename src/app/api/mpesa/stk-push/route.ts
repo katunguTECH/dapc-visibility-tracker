@@ -1,71 +1,93 @@
-// src/app/api/mpesa/stk-push/route.ts
 import { NextResponse } from "next/server";
 import axios from "axios";
+
+// Generate timestamp
+function getTimestamp() {
+  const date = new Date();
+  return (
+    date.getFullYear().toString() +
+    ("0" + (date.getMonth() + 1)).slice(-2) +
+    ("0" + date.getDate()).slice(-2) +
+    ("0" + date.getHours()).slice(-2) +
+    ("0" + date.getMinutes()).slice(-2) +
+    ("0" + date.getSeconds()).slice(-2)
+  );
+}
 
 export async function POST(req: Request) {
   try {
     const { phoneNumber, amount, planName, userId } = await req.json();
 
-    if (!phoneNumber || !amount || !planName || !userId) {
-      return NextResponse.json({ message: "Missing required parameters" }, { status: 400 });
+    if (!phoneNumber || !amount) {
+      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
     }
 
-    // Safaricom M-Pesa API credentials from env
-    const mpesaUrl = process.env.MPESA_STK_PUSH_URL!;
     const consumerKey = process.env.MPESA_CONSUMER_KEY!;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
     const shortcode = process.env.MPESA_SHORTCODE!;
     const passkey = process.env.MPESA_PASSKEY!;
     const callbackUrl = process.env.MPESA_CALLBACK_URL!;
 
-    // Generate timestamp
-    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    console.log("Using shortcode:", shortcode);
+    console.log("Callback URL:", callbackUrl);
 
-    // Generate password (base64 of shortcode+passkey+timestamp)
+    // 🔐 Generate auth token (PRODUCTION)
+    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
+
+    const tokenRes = await axios.get(
+      "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    const token = tokenRes.data.access_token;
+
+    // ⏱ Timestamp + Password
+    const timestamp = getTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString("base64");
 
-    // Prepare STK Push request body
-    const stkBody = {
-      BusinessShortCode: shortcode,
-      Password: password,
-      Timestamp: timestamp,
-      TransactionType: "CustomerPayBillOnline",
-      Amount: amount,
-      PartyA: phoneNumber,
-      PartyB: shortcode,
-      PhoneNumber: phoneNumber,
-      CallBackURL: callbackUrl,
-      AccountReference: planName,
-      TransactionDesc: `Payment for ${planName}`,
-    };
+    // 🚀 STK PUSH (PRODUCTION)
+    const stkRes = await axios.post(
+      "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      {
+        BusinessShortCode: shortcode,
+        Password: password,
+        Timestamp: timestamp,
+        TransactionType: "CustomerPayBillOnline",
+        Amount: Number(amount),
+        PartyA: phoneNumber,
+        PartyB: shortcode,
+        PhoneNumber: phoneNumber,
+        CallBackURL: callbackUrl,
+        AccountReference: planName || "DAPC",
+        TransactionDesc: "DAPC Payment",
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    // Get OAuth token
-    const tokenResponse = await axios.get(`${process.env.MPESA_TOKEN_URL}`, {
-      auth: { username: consumerKey, password: consumerSecret },
+    console.log("STK RESPONSE:", stkRes.data);
+
+    return NextResponse.json({
+      success: true,
+      response: stkRes.data,
     });
-    const token = tokenResponse.data.access_token;
-
-    // Send STK Push
-    const response = await axios.post(mpesaUrl, stkBody, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    console.log("STK Push Response:", response.data);
-
-    if (response.data.ResponseCode === "0") {
-      return NextResponse.json({ message: "STK Push sent. Check your phone.", data: response.data });
-    } else {
-      return NextResponse.json({
-        message: `STK Push failed: ${response.data.ResponseDescription}`,
-        data: response.data,
-      }, { status: 400 });
-    }
 
   } catch (err: any) {
-    console.error("STK Push Error:", err.response?.data || err.message || err);
-    return NextResponse.json({
-      message: "Payment initiation failed.",
-      error: err.response?.data || err.message,
-    }, { status: 500 });
+    console.error("STK ERROR:", err.response?.data || err.message);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: err.response?.data || err.message,
+      },
+      { status: 500 }
+    );
   }
 }

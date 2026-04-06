@@ -1,47 +1,47 @@
-// src/app/api/mpesa/stk-callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-// This endpoint is called by Safaricom when the STK Push payment completes
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
 
-    // M-Pesa callback contains the result of the transaction
+    console.log("RAW CALLBACK:", JSON.stringify(data, null, 2));
+
     const result = data.Body?.stkCallback;
 
     if (!result) {
-      console.error("Invalid callback payload", data);
-      return NextResponse.json({ message: "Invalid callback payload" }, { status: 400 });
+      return NextResponse.json({ message: "Invalid callback" }, { status: 400 });
     }
 
-    const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = result;
+    const {
+      MerchantRequestID,
+      CheckoutRequestID,
+      ResultCode,
+      ResultDesc,
+      CallbackMetadata,
+    } = result;
 
-    console.log("STK Callback Received:", result);
+    console.log("STK CALLBACK:", result);
 
-    // ResultCode 0 means successful payment
     if (ResultCode === 0) {
-      // Extract payment info from CallbackMetadata
       const items = CallbackMetadata?.Item || [];
-      const amountItem = items.find((i: any) => i.Name === "Amount");
-      const mpesaReceiptItem = items.find((i: any) => i.Name === "MpesaReceiptNumber");
-      const phoneItem = items.find((i: any) => i.Name === "PhoneNumber");
 
-      const amount = amountItem?.Value;
-      const receipt = mpesaReceiptItem?.Value;
-      const phoneNumber = phoneItem?.Value;
+      const amount = items.find((i: any) => i.Name === "Amount")?.Value;
+      const receipt = items.find((i: any) => i.Name === "MpesaReceiptNumber")?.Value;
+      const phone = items.find((i: any) => i.Name === "PhoneNumber")?.Value;
 
-      console.log(`Payment successful! Phone: ${phoneNumber}, Amount: ${amount}, Receipt: ${receipt}`);
+      console.log("✅ PAYMENT SUCCESS:");
+      console.log("Phone:", phone);
+      console.log("Amount:", amount);
+      console.log("Receipt:", receipt);
 
-      // TODO: Update your database to mark the subscription as paid
-      // e.g., update user where phoneNumber = phoneNumber with amount, receipt, plan info
-
-      return NextResponse.json({ message: "Payment confirmed" });
+      return NextResponse.json({ success: true });
     } else {
-      console.warn(`Payment failed: ${ResultDesc} (ResultCode: ${ResultCode})`);
-      return NextResponse.json({ message: `Payment failed: ${ResultDesc}` });
+      console.warn("❌ PAYMENT FAILED:", ResultDesc);
+      return NextResponse.json({ success: false, message: ResultDesc });
     }
-  } catch (err: any) {
-    console.error("STK Callback Error:", err);
-    return NextResponse.json({ message: "Callback processing failed" }, { status: 500 });
+
+  } catch (err) {
+    console.error("CALLBACK ERROR:", err);
+    return NextResponse.json({ message: "Callback failed" }, { status: 500 });
   }
 }

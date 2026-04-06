@@ -1,90 +1,43 @@
-// src/app/api/mpesa/stk-push/route.ts
-import { NextResponse } from "next/server";
-import axios from "axios";
+const processPayment = async () => {
+  let cleanNumber = phoneNumber.replace(/\D/g, "");
 
-function getTimestamp() {
-  const date = new Date();
-  return (
-    date.getFullYear().toString() +
-    ("0" + (date.getMonth() + 1)).slice(-2) +
-    ("0" + date.getDate()).slice(-2) +
-    ("0" + date.getHours()).slice(-2) +
-    ("0" + date.getMinutes()).slice(-2) +
-    ("0" + date.getSeconds()).slice(-2)
-  );
-}
+  if (cleanNumber.startsWith("0")) {
+    cleanNumber = "254" + cleanNumber.substring(1);
+  } else if (cleanNumber.startsWith("7") || cleanNumber.startsWith("1")) {
+    cleanNumber = "254" + cleanNumber;
+  }
 
-export async function POST(req: Request) {
+  if (cleanNumber.length !== 12) {
+    alert("Enter valid number e.g. 0712345678");
+    return;
+  }
+
   try {
-    const { phoneNumber, amount, planName, userId } = await req.json();
-
-    if (!phoneNumber || !amount) {
-      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
-    }
-
-    const consumerKey = process.env.MPESA_CONSUMER_KEY!;
-    const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
-    const shortcode = process.env.MPESA_SHORTCODE!;
-    const passkey = process.env.MPESA_PASSKEY!;
-    const callbackUrl = process.env.MPESA_CALLBACK_URL!;
-
-    // 🔐 Get token
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-
-    const tokenRes = await axios.get(
-      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-        },
-      }
-    );
-
-    const token = tokenRes.data.access_token;
-
-    // ⏱ Generate password
-    const timestamp = getTimestamp();
-    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString("base64");
-
-    // 🚀 STK push request
-    const stkRes = await axios.post(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-      {
-        BusinessShortCode: shortcode,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: Number(amount),
-        PartyA: phoneNumber,
-        PartyB: shortcode,
-        PhoneNumber: phoneNumber,
-        CallBackURL: callbackUrl,
-        AccountReference: planName || "DAPC",
-        TransactionDesc: "DAPC Payment",
+    const res = await fetch("/api/mpesa/stk-push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    console.log("STK SUCCESS:", stkRes.data);
-
-    return NextResponse.json({
-      success: true,
-      data: stkRes.data,
+      body: JSON.stringify({
+        phoneNumber: cleanNumber,
+        amount: amount,
+        planName: planName,
+        userId: "user", // replace later with Clerk ID
+      }),
     });
 
-  } catch (err: any) {
-    console.error("STK ERROR:", err.response?.data || err.message);
+    const data = await res.json();
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: err.response?.data || err.message,
-      },
-      { status: 500 }
-    );
+    console.log("STK RESPONSE:", data);
+
+    if (data.success) {
+      alert("STK Push sent. Check your phone.");
+      setIsOpen(false);
+    } else {
+      alert("Payment failed");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error sending payment");
   }
-}
+};

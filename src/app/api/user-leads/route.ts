@@ -1,21 +1,13 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // ✅ FIXED IMPORT
+// src/app/api/user-leads/route.ts
+import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const body = await req.json();
-
-    const lead = await prisma.lead.create({
-      data: {
-        business: body.business,
-        location: body.location,
-        score: body.score,
-      },
-    });
-
-    return NextResponse.json(lead);
-  } catch (error) {
-    console.error("SAVE LEAD ERROR:", error);
-    return NextResponse.json({ error: "Failed to save lead" }, { status: 500 });
+    const users = await prisma.user.findMany();
+    return NextResponse.json(users);
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Failed to fetch users' });
   }
 }

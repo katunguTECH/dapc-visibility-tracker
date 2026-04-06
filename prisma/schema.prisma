@@ -1,55 +1,50 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider  = "postgresql"
-  // url uses connection pooling
-  url       = env("POSTGRES_PRISMA_URL")
-  // directUrl used for migrations
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  url       = env("PRISMA_DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  clerkId       String    @unique
-  email         String    @unique
-  name          String?
-  hasPaid       Boolean   @default(false)
-  plan          String    @default("Free") // Starter, Local Boost, Growth, etc.
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  searches      Search[]
+  id        String    @id @default(cuid())
+  clerkId   String    @unique
+  email     String    @unique
+  name      String?
+  hasPaid   Boolean   @default(false)
+  plan      String    @default("Free")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  searches  Search[]
 }
 
 model Business {
-  id            String    @id @default(cuid())
-  name          String
-  location      String
-  category      String?
-  visibilityScore Int     @default(0)
-  lastAudit     DateTime  @default(now())
-  searches      Search[]
+  id             String    @id @default(cuid())
+  name           String
+  location       String
+  category       String?
+  visibilityScore Int      @default(0)
+  lastAudit      DateTime  @default(now())
+  searches       Search[]
 }
 
 model Search {
-  id            String    @id @default(cuid())
-  query         String
-  timestamp     DateTime  @default(now())
-  userId        String?
-  user          User?     @relation(fields: [userId], references: [id])
-  businessId    String?
-  business      Business? @relation(fields: [businessId], references: [id])
+  id         String    @id @default(cuid())
+  query      String
+  timestamp  DateTime  @default(now())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id])
 }
 
 model Payment {
-  id            String    @id @default(cuid())
-  amount        Float
-  phoneNumber   String
-  status        String    @default("PENDING") // PENDING, SUCCESS, FAILED
-  checkoutId    String    @unique // M-Pesa CheckoutRequestID
-  createdAt     DateTime  @default(now())
+  id          String   @id @default(cuid())
+  amount      Float
+  phoneNumber String
+  status      String   @default("PENDING")
+  checkoutId  String   @unique
+  createdAt   DateTime @default(now())
 }

@@ -1,10 +1,20 @@
+// src/app/api/mpesa/stk-push/route.ts
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // 1️⃣ Parse request body
     const body = await req.json();
     const { phone, amount } = body;
 
+    if (!phone || !amount) {
+      return NextResponse.json(
+        { success: false, message: "Phone number or amount missing" },
+        { status: 400 }
+      );
+    }
+
+    // 2️⃣ Load environment variables
     const {
       MPESA_CONSUMER_KEY: key,
       MPESA_CONSUMER_SECRET: secret,
@@ -14,48 +24,54 @@ export async function POST(req: Request) {
     } = process.env;
 
     if (!key || !secret || !shortcode || !passkey || !callback) {
-      console.error("Missing M-Pesa Environment Variables");
+      console.error("Missing M-Pesa environment variables", {
+        key,
+        secret,
+        shortcode,
+        passkey,
+        callback,
+      });
       return NextResponse.json(
         { success: false, message: "Server configuration error" },
         { status: 500 }
       );
     }
 
-    // Format phone
-    const formattedPhone = phone.startsWith("0") ? "254" + phone.slice(1) : phone;
+    console.log("Received STK request:", { phone, amount });
 
-    // Get OAuth token
+    // 3️⃣ Format phone number (0712345678 → 254712345678)
+    const formattedPhone = phone.startsWith("0")
+      ? "254" + phone.slice(1)
+      : phone;
+
+    // 4️⃣ Generate OAuth token
     const auth = Buffer.from(`${key}:${secret}`).toString("base64");
+
     const tokenRes = await fetch(
       "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
       { headers: { Authorization: `Basic ${auth}` } }
     );
 
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) {
-      console.error("Auth failed:", tokenData);
+    console.log("OAuth response:", tokenData);
+
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
       return NextResponse.json(
         { success: false, message: "Failed to get access token" },
         { status: 500 }
       );
     }
 
-    const accessToken = tokenData.access_token;
+    // 5️⃣ Prepare STK Push request
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-:TZ.]/g, "")
+      .slice(0, 14);
+    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString(
+      "base64"
+    );
 
-    // Generate timestamp YYYYMMDDHHMMSS
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    const timestamp =
-      now.getFullYear().toString() +
-      pad(now.getMonth() + 1) +
-      pad(now.getDate()) +
-      pad(now.getHours()) +
-      pad(now.getMinutes()) +
-      pad(now.getSeconds());
-
-    const password = Buffer.from(shortcode + passkey + timestamp).toString("base64");
-
-    // Send STK Push
     const stkRes = await fetch(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
@@ -81,18 +97,21 @@ export async function POST(req: Request) {
     );
 
     const stkData = await stkRes.json();
-    console.log("STK Push response:", stkData);
+    console.log("STK Push Response:", stkData);
 
-    if (stkData.ResponseCode !== "0") {
+    if (stkData.ResponseCode && stkData.ResponseCode !== "0") {
       return NextResponse.json(
-        { success: false, message: stkData.ResponseDescription || "STK Push failed" },
+        { success: false, message: stkData.ResponseDescription || "STK failed" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true, data: stkData });
-  } catch (error: any) {
-    console.error("Internal Error:", error.message);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  } catch (err: any) {
+    console.error("Internal STK error:", err);
+    return NextResponse.json(
+      { success: false, message: err.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }

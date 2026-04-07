@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { phone, amount } = body;
+    const { phone, amount } = await req.json();
 
     if (!phone || !amount) {
       return NextResponse.json(
@@ -12,109 +11,112 @@ export async function POST(req: Request) {
       );
     }
 
-    const env = process.env;
+    const {
+      MPESA_CONSUMER_KEY,
+      MPESA_CONSUMER_SECRET,
+      MPESA_SHORTCODE,
+      MPESA_PASSKEY,
+      MPESA_CALLBACK_URL,
+    } = process.env;
 
-    if (
-      !env.MPESA_CONSUMER_KEY ||
-      !env.MPESA_CONSUMER_SECRET ||
-      !env.MPESA_SHORTCODE ||
-      !env.MPESA_PASSKEY ||
-      !env.MPESA_CALLBACK_URL
-    ) {
-      console.error("ENV ERROR:", env);
+    if (!MPESA_CONSUMER_KEY || !MPESA_CONSUMER_SECRET) {
       return NextResponse.json(
-        { success: false, message: "Missing env variables" },
+        { success: false, message: "Missing env vars" },
         { status: 500 }
       );
     }
 
-    const phoneFormatted = phone.startsWith("0")
+    // Format phone (0712 → 254712)
+    const formattedPhone = phone.startsWith("0")
       ? "254" + phone.slice(1)
       : phone;
 
-    // 🔐 AUTH
+    // OAuth
     const auth = Buffer.from(
-      `${env.MPESA_CONSUMER_KEY}:${env.MPESA_CONSUMER_SECRET}`
+      `${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`
     ).toString("base64");
 
     const tokenRes = await fetch(
       "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
       {
-        headers: { Authorization: `Basic ${auth}` },
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
       }
     );
 
     const tokenText = await tokenRes.text();
 
-    if (!tokenRes.ok) {
-      console.error("TOKEN ERROR:", tokenText);
+    let accessToken;
+    try {
+      accessToken = JSON.parse(tokenText).access_token;
+    } catch {
+      console.error("Token parse error:", tokenText);
       return NextResponse.json(
-        { success: false, message: tokenText },
+        { success: false, message: "Invalid token response" },
         { status: 500 }
       );
     }
 
-    const token = JSON.parse(tokenText)?.access_token;
-
-    if (!token) {
+    if (!accessToken) {
       return NextResponse.json(
         { success: false, message: "No access token" },
         { status: 500 }
       );
     }
 
-    // 📦 STK
+    // Timestamp + password
     const timestamp = new Date()
       .toISOString()
       .replace(/[-:TZ.]/g, "")
       .slice(0, 14);
 
     const password = Buffer.from(
-      `${env.MPESA_SHORTCODE}${env.MPESA_PASSKEY}${timestamp}`
+      `${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`
     ).toString("base64");
 
+    // STK Push
     const stkRes = await fetch(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          BusinessShortCode: env.MPESA_SHORTCODE,
+          BusinessShortCode: MPESA_SHORTCODE,
           Password: password,
           Timestamp: timestamp,
           TransactionType: "CustomerPayBillOnline",
           Amount: Number(amount),
-          PartyA: phoneFormatted,
-          PartyB: env.MPESA_SHORTCODE,
-          PhoneNumber: phoneFormatted,
-          CallBackURL: env.MPESA_CALLBACK_URL,
+          PartyA: formattedPhone,
+          PartyB: MPESA_SHORTCODE,
+          PhoneNumber: formattedPhone,
+          CallBackURL: MPESA_CALLBACK_URL,
           AccountReference: "DAPC",
-          TransactionDesc: "DAPC Payment",
+          TransactionDesc: "Payment",
         }),
       }
     );
 
     const stkText = await stkRes.text();
 
-    if (!stkRes.ok) {
-      console.error("STK ERROR:", stkText);
+    try {
+      const data = JSON.parse(stkText);
+      return NextResponse.json({ success: true, data });
+    } catch {
+      console.error("STK parse error:", stkText);
       return NextResponse.json(
-        { success: false, message: stkText },
+        { success: false, message: "Invalid STK response" },
         { status: 500 }
       );
     }
 
-    const data = JSON.parse(stkText);
-
-    return NextResponse.json({ success: true, data });
-
-  } catch (err: any) {
-    console.error("FATAL:", err);
+  } catch (error: any) {
+    console.error("Server error:", error);
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }

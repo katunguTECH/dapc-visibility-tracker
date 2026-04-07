@@ -1,19 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isPublicRoute = createRouteMatcher([
-  "/",                        // homepage
-  "/api/mpesa/stk-push",     // ✅ allow payments
-  "/api/mpesa/callback",     // (optional but recommended)
+// Define protected routes
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/api/protected(.*)",
 ]);
 
 export default clerkMiddleware((auth, req) => {
-  if (!isPublicRoute(req)) {
+  if (isProtectedRoute(req)) {
     auth().protect();
-  }
-});
-
-export const config = {
-  matcher: [
-    "/((?!_next|.*\\..*).*)",
-  ],
-};

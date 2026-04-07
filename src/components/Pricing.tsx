@@ -3,10 +3,6 @@
 import { useState } from "react";
 import { useUser, useSignIn } from "@clerk/nextjs";
 
-interface PricingProps {
-  isSignedIn: boolean;
-}
-
 const plans = [
   { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
   { name: "Local Boost", price: 3999, icon: "/icons/boost-buffalo.jpg" },
@@ -15,60 +11,73 @@ const plans = [
   { name: "Super Active", price: 10000, icon: "/icons/superactivevisibility-lion.jpg" },
 ];
 
-export default function Pricing({ isSignedIn }: PricingProps) {
+export default function Pricing() {
+  const { isSignedIn } = useUser();
   const { openSignIn } = useSignIn();
-  const { user } = useUser();
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = async (planName: string, planPrice: number) => {
+  const handleSubscribe = async (plan: any) => {
+    // 🔐 STEP 1: FORCE SIGN IN
     if (!isSignedIn) {
       openSignIn?.();
       return;
     }
 
-    setLoadingPlan(planName);
+    // 💰 STEP 2: TRIGGER MPESA (independent)
+    setLoading(plan.name);
 
     try {
       const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          phone: user?.phoneNumber || "",
-          amount: planPrice,
-        }),
+          phone: "254712345678", // ⚠️ replace with real input later
+          amount: plan.price
+        })
       });
 
       const data = await res.json();
-      if (data.success) alert(`STK Push sent for ${planName}!`);
-      else alert("Failed to send payment request. Try again.");
+
+      if (data.success) {
+        alert("STK sent to your phone!");
+      } else {
+        alert("Payment failed");
+      }
+
     } catch (err) {
       console.error(err);
-      alert("Error processing payment.");
+      alert("Error sending STK");
     } finally {
-      setLoadingPlan(null);
+      setLoading(null);
     }
   };
 
   return (
-    <section className="bg-white py-32 px-10 border-t border-slate-100">
-      <div className="max-w-7xl mx-auto text-center mb-20">
-        <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter">Choose Your Growth Tier</h2>
-        <p className="text-slate-500 font-medium">Select a plan to fix the gaps found in your audit.</p>
-      </div>
+    <section className="py-20 px-6 bg-white">
+      <h2 className="text-3xl font-black text-center mb-10">
+        Choose Your Growth Tier
+      </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid md:grid-cols-5 gap-6 max-w-7xl mx-auto">
         {plans.map((plan) => (
-          <div key={plan.name} className="bg-white rounded-[2rem] p-6 border border-slate-200 flex flex-col items-center hover:border-blue-700 transition-all">
-            <img src={plan.icon} alt={plan.name} className="w-16 h-16 mb-6 rounded-full object-cover border-2 border-slate-50 shadow-sm" />
-            <h3 className="text-[10px] font-black text-slate-900 text-center uppercase mb-4 tracking-tighter">{plan.name}</h3>
-            <p className="text-xl font-black text-blue-700 mb-10">KES {plan.price}</p>
-            
+          <div key={plan.name} className="p-6 border rounded-2xl text-center">
+            <img src={plan.icon} className="w-16 h-16 mx-auto mb-4 rounded-full" />
+            <h3 className="font-bold mb-2">{plan.name}</h3>
+            <p className="text-blue-700 font-black mb-6">
+              KES {plan.price.toLocaleString()}
+            </p>
+
             <button
-              onClick={() => handleSubscribe(plan.name, plan.price)}
-              disabled={loadingPlan === plan.name}
-              className="bg-blue-700 text-white px-6 py-3 rounded-xl font-black hover:bg-black transition disabled:opacity-50"
+              onClick={() => handleSubscribe(plan)}
+              className="bg-blue-700 text-white px-4 py-2 rounded-xl w-full"
             >
-              {loadingPlan === plan.name ? "Processing..." : "Sign In to Subscribe"}
+              {loading === plan.name
+                ? "Processing..."
+                : isSignedIn
+                ? "Subscribe"
+                : "Sign In to Subscribe"}
             </button>
           </div>
         ))}

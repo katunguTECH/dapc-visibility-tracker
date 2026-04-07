@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import axios from "axios";
 
-// Generate timestamp
+// Helper to generate Safaricom-compatible timestamp
 function getTimestamp() {
   const date = new Date();
   return (
@@ -16,77 +15,89 @@ function getTimestamp() {
 
 export async function POST(req: Request) {
   try {
-    const { phoneNumber, amount, planName, userId } = await req.json();
+    // 1. Parse request body safely
+    const body = await req.json();
+    const { phoneNumber, amount, planName } = body;
 
     if (!phoneNumber || !amount) {
       return NextResponse.json({ message: "Missing fields" }, { status: 400 });
     }
 
-    const consumerKey = process.env.MPESA_CONSUMER_KEY!;
-    const consumerSecret = process.env.MPESA_CONSUMER_SECRET!;
-    const shortcode = process.env.MPESA_SHORTCODE!;
-    const passkey = process.env.MPESA_PASSKEY!;
-    const callbackUrl = process.env.MPESA_CALLBACK_URL!;
+    // 2. Load and validate Environment Variables
+    const consumerKey = process.env.MPESA_CONSUMER_KEY;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+    const shortcode = process.env.MPESA_SHORTCODE;
+    const passkey = process.env.MPESA_PASSKEY;
+    const callbackUrl = process.env.MPESA_CALLBACK_URL;
 
-    console.log("Using shortcode:", shortcode);
-    console.log("Callback URL:", callbackUrl);
+    if (!consumerKey || !consumerSecret || !shortcode || !passkey) {
+      console.error("CRITICAL: Missing Mpesa Environment Variables");
+      return NextResponse.json({ message: "Server configuration error" }, { status: 500 });
+    }
 
-    // 🔐 Generate auth token (PRODUCTION)
+    // 3. Generate OAuth Token
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
 
-    const tokenRes = await axios.get(
+    // Using native fetch to avoid Axios header/get issues in Vercel
+    const tokenRes = await fetch(
       "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
       {
+        method: "GET",
         headers: {
           Authorization: `Basic ${auth}`,
         },
       }
     );
 
-    const token = tokenRes.data.access_token;
+    const tokenData = await tokenRes.json();
+    const token = tokenData.access_token;
 
-    // ⏱ Timestamp + Password
+    if (!token) {
+      throw new Error("Failed to generate M-Pesa access token");
+    }
+
+    // 4. Generate Password and Timestamp
     const timestamp = getTimestamp();
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString("base64");
 
-    // 🚀 STK PUSH (PRODUCTION)
-    const stkRes = await axios.post(
+    // 5. Trigger STK Push
+    const stkRes = await fetch(
       "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
       {
-        BusinessShortCode: shortcode,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
-        Amount: Number(amount),
-        PartyA: phoneNumber,
-        PartyB: shortcode,
-        PhoneNumber: phoneNumber,
-        CallBackURL: callbackUrl,
-        AccountReference: planName || "DAPC",
-        TransactionDesc: "DAPC Payment",
-      },
-      {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          BusinessShortCode: shortcode,
+          Password: password,
+          Timestamp: timestamp,
+          TransactionType: "CustomerPayBillOnline",
+          Amount: Math.round(Number(amount)), // Ensure it's an integer
+          PartyA: phoneNumber,
+          PartyB: shortcode,
+          PhoneNumber: phoneNumber,
+          CallBackURL: callbackUrl,
+          AccountReference: (planName || "DAPC").substring(0, 12), // Safaricom limit is 12 chars
+          TransactionDesc: "DAPC Payment",
+        }),
       }
     );
 
-    console.log("STK RESPONSE:", stkRes.data);
+    const stkData = await stkRes.json();
 
-    return NextResponse.json({
-      success: true,
-      response: stkRes.data,
-    });
+    if (stkRes.ok) {
+      return NextResponse.json({ success: true, response: stkData });
+    } else {
+      console.error("Safaricom API Error:", stkData);
+      return NextResponse.json({ success: false, error: stkData }, { status: stkRes.status });
+    }
 
   } catch (err: any) {
-    console.error("STK ERROR:", err.response?.data || err.message);
-
+    console.error("STK PUSH RUNTIME ERROR:", err.message);
     return NextResponse.json(
-      {
-        success: false,
-        error: err.response?.data || err.message,
-      },
+      { success: false, error: err.message },
       { status: 500 }
     );
   }

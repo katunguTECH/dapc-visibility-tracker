@@ -1,9 +1,9 @@
-// src/components/Pricing.tsx
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import MpesaModal from "./MpesaModal";
+import Image from "next/image";
+import { useUser, useSignIn } from "@clerk/nextjs";
 
 const plans = [
   { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
@@ -14,38 +14,52 @@ const plans = [
 ];
 
 export default function Pricing() {
-  const [selectedPlan, setSelectedPlan] = useState<null | typeof plans[0]>(null);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useSignIn();
 
   return (
-    <section className="py-10 px-4 bg-white">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+    <section className="py-10 px-4">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
         {plans.map((plan) => (
-          <div
-            key={plan.name}
+          <div 
+            key={plan.name} 
             className="flex flex-col border p-6 rounded-3xl text-center bg-white shadow-sm hover:shadow-md transition-shadow"
           >
-            {/* Animal Icon */}
-            <div className="relative w-24 h-24 mx-auto mb-4 border-2 border-blue-50 rounded-full overflow-hidden">
-              <Image
-                src={plan.icon}
-                alt={plan.name}
-                fill
-                className="object-cover"
+            
+            {/* ICON */}
+            <div className="relative w-20 h-20 mx-auto mb-4 border-2 border-blue-50">
+              <Image 
+                src={plan.icon} 
+                alt={plan.name} 
+                fill 
+                className="rounded-full object-cover" 
               />
             </div>
 
-            {/* Plan Name & Price */}
-            <h3 className="font-bold text-sm mb-2 text-gray-800 h-10 flex items-center justify-center">
+            {/* TITLE */}
+            <h3 className="font-bold text-sm mb-2 text-gray-800">
               {plan.name}
             </h3>
+            
+            {/* PRICE */}
             <p className="text-blue-700 font-black mb-6 text-lg">
               KES {plan.price.toLocaleString()}
             </p>
 
-            {/* Subscribe Button */}
-            <button
-              onClick={() => setSelectedPlan(plan)}
-              className="mt-auto w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl text-xs font-bold transition-colors"
+            {/* BUTTON */}
+            <button 
+              onClick={() => {
+                if (!isSignedIn) {
+                  openSignIn?.();   // 🔐 force login
+                  return;
+                }
+
+                setSelectedPlan(plan); // ✅ open modal ONLY if signed in
+              }}
+              className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl text-xs font-bold transition-colors"
             >
               Subscribe with M-Pesa
             </button>
@@ -53,13 +67,13 @@ export default function Pricing() {
         ))}
       </div>
 
-      {/* M-Pesa Modal */}
+      {/* MODAL */}
       {selectedPlan && (
-        <MpesaModal
-          isOpen={!!selectedPlan}
-          onClose={() => setSelectedPlan(null)}
-          planName={selectedPlan.name}
-          amount={selectedPlan.price}
+        <MpesaModal 
+          isOpen={true}
+          onClose={() => setSelectedPlan(null)} 
+          planName={selectedPlan.name} 
+          amount={selectedPlan.price} 
         />
       )}
     </section>

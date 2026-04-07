@@ -1,10 +1,8 @@
-// src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { UserButton, useSignIn, useUser, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Search, ArrowRight, MapPin, Share2, BarChart3 } from "lucide-react";
-
 import Pricing from "../components/Pricing";
 
 /* =========================
@@ -14,11 +12,11 @@ export default function LandingPage() {
   const [businessName, setBusinessName] = useState("");
   const [searchCount, setSearchCount] = useState(0);
   const [isAuditing, setIsAuditing] = useState(false);
-  const [report, setReport] = useState<any>(null);
   const { openSignIn } = useSignIn();
   const { isSignedIn } = useUser();
+  const [report, setReport] = useState<any>(null);
 
-  /* Load search count from localStorage */
+  /* Load search count */
   useEffect(() => {
     const saved = localStorage.getItem("dapc_search_count");
     if (saved) setSearchCount(parseInt(saved));
@@ -26,13 +24,13 @@ export default function LandingPage() {
 
   /* =========================
      AUDIT FUNCTION
-  ========================== */
+  ========================= */
   const handleAudit = async () => {
     if (!businessName.trim()) return;
 
     if (searchCount >= 1 && !isSignedIn) {
       alert("You've used your free audit! Please sign in.");
-      openSignIn?.({});
+      openSignIn?.();
       return;
     }
 
@@ -40,8 +38,11 @@ export default function LandingPage() {
 
     try {
       const res = await fetch(
-        `/api/visibility?business=${encodeURIComponent(businessName)}&location=Nairobi&t=${Date.now()}`
+        `/api/visibility?business=${encodeURIComponent(
+          businessName
+        )}&location=Nairobi&t=${Date.now()}`
       );
+
       const data = await res.json();
       setReport(data.audit);
 
@@ -59,8 +60,8 @@ export default function LandingPage() {
   };
 
   /* =========================
-     RENDER
-  ========================== */
+     UI
+  ========================= */
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
 
@@ -70,8 +71,13 @@ export default function LandingPage() {
 
         <div className="flex gap-4">
           <SignedOut>
-            <button onClick={() => openSignIn?.()}>Login</button>
-            <button className="bg-blue-700 text-white px-4 py-2 rounded">
+            <button onClick={() => openSignIn?.()} className="font-semibold">
+              Login
+            </button>
+            <button
+              onClick={() => openSignIn?.()}
+              className="bg-blue-700 text-white px-4 py-2 rounded"
+            >
               Get Started
             </button>
           </SignedOut>
@@ -92,7 +98,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* SEARCH BAR */}
+      {/* SEARCH */}
       <div className="flex gap-3 max-w-2xl mx-auto mb-12 bg-white p-3 rounded-xl shadow">
         <input
           className="flex-1 p-3 outline-none"
@@ -105,13 +111,13 @@ export default function LandingPage() {
         <button
           onClick={handleAudit}
           disabled={isAuditing}
-          className="bg-blue-700 text-white px-6 rounded"
+          className="bg-blue-700 text-white px-6 rounded flex items-center gap-2"
         >
-          {isAuditing ? "Analyzing..." : "Run Audit"}
+          {isAuditing ? "Analyzing..." : "Run Audit"} <ArrowRight size={16} />
         </button>
       </div>
 
-      {/* AUDIT RESULTS */}
+      {/* RESULTS */}
       {report ? (
         <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-6 mb-20">
 
@@ -121,15 +127,15 @@ export default function LandingPage() {
             <h2 className="text-4xl font-black">{report.score}/100</h2>
           </div>
 
-          {/* MAP STATUS */}
+          {/* MAPS */}
           <div className="bg-white p-6 rounded-2xl">
-            <MapPin />
-            <p>{report.googleMaps?.status}</p>
+            <MapPin className="mb-2" />
+            <p>{report.googleMaps?.status || "No data"}</p>
           </div>
 
-          {/* SOCIAL STATUS */}
+          {/* SOCIAL */}
           <div className="bg-white p-6 rounded-2xl">
-            <Share2 />
+            <Share2 className="mb-2" />
             <p>Social Presence</p>
           </div>
 
@@ -142,7 +148,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* PRICING SECTION */}
+      {/* ✅ PRICING COMPONENT (CLEAN + WORKING) */}
       <Pricing />
 
     </div>

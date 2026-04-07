@@ -1,9 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isPublicRoute = createRouteMatcher([
-  "/",
-  "/api/mpesa/stk-push",   // ✅ VERY IMPORTANT
-  "/api/mpesa/callback",   // (optional but recommended)
+  "/",                        // homepage
+  "/api/mpesa/stk-push",     // ✅ allow payments
+  "/api/mpesa/callback",     // (optional but recommended)
 ]);
 
 export default clerkMiddleware((auth, req) => {

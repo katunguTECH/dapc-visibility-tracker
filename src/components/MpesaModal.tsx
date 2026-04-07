@@ -1,92 +1,114 @@
-"use client";
+import { NextResponse } from "next/server";
 
-import { useState } from "react";
+export async function POST(req: Request) {
+  try {
+    console.log("MPESA STK PUSH HIT");
 
-export default function MpesaModal({
-  amount,
-  planName,
-}: {
-  amount: string;
-  planName: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+    // ✅ CORRECT way to read body
+    const body = await req.json();
 
-  const handlePayment = async () => {
-    if (!phone) {
-      alert("Enter phone number");
-      return;
+    const { phone, amount } = body;
+
+    if (!phone || !amount) {
+      return NextResponse.json(
+        { success: false, message: "Missing phone or amount" },
+        { status: 400 }
+      );
     }
 
-    setLoading(true);
+    /* =========================
+       FORMAT PHONE NUMBER
+    ========================= */
+    const formattedPhone = phone.startsWith("0")
+      ? "254" + phone.substring(1)
+      : phone;
 
-    try {
-      const res = await fetch("/api/mpesa/stk-push", {
-        method: "POST",
-        body: JSON.stringify({
-          phone,
-          amount,
-        }),
-      });
+    /* =========================
+       GET ACCESS TOKEN
+    ========================= */
+    const auth = Buffer.from(
+      `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
+    ).toString("base64");
 
-      const data = await res.json();
-
-      if (data.success) {
-        alert("📲 STK Push sent! Check your phone.");
-        setOpen(false);
-      } else {
-        alert("Payment failed");
+    const tokenRes = await fetch(
+      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error sending payment");
-    } finally {
-      setLoading(false);
+    );
+
+    const tokenData = await tokenRes.json();
+
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      console.error("TOKEN ERROR:", tokenData);
+      return NextResponse.json(
+        { success: false, message: "Failed to get access token" },
+        { status: 500 }
+      );
     }
-  };
 
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="bg-green-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-green-700"
-      >
-        Pay via M-Pesa
-      </button>
+    /* =========================
+       GENERATE PASSWORD
+    ========================= */
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-:TZ.]/g, "")
+      .slice(0, 14);
 
-      {open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl w-[90%] max-w-md">
-            <h2 className="text-xl font-black mb-4">
-              Pay for {planName}
-            </h2>
+    const password = Buffer.from(
+      `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
+    ).toString("base64");
 
-            <input
-              type="text"
-              placeholder="2547XXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border p-3 rounded-lg mb-4"
-            />
+    /* =========================
+       STK PUSH REQUEST
+    ========================= */
+    const stkRes = await fetch(
+      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          BusinessShortCode: process.env.MPESA_SHORTCODE,
+          Password: password,
+          Timestamp: timestamp,
+          TransactionType: "CustomerPayBillOnline",
+          Amount: Number(amount),
+          PartyA: formattedPhone,
+          PartyB: process.env.MPESA_SHORTCODE,
+          PhoneNumber: formattedPhone,
+          CallBackURL: process.env.MPESA_CALLBACK_URL,
+          AccountReference: "DAPC",
+          TransactionDesc: "DAPC Payment",
+        }),
+      }
+    );
 
-            <button
-              onClick={handlePayment}
-              disabled={loading}
-              className="w-full bg-blue-700 text-white py-3 rounded-xl font-bold"
-            >
-              {loading ? "Processing..." : `Pay KES ${amount}`}
-            </button>
+    const stkData = await stkRes.json();
 
-            <button
-              onClick={() => setOpen(false)}
-              className="mt-3 text-sm text-gray-500"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+    console.log("STK RESPONSE:", stkData);
+
+    if (stkData.ResponseCode === "0") {
+      return NextResponse.json({ success: true, data: stkData });
+    } else {
+      return NextResponse.json(
+        { success: false, message: stkData.ResponseDescription },
+        { status: 400 }
+      );
+    }
+
+  } catch (error) {
+    console.error("MPESA ERROR:", error);
+
+    return NextResponse.json(
+      { success: false, message: "Server error" },
+      { status: 500 }
+    );
+  }
 }

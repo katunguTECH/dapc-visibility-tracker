@@ -1,156 +1,77 @@
+// src/app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { UserButton, useSignIn, useUser, SignedIn, SignedOut } from "@clerk/nextjs";
-import { Search, ArrowRight, MapPin, Share2, BarChart3 } from "lucide-react";
+import Image from "next/image";
 import Pricing from "../components/Pricing";
+import { useUser, useSignIn } from "@clerk/nextjs";
 
-/* =========================
-   MAIN COMPONENT
-========================= */
-export default function LandingPage() {
-  const [businessName, setBusinessName] = useState("");
-  const [searchCount, setSearchCount] = useState(0);
-  const [isAuditing, setIsAuditing] = useState(false);
-  const { openSignIn } = useSignIn();
+export default function HomePage() {
   const { isSignedIn } = useUser();
-  const [report, setReport] = useState<any>(null);
+  const { openSignIn } = useSignIn();
 
-  /* Load search count */
-  useEffect(() => {
-    const saved = localStorage.getItem("dapc_search_count");
-    if (saved) setSearchCount(parseInt(saved));
-  }, []);
-
-  /* =========================
-     AUDIT FUNCTION
-  ========================= */
-  const handleAudit = async () => {
-    if (!businessName.trim()) return;
-
-    if (searchCount >= 1 && !isSignedIn) {
-      alert("You've used your free audit! Please sign in.");
-      openSignIn?.();
-      return;
-    }
-
-    setIsAuditing(true);
-
-    try {
-      const res = await fetch(
-        `/api/visibility?business=${encodeURIComponent(
-          businessName
-        )}&location=Nairobi&t=${Date.now()}`
-      );
-
-      const data = await res.json();
-      setReport(data.audit);
-
-      if (!isSignedIn) {
-        const newCount = searchCount + 1;
-        setSearchCount(newCount);
-        localStorage.setItem("dapc_search_count", newCount.toString());
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Audit failed");
-    } finally {
-      setIsAuditing(false);
-    }
-  };
-
-  /* =========================
-     UI
-  ========================= */
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-
-      {/* NAVBAR */}
-      <nav className="flex justify-between items-center px-10 py-5 bg-white border-b">
-        <img src="/dapc-logo.jpg" className="h-10" alt="DAPC Logo" />
-
-        <div className="flex gap-4">
-          <SignedOut>
-            <button onClick={() => openSignIn?.()} className="font-semibold">
-              Login
-            </button>
-            <button
-              onClick={() => openSignIn?.()}
-              className="bg-blue-700 text-white px-4 py-2 rounded"
-            >
-              Get Started
-            </button>
-          </SignedOut>
-
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-        </div>
-      </nav>
-
-      {/* HERO */}
-      <div className="text-center py-16 px-6">
-        <h1 className="text-5xl font-black mb-4">
-          Business Intelligence for Nairobi
+    <main className="min-h-screen bg-gray-50">
+      {/* HERO SECTION */}
+      <section className="py-20 px-6 text-center bg-blue-700 text-white">
+        <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          Welcome to DAPC Visibility Tracker
         </h1>
-        <p className="text-gray-500">
-          Scan your Google Maps, SEO & social visibility instantly
+        <p className="text-lg md:text-2xl mb-6">
+          Monitor your brand, analyze competitors, and boost your visibility.
         </p>
-      </div>
 
-      {/* SEARCH */}
-      <div className="flex gap-3 max-w-2xl mx-auto mb-12 bg-white p-3 rounded-xl shadow">
-        <input
-          className="flex-1 p-3 outline-none"
-          placeholder="Enter business name"
-          value={businessName}
-          onChange={(e) => setBusinessName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAudit()}
-        />
+        {!isSignedIn && (
+          <button
+            onClick={() => openSignIn?.()}
+            className="bg-white text-blue-700 font-bold py-3 px-6 rounded-xl hover:bg-gray-100 transition"
+          >
+            Sign in to get started
+          </button>
+        )}
+      </section>
 
-        <button
-          onClick={handleAudit}
-          disabled={isAuditing}
-          className="bg-blue-700 text-white px-6 rounded flex items-center gap-2"
-        >
-          {isAuditing ? "Analyzing..." : "Run Audit"} <ArrowRight size={16} />
-        </button>
-      </div>
-
-      {/* RESULTS */}
-      {report ? (
-        <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-6 mb-20">
-
-          {/* SCORE */}
-          <div className="bg-black text-white p-8 rounded-2xl text-center">
-            <BarChart3 className="mx-auto mb-4" />
-            <h2 className="text-4xl font-black">{report.score}/100</h2>
-          </div>
-
-          {/* MAPS */}
-          <div className="bg-white p-6 rounded-2xl">
-            <MapPin className="mb-2" />
-            <p>{report.googleMaps?.status || "No data"}</p>
-          </div>
-
-          {/* SOCIAL */}
-          <div className="bg-white p-6 rounded-2xl">
-            <Share2 className="mb-2" />
-            <p>Social Presence</p>
-          </div>
-
-        </div>
-      ) : (
-        <div className="opacity-20 grid grid-cols-3 gap-4 max-w-4xl mx-auto mb-20">
-          <div className="h-40 bg-gray-200 rounded"></div>
-          <div className="h-40 bg-gray-200 rounded"></div>
-          <div className="h-40 bg-gray-200 rounded"></div>
-        </div>
-      )}
-
-      {/* ✅ PRICING COMPONENT (CLEAN + WORKING) */}
+      {/* PRICING SECTION */}
       <Pricing />
 
-    </div>
+      {/* HOW IT WORKS SECTION */}
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-10">How It Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-3xl shadow p-6 text-center">
+            <Image
+              src="/icons/analyze.png"
+              alt="Analyze"
+              width={80}
+              height={80}
+              className="mx-auto mb-4"
+            />
+            <h3 className="font-bold mb-2">Analyze Competitors</h3>
+            <p>Track competitor activity to stay ahead in your market.</p>
+          </div>
+          <div className="bg-white rounded-3xl shadow p-6 text-center">
+            <Image
+              src="/icons/monitor.png"
+              alt="Monitor"
+              width={80}
+              height={80}
+              className="mx-auto mb-4"
+            />
+            <h3 className="font-bold mb-2">Monitor Visibility</h3>
+            <p>Get real-time insights into your brand’s online performance.</p>
+          </div>
+          <div className="bg-white rounded-3xl shadow p-6 text-center">
+            <Image
+              src="/icons/boost.png"
+              alt="Boost"
+              width={80}
+              height={80}
+              className="mx-auto mb-4"
+            />
+            <h3 className="font-bold mb-2">Boost Performance</h3>
+            <p>Implement strategies that drive real growth and engagement.</p>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

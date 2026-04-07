@@ -1,11 +1,17 @@
-// src/lib/prisma.ts
+// lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
+// Singleton pattern for Next.js to avoid multiple instances in development
+const prismaClientSingleton = () => new PrismaClient();
+
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
-
-export const prisma = global.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") global.prisma = prisma;

@@ -2,23 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { UserButton, useSignIn, useUser, SignedIn, SignedOut } from "@clerk/nextjs";
-import { 
-  Search, ArrowRight, MapPin, Share2, 
-  Users, Globe, AlertCircle, BarChart3 
-} from "lucide-react";
+import { MapPin, Share2, BarChart3 } from "lucide-react";
 
-import MpesaModal from "../components/MpesaModal";
-
-/* =========================
-   PRICING PLANS
-========================= */
-const pricingPlans = [
-  { name: "Starter Listing", icon: "/icons/starter-cheetah.jpg", price: "1,999" },
-  { name: "Local Boost", icon: "/icons/boost-buffalo.jpg", price: "3,999" },
-  { name: "Growth Engine", icon: "/icons/growthengine-rhino.jpg", price: "5,999" },
-  { name: "Market Leader", icon: "/icons/marketleader-elephant.jpg", price: "7,999" },
-  { name: "Super Active", icon: "/icons/superactivevisibility-lion.jpg", price: "10,000" },
-];
+import Pricing from "../components/Pricing";
 
 /* =========================
    MAIN COMPONENT
@@ -31,7 +17,7 @@ export default function LandingPage() {
   const { isSignedIn } = useUser();
   const [report, setReport] = useState<any>(null);
 
-  /* Load search count */
+  /* Load search count from localStorage */
   useEffect(() => {
     const saved = localStorage.getItem("dapc_search_count");
     if (saved) setSearchCount(parseInt(saved));
@@ -80,7 +66,7 @@ export default function LandingPage() {
 
       {/* NAVBAR */}
       <nav className="flex justify-between items-center px-10 py-5 bg-white border-b">
-        <img src="/dapc-logo.jpg" className="h-10" />
+        <img src="/dapc-logo.jpg" className="h-10" alt="DAPC Logo" />
 
         <div className="flex gap-4">
           <SignedOut>
@@ -157,27 +143,7 @@ export default function LandingPage() {
       )}
 
       {/* PRICING */}
-      <section className="bg-white py-20 px-10">
-        <div className="grid md:grid-cols-5 gap-4 max-w-6xl mx-auto">
-
-          {pricingPlans.map((plan, i) => (
-            <div key={i} className="border p-6 rounded-2xl text-center">
-              <img src={plan.icon} className="w-16 h-16 mx-auto mb-4 rounded-full" />
-              <h3 className="font-bold mb-2">{plan.name}</h3>
-              <p className="text-blue-700 font-black mb-4">
-                KES {plan.price}
-              </p>
-
-              {/* ✅ CORRECT MODAL */}
-              <MpesaModal
-                amount={plan.price.replace(",", "")}
-                planName={plan.name}
-              />
-            </div>
-          ))}
-
-        </div>
-      </section>
+      <Pricing />
 
     </div>
   );

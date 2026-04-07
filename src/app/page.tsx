@@ -1,13 +1,11 @@
+// src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { UserButton, useSignIn, useUser, SignedIn, SignedOut } from "@clerk/nextjs";
-import { MapPin, Share2, BarChart3 } from "lucide-react";
+import { Search, ArrowRight, MapPin, Share2, BarChart3 } from "lucide-react";
 
 import Pricing from "../components/Pricing";
-
-/* inside your JSX */
-<Pricing />
 
 /* =========================
    MAIN COMPONENT
@@ -16,9 +14,9 @@ export default function LandingPage() {
   const [businessName, setBusinessName] = useState("");
   const [searchCount, setSearchCount] = useState(0);
   const [isAuditing, setIsAuditing] = useState(false);
+  const [report, setReport] = useState<any>(null);
   const { openSignIn } = useSignIn();
   const { isSignedIn } = useUser();
-  const [report, setReport] = useState<any>(null);
 
   /* Load search count from localStorage */
   useEffect(() => {
@@ -28,7 +26,7 @@ export default function LandingPage() {
 
   /* =========================
      AUDIT FUNCTION
-  ========================= */
+  ========================== */
   const handleAudit = async () => {
     if (!businessName.trim()) return;
 
@@ -44,7 +42,6 @@ export default function LandingPage() {
       const res = await fetch(
         `/api/visibility?business=${encodeURIComponent(businessName)}&location=Nairobi&t=${Date.now()}`
       );
-
       const data = await res.json();
       setReport(data.audit);
 
@@ -62,8 +59,8 @@ export default function LandingPage() {
   };
 
   /* =========================
-     UI
-  ========================= */
+     RENDER
+  ========================== */
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
 
@@ -95,7 +92,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* SEARCH */}
+      {/* SEARCH BAR */}
       <div className="flex gap-3 max-w-2xl mx-auto mb-12 bg-white p-3 rounded-xl shadow">
         <input
           className="flex-1 p-3 outline-none"
@@ -114,7 +111,7 @@ export default function LandingPage() {
         </button>
       </div>
 
-      {/* RESULTS */}
+      {/* AUDIT RESULTS */}
       {report ? (
         <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-6 mb-20">
 
@@ -124,13 +121,13 @@ export default function LandingPage() {
             <h2 className="text-4xl font-black">{report.score}/100</h2>
           </div>
 
-          {/* MAPS */}
+          {/* MAP STATUS */}
           <div className="bg-white p-6 rounded-2xl">
             <MapPin />
             <p>{report.googleMaps?.status}</p>
           </div>
 
-          {/* SOCIAL */}
+          {/* SOCIAL STATUS */}
           <div className="bg-white p-6 rounded-2xl">
             <Share2 />
             <p>Social Presence</p>
@@ -145,7 +142,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* PRICING */}
+      {/* PRICING SECTION */}
       <Pricing />
 
     </div>

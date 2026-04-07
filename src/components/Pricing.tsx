@@ -1,7 +1,9 @@
+// src/components/Pricing.tsx
 "use client";
+
 import { useState } from "react";
-import MpesaModal from "./MpesaModal";
 import Image from "next/image";
+import MpesaModal from "./MpesaModal";
 
 const plans = [
   { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
@@ -12,23 +14,38 @@ const plans = [
 ];
 
 export default function Pricing() {
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<null | typeof plans[0]>(null);
 
   return (
     <section className="py-10 px-4 bg-white">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
         {plans.map((plan) => (
-          <div key={plan.name} className="flex flex-col items-center border p-6 rounded-3xl shadow-sm hover:shadow-md">
-            <div className="relative w-20 h-20 mb-4 border-2 border-blue-50 rounded-full">
-              <Image src={plan.icon} alt={plan.name} fill className="rounded-full object-cover" />
+          <div
+            key={plan.name}
+            className="flex flex-col border p-6 rounded-3xl text-center bg-white shadow-sm hover:shadow-md transition-shadow"
+          >
+            {/* Animal Icon */}
+            <div className="relative w-24 h-24 mx-auto mb-4 border-2 border-blue-50 rounded-full overflow-hidden">
+              <Image
+                src={plan.icon}
+                alt={plan.name}
+                fill
+                className="object-cover"
+              />
             </div>
 
-            <h3 className="font-bold text-sm mb-2">{plan.name}</h3>
-            <p className="text-blue-700 font-black text-lg mb-4">KES {plan.price.toLocaleString()}</p>
+            {/* Plan Name & Price */}
+            <h3 className="font-bold text-sm mb-2 text-gray-800 h-10 flex items-center justify-center">
+              {plan.name}
+            </h3>
+            <p className="text-blue-700 font-black mb-6 text-lg">
+              KES {plan.price.toLocaleString()}
+            </p>
 
+            {/* Subscribe Button */}
             <button
               onClick={() => setSelectedPlan(plan)}
-              className="w-full py-3 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800"
+              className="mt-auto w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl text-xs font-bold transition-colors"
             >
               Subscribe with M-Pesa
             </button>
@@ -36,7 +53,7 @@ export default function Pricing() {
         ))}
       </div>
 
-      {/* Modal */}
+      {/* M-Pesa Modal */}
       {selectedPlan && (
         <MpesaModal
           isOpen={!!selectedPlan}

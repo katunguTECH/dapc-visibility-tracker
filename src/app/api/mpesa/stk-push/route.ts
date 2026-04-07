@@ -3,115 +3,101 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    // 1️⃣ Parse request body
     const body = await req.json();
     const { phone, amount } = body;
 
     if (!phone || !amount) {
-      return NextResponse.json(
-        { success: false, message: "Phone number or amount missing" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Phone and amount are required" }, { status: 400 });
     }
 
-    // 2️⃣ Load environment variables
+    // Load environment variables
     const {
-      MPESA_CONSUMER_KEY: key,
-      MPESA_CONSUMER_SECRET: secret,
-      MPESA_SHORTCODE: shortcode,
-      MPESA_PASSKEY: passkey,
-      MPESA_CALLBACK_URL: callback,
+      MPESA_CONSUMER_KEY,
+      MPESA_CONSUMER_SECRET,
+      MPESA_SHORTCODE,
+      MPESA_PASSKEY,
+      MPESA_CALLBACK_URL,
     } = process.env;
 
-    if (!key || !secret || !shortcode || !passkey || !callback) {
-      console.error("Missing M-Pesa environment variables", {
-        key,
-        secret,
-        shortcode,
-        passkey,
-        callback,
-      });
-      return NextResponse.json(
-        { success: false, message: "Server configuration error" },
-        { status: 500 }
-      );
+    if (!MPESA_CONSUMER_KEY || !MPESA_CONSUMER_SECRET || !MPESA_SHORTCODE || !MPESA_PASSKEY || !MPESA_CALLBACK_URL) {
+      console.error("Missing M-Pesa environment variables");
+      return NextResponse.json({ success: false, message: "Server configuration error" }, { status: 500 });
     }
 
-    console.log("Received STK request:", { phone, amount });
+    // Format phone number to international format
+    const formattedPhone = phone.startsWith("0") ? "254" + phone.slice(1) : phone;
 
-    // 3️⃣ Format phone number (0712345678 → 254712345678)
-    const formattedPhone = phone.startsWith("0")
-      ? "254" + phone.slice(1)
-      : phone;
-
-    // 4️⃣ Generate OAuth token
-    const auth = Buffer.from(`${key}:${secret}`).toString("base64");
+    // 1️⃣ Get OAuth token
+    const auth = Buffer.from(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`).toString("base64");
 
     const tokenRes = await fetch(
       "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
       { headers: { Authorization: `Basic ${auth}` } }
     );
 
+    if (!tokenRes.ok) {
+      const text = await tokenRes.text();
+      console.error("OAuth token request failed:", text);
+      return NextResponse.json({ success: false, message: "Failed to get access token", data: text }, { status: 500 });
+    }
+
     const tokenData = await tokenRes.json();
-    console.log("OAuth response:", tokenData);
+    const accessToken = tokenData?.access_token;
 
-    const accessToken = tokenData.access_token;
     if (!accessToken) {
-      return NextResponse.json(
-        { success: false, message: "Failed to get access token" },
-        { status: 500 }
-      );
+      console.error("Access token missing", tokenData);
+      return NextResponse.json({ success: false, message: "Access token missing", data: tokenData }, { status: 500 });
     }
 
-    // 5️⃣ Prepare STK Push request
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[-:TZ.]/g, "")
-      .slice(0, 14);
-    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString(
-      "base64"
-    );
+    // 2️⃣ Prepare STK Push payload
+    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    const password = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString("base64");
 
-    const stkRes = await fetch(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          BusinessShortCode: shortcode,
-          Password: password,
-          Timestamp: timestamp,
-          TransactionType: "CustomerPayBillOnline",
-          Amount: Math.round(Number(amount)),
-          PartyA: formattedPhone,
-          PartyB: shortcode,
-          PhoneNumber: formattedPhone,
-          CallBackURL: callback,
-          AccountReference: "DAPC",
-          TransactionDesc: "DAPC Payment",
-        }),
-      }
-    );
+    const stkPayload = {
+      BusinessShortCode: MPESA_SHORTCODE,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: Math.round(Number(amount)),
+      PartyA: formattedPhone,
+      PartyB: MPESA_SHORTCODE,
+      PhoneNumber: formattedPhone,
+      CallBackURL: MPESA_CALLBACK_URL,
+      AccountReference: "DAPC",
+      TransactionDesc: "DAPC Payment",
+    };
 
-    const stkData = await stkRes.json();
-    console.log("STK Push Response:", stkData);
+    // 3️⃣ Send STK Push request
+    const stkRes = await fetch("https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(stkPayload),
+    });
 
-    if (stkData.ResponseCode && stkData.ResponseCode !== "0") {
-      return NextResponse.json(
-        { success: false, message: stkData.ResponseDescription || "STK failed" },
-        { status: 500 }
-      );
+    const text = await stkRes.text();
+
+    if (!stkRes.ok) {
+      console.error("STK Push failed:", text);
+      return NextResponse.json({ success: false, message: "STK Push failed", data: text }, { status: 500 });
     }
 
+    // Attempt to parse JSON
+    let stkData;
+    try {
+      stkData = JSON.parse(text);
+    } catch (err) {
+      console.error("Failed to parse STK Push response:", text);
+      return NextResponse.json({ success: false, message: "Invalid STK response", data: text }, { status: 500 });
+    }
+
+    console.log("M-Pesa Response:", stkData);
     return NextResponse.json({ success: true, data: stkData });
-  } catch (err: any) {
-    console.error("Internal STK error:", err);
-    return NextResponse.json(
-      { success: false, message: err.message || "Internal server error" },
-      { status: 500 }
-    );
+
+  } catch (error: any) {
+    console.error("Internal Error:", error);
+    return NextResponse.json({ success: false, message: error?.message || "Unknown error" }, { status: 500 });
   }
 }

@@ -1,12 +1,10 @@
 "use client";
 
+import { SignInButton, useUser } from "@clerk/nextjs";
 import { useState } from "react";
-import { useUser, SignInButton, SignOutButton, RedirectToSignIn } from "@clerk/nextjs";
 
 export default function HomePage() {
   const { isSignedIn, user } = useUser();
-  const [phone, setPhone] = useState("");
-  const [amount, setAmount] = useState(100);
   const [loading, setLoading] = useState(false);
 
   const handleSubscribe = async () => {
@@ -15,73 +13,44 @@ export default function HomePage() {
       return;
     }
 
-    if (!phone) {
-      alert("Enter a valid phone number");
-      return;
-    }
+    const phone = prompt("Enter your phone number (e.g., 0712345678)");
+    if (!phone) return;
+
+    const amount = 100; // Example amount
 
     setLoading(true);
-    try {
-      const res = await fetch("/api/mpesa/stk-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, amount }),
-      });
+    const res = await fetch("/api/mpesa/stk-push", {
+      method: "POST",
+      body: JSON.stringify({ phone, amount }),
+      headers: { "Content-Type": "application/json" },
+    });
 
-      const data = await res.json();
-
-      if (data.success) {
-        alert("STK Push sent! Check your phone.");
-      } else {
-        alert("Error: " + data.message);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong.");
-    }
+    const data = await res.json();
+    console.log("STK Push response:", data);
     setLoading(false);
+    alert(data.success ? "STK sent! Check your phone." : data.message);
   };
 
   return (
-    <main className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Welcome to DAPC</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <h1 className="text-4xl font-bold mb-4">Welcome to DAPC</h1>
+      <p className="mb-6">Sign in to subscribe and get growth insights</p>
 
       {!isSignedIn ? (
-        <div>
-          <p>Please sign in to subscribe:</p>
-          <SignInButton
-            mode="modal"
-            redirectUrl="/" // ← Redirects back here after sign-in
-          >
-            <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded">
-              Sign In
-            </button>
-          </SignInButton>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2 max-w-sm">
-          <p>Hello, {user?.firstName || user?.email}</p>
-          <input
-            type="text"
-            placeholder="Phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="p-2 border rounded"
-          />
-          <button
-            onClick={handleSubscribe}
-            className="px-4 py-2 bg-green-600 text-white rounded"
-            disabled={loading}
-          >
-            {loading ? "Processing..." : "Subscribe"}
+        <SignInButton>
+          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+            Sign In
           </button>
-          <SignOutButton>
-            <button className="mt-2 px-4 py-2 bg-red-600 text-white rounded">
-              Sign Out
-            </button>
-          </SignOutButton>
-        </div>
+        </SignInButton>
+      ) : (
+        <button
+          onClick={handleSubscribe}
+          disabled={loading}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+        >
+          {loading ? "Processing..." : "Subscribe"}
+        </button>
       )}
-    </main>
+    </div>
   );
 }

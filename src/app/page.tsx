@@ -31,7 +31,7 @@ export default function HomePage() {
       </section>
 
       {/* PRICING SECTION */}
-      <Pricing />
+      <Pricing isSignedIn={isSignedIn} />
 
       {/* HOW IT WORKS SECTION */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -39,7 +39,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white rounded-3xl shadow p-6 text-center">
             <Image
-              src="/icons/analyze.png"
+              src="/images/analyze.png" // make sure this exists in public/images/
               alt="Analyze"
               width={80}
               height={80}
@@ -50,7 +50,7 @@ export default function HomePage() {
           </div>
           <div className="bg-white rounded-3xl shadow p-6 text-center">
             <Image
-              src="/icons/monitor.png"
+              src="/images/monitor.png"
               alt="Monitor"
               width={80}
               height={80}
@@ -61,7 +61,7 @@ export default function HomePage() {
           </div>
           <div className="bg-white rounded-3xl shadow p-6 text-center">
             <Image
-              src="/icons/boost.png"
+              src="/images/boost.png"
               alt="Boost"
               width={80}
               height={80}

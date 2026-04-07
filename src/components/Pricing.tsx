@@ -4,26 +4,36 @@ import { useState } from "react";
 import { useUser, useSignIn } from "@clerk/nextjs";
 
 const plans = [
-  { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
-  { name: "Local Boost", price: 3999, icon: "/icons/boost-buffalo.jpg" },
-  { name: "Growth Engine", price: 5999, icon: "/icons/growthengine-rhino.jpg" },
-  { name: "Market Leader", price: 7999, icon: "/icons/marketleader-elephant.jpg" },
-  { name: "Super Active", price: 10000, icon: "/icons/superactivevisibility-lion.jpg" },
+  { name: "Starter Listing", price: 1999 },
+  { name: "Local Boost", price: 3999 },
+  { name: "Growth Engine", price: 5999 },
+  { name: "Market Leader", price: 7999 },
+  { name: "Super Active", price: 10000 },
 ];
 
 export default function Pricing() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const { openSignIn } = useSignIn();
+
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleSubscribe = async (plan: any) => {
-    // 🔐 STEP 1: FORCE SIGN IN
-    if (!isSignedIn) {
-      openSignIn?.();
+    console.log("CLICKED:", plan.name);
+
+    // 🚨 WAIT FOR CLERK
+    if (!isLoaded) {
+      console.log("Clerk not loaded yet");
       return;
     }
 
-    // 💰 STEP 2: TRIGGER MPESA (independent)
+    // 🔐 FORCE SIGN IN
+    if (!isSignedIn) {
+      console.log("Opening sign-in...");
+      await openSignIn?.();
+      return;
+    }
+
+    // 💰 STK PUSH
     setLoading(plan.name);
 
     try {
@@ -33,7 +43,7 @@ export default function Pricing() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          phone: "254712345678", // ⚠️ replace with real input later
+          phone: "254712345678", // replace later
           amount: plan.price
         })
       });
@@ -55,33 +65,27 @@ export default function Pricing() {
   };
 
   return (
-    <section className="py-20 px-6 bg-white">
-      <h2 className="text-3xl font-black text-center mb-10">
-        Choose Your Growth Tier
-      </h2>
+    <div className="grid md:grid-cols-5 gap-6 p-10">
+      {plans.map((plan) => (
+        <div key={plan.name} className="border p-6 rounded-xl text-center">
+          <h3 className="font-bold mb-2">{plan.name}</h3>
 
-      <div className="grid md:grid-cols-5 gap-6 max-w-7xl mx-auto">
-        {plans.map((plan) => (
-          <div key={plan.name} className="p-6 border rounded-2xl text-center">
-            <img src={plan.icon} className="w-16 h-16 mx-auto mb-4 rounded-full" />
-            <h3 className="font-bold mb-2">{plan.name}</h3>
-            <p className="text-blue-700 font-black mb-6">
-              KES {plan.price.toLocaleString()}
-            </p>
+          <p className="text-blue-700 font-black mb-4">
+            KES {plan.price.toLocaleString()}
+          </p>
 
-            <button
-              onClick={() => handleSubscribe(plan)}
-              className="bg-blue-700 text-white px-4 py-2 rounded-xl w-full"
-            >
-              {loading === plan.name
-                ? "Processing..."
-                : isSignedIn
-                ? "Subscribe"
-                : "Sign In to Subscribe"}
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>
+          <button
+            onClick={() => handleSubscribe(plan)}
+            className="bg-blue-700 text-white px-4 py-2 rounded-xl w-full"
+          >
+            {loading === plan.name
+              ? "Processing..."
+              : isSignedIn
+              ? "Subscribe"
+              : "Sign In to Subscribe"}
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }

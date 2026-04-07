@@ -15,25 +15,53 @@ export default function Pricing() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-      {plans.map((plan) => (
-        <div key={plan.name} className="border p-6 rounded-3xl text-center bg-white shadow-sm">
-          <div className="relative w-16 h-16 mx-auto mb-4">
-            <Image src={plan.icon} alt={plan.name} fill className="rounded-full object-cover" />
-          </div>
-          <h3 className="font-bold text-sm mb-2">{plan.name}</h3>
-          <p className="text-blue-700 font-black mb-4">KES {plan.price.toLocaleString()}</p>
-          <button 
-            onClick={() => setSelectedPlan(plan)}
-            className="w-full bg-blue-700 text-white py-2 rounded-xl text-xs font-bold"
+    <section className="py-10 px-4">
+      {/* 5-column grid for the Big Five packages */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
+        {plans.map((plan) => (
+          <div 
+            key={plan.name} 
+            className="flex flex-col border p-6 rounded-3xl text-center bg-white shadow-sm hover:shadow-md transition-shadow"
           >
-            Subscribe
-          </button>
-        </div>
-      ))}
+            {/* The Big Five Animal Icons - preserved exactly as requested */}
+            <div className="relative w-20 h-20 mx-auto mb-4 border-2 border-blue-50">
+              <Image 
+                src={plan.icon} 
+                alt={plan.name} 
+                fill 
+                className="rounded-full object-cover" 
+              />
+            </div>
+
+            <h3 className="font-bold text-sm mb-2 text-gray-800 h-10 flex items-center justify-center">
+              {plan.name}
+            </h3>
+            
+            <p className="text-blue-700 font-black mb-6 text-lg">
+              KES {plan.price.toLocaleString()}
+            </p>
+
+            <div className="mt-auto">
+              <button 
+                onClick={() => setSelectedPlan(plan)}
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl text-xs font-bold transition-colors"
+              >
+                Subscribe with M-Pesa
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* The Popup Modal */}
       {selectedPlan && (
-        <MpesaModal isOpen={!!selectedPlan} onClose={() => setSelectedPlan(null)} planName={selectedPlan.name} amount={selectedPlan.price} />
+        <MpesaModal 
+          isOpen={!!selectedPlan} 
+          onClose={() => setSelectedPlan(null)} 
+          planName={selectedPlan.name} 
+          amount={selectedPlan.price} 
+        />
       )}
-    </div>
+    </section>
   );
 }

@@ -6,6 +6,9 @@ import { MapPin, Share2, BarChart3 } from "lucide-react";
 
 import Pricing from "../components/Pricing";
 
+/* inside your JSX */
+<Pricing />
+
 /* =========================
    MAIN COMPONENT
 ========================= */

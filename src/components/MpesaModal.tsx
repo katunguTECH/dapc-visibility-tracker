@@ -14,11 +14,7 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: MpesaM
 
   // Prevent scrolling when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => { document.body.style.overflow = "unset"; };
   }, [isOpen]);
 
@@ -29,76 +25,65 @@ export default function MpesaModal({ isOpen, onClose, planName, amount }: MpesaM
     setLoading(true);
 
     try {
-      const response = await fetch("/api/mpesa/stk-push", {
+      const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: phoneNumber, amount }),
       });
 
-      const result = await response.json();
-      if (result.success) {
-        alert("STK Push sent! Please check your phone.");
+      const data = await res.json();
+      console.log("STK Response:", data);
+
+      if (data.success) {
+        alert("STK Push sent! Check your phone for the M-Pesa PIN prompt.");
         onClose();
       } else {
-        alert("Payment Error: " + (result.message || "Something went wrong"));
+        alert("Payment Error: " + (data.message || "Something went wrong"));
       }
     } catch (err) {
       alert("Network error. Check your connection.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full z-[9999] flex items-center justify-center">
-      {/* Dark Overlay background */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
-        onClick={onClose} 
-      />
-      
-      {/* Modal Content */}
-      <div className="relative bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4 border border-gray-100">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black">
+          ✕
         </button>
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-black text-gray-900">M-Pesa Pay</h2>
+          <h2 className="text-2xl font-black">M-Pesa Pay</h2>
           <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">{planName}</p>
+            <p className="text-xs font-bold text-blue-700 uppercase">{planName}</p>
             <p className="text-lg font-black text-blue-900">KES {amount.toLocaleString()}</p>
           </div>
         </div>
 
         <form onSubmit={handlePayment} className="space-y-4">
-          <div>
-            <label className="block text-[10px] font-bold text-gray-400 uppercase ml-1 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              placeholder="0712345678"
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none text-center text-xl font-bold text-gray-800"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-          
+          <input
+            type="tel"
+            placeholder="0712345678"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            required
+            className="w-full p-4 text-center border rounded-xl focus:ring-2 focus:ring-blue-600"
+          />
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#24b04b] hover:bg-[#1c8c3c] text-white font-black py-4 rounded-2xl shadow-lg shadow-green-200 transition-all active:scale-95 disabled:bg-gray-300 disabled:shadow-none"
+            className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:bg-gray-300"
           >
             {loading ? "CHECK YOUR PHONE..." : "SEND STK PUSH"}
           </button>
-          
-          <p className="text-[10px] text-center text-gray-400 px-4">
-            Enter your M-Pesa number above. You will receive a prompt on your phone to enter your PIN.
-          </p>
         </form>
       </div>
     </div>

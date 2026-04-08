@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSignIn, useUser, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import Image from "next/image";
 
 interface AuditResult {
   business: string;
@@ -44,7 +45,6 @@ export default function HomePage() {
       const data = await res.json();
       console.log("AUDIT RESULT:", data);
 
-      // Simulated format
       const audit: AuditResult = {
         business: business,
         visibilityScore: data.visibilityScore || Math.floor(Math.random() * 100),
@@ -68,8 +68,24 @@ export default function HomePage() {
     }
   };
 
+  const growthPlans = [
+    { name: "Starter Listing", price: 1999 },
+    { name: "Local Boost", price: 3999 },
+    { name: "Growth Engine", price: 5999 },
+    { name: "Market Leader", price: 7999 },
+    { name: "Super Active", price: 10000 },
+  ];
+
+  const bigFiveIcons = [
+    "/icons/lion.png",
+    "/icons/elephant.png",
+    "/icons/rhino.png",
+    "/icons/leopard.png",
+    "/icons/buffalo.png",
+  ];
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-gray-50 text-slate-900">
 
       {/* NAVBAR */}
       <nav className="flex justify-between items-center px-10 py-5 bg-white border-b">
@@ -92,6 +108,14 @@ export default function HomePage() {
         <h1 className="text-5xl font-black mb-4">Business Intelligence for Nairobi</h1>
         <p className="text-lg mb-8">Scan your Google Maps, Social Media, and SEO footprint in real-time.</p>
 
+        {/* Big Five Icons */}
+        <div className="flex justify-center gap-6 mb-8">
+          {bigFiveIcons.map((icon, idx) => (
+            <Image key={idx} src={icon} width={80} height={80} alt="Big Five" className="rounded-xl" />
+          ))}
+        </div>
+
+        {/* Search bar */}
         <div className="max-w-2xl mx-auto flex bg-white rounded-xl overflow-hidden shadow-lg">
           <input
             value={business}
@@ -147,15 +171,8 @@ export default function HomePage() {
       {/* PRICING */}
       <section className="py-20 px-6 text-center">
         <h2 className="text-3xl font-black mb-10">Choose Your Growth Tier</h2>
-
         <div className="grid md:grid-cols-5 gap-4 max-w-7xl mx-auto">
-          {[
-            { name: "Starter Listing", price: 1999 },
-            { name: "Local Boost", price: 3999 },
-            { name: "Growth Engine", price: 5999 },
-            { name: "Market Leader", price: 7999 },
-            { name: "Super Active", price: 10000 },
-          ].map((plan, i) => (
+          {growthPlans.map((plan, i) => (
             <div key={i} className="bg-white p-6 rounded-2xl shadow">
               <h3 className="font-bold">{plan.name}</h3>
               <p className="text-xl font-bold mb-4">KES {plan.price}</p>

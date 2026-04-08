@@ -1,40 +1,47 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import fetch from "node-fetch";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const business = searchParams.get('business');
-  const location = searchParams.get('location') || 'Nairobi';
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const business = url.searchParams.get("business") || "Unknown";
 
-  // In a real app, you would call Google Places API or a scraper here.
-  // For now, we return a professional structured report.
-  const mockReport = {
-    businessName: business,
-    location: location,
-    timestamp: new Date().toISOString(),
-    score: 38,
-    audit: {
-      googleMaps: {
-        status: "Unoptimized",
-        issue: "Missing NAP (Name, Address, Phone) consistency",
-        coordinates: { lat: -1.286389, lng: 36.817223 } // Nairobi center
-      },
-      socials: {
-        facebook: { found: true, followers: "1.2k", status: "Active" },
-        tiktok: { found: false, followers: 0, status: "Missing" },
-        x: { found: false, followers: 0, status: "Missing" }
-      },
-      seo: {
-        metaDescription: "Missing",
-        loadSpeed: "2.4s",
-        mobileFriendly: true,
-        keywords: ["Local Search", "Kenya Business"]
-      },
-      competitors: [
-        { name: "Top Competitor A", score: 72, gap: "High" },
-        { name: "Top Competitor B", score: 65, gap: "Medium" }
-      ]
-    }
-  };
+  try {
+    // SERPAPI Google Search
+    const serpRes = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(business)}&google_domain=google.com&gl=ke&hl=en&api_key=${process.env.SERP_API_KEY}`);
+    const serpData = await serpRes.json();
 
-  return NextResponse.json(mockReport);
+    const mapsPresence = serpData.local_results?.length > 0;
+    const seoScore = Math.floor(Math.random() * 50 + 50); // placeholder until real SEO logic
+
+    // Social Media detection (Clearbit or SERPER)
+    const social = {
+      facebook: !!serpData?.knowledge_graph?.facebook,
+      twitter: !!serpData?.knowledge_graph?.twitter,
+      instagram: !!serpData?.knowledge_graph?.instagram,
+      tiktok: false, // add logic if API supports
+    };
+
+    // Competitor comparison (top 3 local results)
+    const competitors = serpData.local_results?.slice(0, 3).map((c: any) => ({
+      name: c.title,
+      score: Math.floor(Math.random() * 40 + 60),
+    })) || [];
+
+    const data = {
+      business,
+      score: Math.floor((seoScore + competitors.reduce((acc, c) => acc + c.score, 0)) / (competitors.length + 1)),
+      seoScore,
+      mapsPresence,
+      social,
+      competitors
+    };
+
+    return NextResponse.json(data);
+
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to fetch visibility data" }, { status: 500 });
+  }
 }
+
+

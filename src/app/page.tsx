@@ -4,31 +4,42 @@ import { useState } from "react";
 import Image from "next/image";
 import { useUser, useSignIn } from "@clerk/nextjs";
 import Pricing from "../components/Pricing";
+import Report from "../components/Report";
 
 export default function HomePage() {
   const { isSignedIn } = useUser();
   const { openSignIn } = useSignIn();
 
-  // Free search counter
   const [searchCount, setSearchCount] = useState(0);
   const maxFreeSearches = 5;
   const [businessName, setBusinessName] = useState("");
+  const [reportData, setReportData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!businessName) return alert("Enter a business name!");
     if (searchCount >= maxFreeSearches && !isSignedIn) {
       openSignIn?.();
       return;
     }
-    setSearchCount((prev) => prev + 1);
-    // Simulate search API
-    console.log("Searching for", businessName);
-    alert(`Search executed for ${businessName}. Free searches used: ${searchCount + 1}/${maxFreeSearches}`);
+
+    setSearchCount(prev => prev + 1);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`/api/visibility?business=${encodeURIComponent(businessName)}`);
+      const data = await res.json();
+      setReportData(data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch visibility data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* HERO */}
       <section className="py-20 px-6 text-center bg-blue-700 text-white">
         <h1 className="text-4xl md:text-6xl font-bold mb-6">
           Business Intelligence for Nairobi
@@ -36,7 +47,6 @@ export default function HomePage() {
         <p className="text-lg md:text-2xl mb-6">
           Scan your Google Maps, Social Media, and SEO footprint in real-time.
         </p>
-
         {!isSignedIn && (
           <button
             onClick={() => openSignIn?.()}
@@ -47,25 +57,22 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* BIG FIVE ICONS */}
+      {/* Big Five Icons */}
       <section className="py-10 px-6 text-center">
-        <h2 className="text-3xl font-bold mb-6">Big Five Visibility</h2>
         <div className="flex flex-wrap justify-center gap-6">
-          <Image src="/icons/starter-cheetah.jpg" alt="Starter Cheetah" width={80} height={80} />
-          <Image src="/icons/boost-buffalo.jpg" alt="Local Boost Buffalo" width={80} height={80} />
-          <Image src="/icons/growthengine-rhino.jpg" alt="Growth Engine Rhino" width={80} height={80} />
-          <Image src="/icons/marketleader-elephant.jpg" alt="Market Leader Elephant" width={80} height={80} />
-          <Image src="/icons/supervisibility-lion.jpg" alt="Super Active Lion" width={80} height={80} />
+          {["starter-cheetah.jpg","boost-buffalo.jpg","growthengine-rhino.jpg","marketleader-elephant.jpg","supervisibility-lion.jpg"].map(icon => (
+            <Image key={icon} src={`/icons/${icon}`} alt={icon} width={80} height={80}/>
+          ))}
         </div>
       </section>
 
-      {/* SEARCH BAR */}
+      {/* Search Bar */}
       <section className="py-10 px-6 text-center">
         <input
           type="text"
           value={businessName}
-          onChange={(e) => setBusinessName(e.target.value)}
-          placeholder="Enter business name (e.g. Java House)"
+          onChange={e => setBusinessName(e.target.value)}
+          placeholder="Enter business name (e.g. Langata Hospital)"
           className="border p-2 rounded w-1/2 mb-4"
         />
         <div>
@@ -73,7 +80,7 @@ export default function HomePage() {
             onClick={handleSearch}
             className="bg-blue-700 text-white py-2 px-6 rounded-xl hover:bg-blue-800"
           >
-            Run Audit
+            {loading ? "Searching..." : "Run Audit"}
           </button>
         </div>
         <p className="mt-2 text-sm text-gray-700">
@@ -81,7 +88,8 @@ export default function HomePage() {
         </p>
       </section>
 
-      {/* PRICING */}
+      {reportData && <Report data={reportData} />}
+
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-10">Choose Your Growth Tier</h2>
         <Pricing />

@@ -1,90 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { useSignIn } from "@clerk/nextjs";
+import { useUser, useSignIn } from "@clerk/nextjs";
 
-export default function Pricing({ isSignedIn }: { isSignedIn: boolean }) {
+interface PricingProps {
+  isSignedIn: boolean;
+}
+
+const plans = [
+  { name: "Starter Listing", price: 1999 },
+  { name: "Local Boost", price: 3999 },
+  { name: "Growth Engine", price: 5999 },
+  { name: "Market Leader", price: 7999 },
+  { name: "Super Active", price: 10000 },
+];
+
+export default function Pricing({ isSignedIn }: PricingProps) {
   const { openSignIn } = useSignIn();
+  const { user } = useUser();
+  const [loading, setLoading] = useState(false);
 
-  const plans = [
-    { name: "Starter Listing", price: 1999, icon: "/icons/starter-cheetah.jpg" },
-    { name: "Local Boost", price: 3999, icon: "/icons/boost-buffalo.jpg" },
-    { name: "Growth Engine", price: 5999, icon: "/icons/growthengine-rhino.jpg" },
-    { name: "Market Leader", price: 7999, icon: "/icons/marketleader-elephant.jpg" },
-    { name: "Super Active", price: 10000, icon: "/icons/superactivevisibility-lion.jpg" },
-  ];
-
-  const [selected, setSelected] = useState<any>(null);
-  const [phone, setPhone] = useState("");
-
-  const handleClick = (plan: any) => {
-    console.log("CLICKED:", plan.name);
-
+  const handleSubscribe = async (planName: string, planPrice: number) => {
     if (!isSignedIn) {
       openSignIn?.();
       return;
     }
 
-    setSelected(plan);
-  };
+    const phoneNumber = prompt("Enter your phone number (e.g. 2547XXXXXXXX):");
+    if (!phoneNumber) return;
 
-  const sendSTK = async () => {
-    const res = await fetch("/api/mpesa/stk-push", {
-      method: "POST",
-      body: JSON.stringify({
-        phone,
-        amount: selected.price,
-      }),
-    });
+    setLoading(true);
+    try {
+      const res = await fetch("/api/mpesa/stk-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName, amount: planPrice, phone: phoneNumber }),
+      });
 
-    alert("STK sent!");
-    setSelected(null);
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ STK sent to your phone!");
+      } else {
+        console.error("STK error:", data);
+        alert("❌ STK request failed. Check console for details.");
+      }
+    } catch (err) {
+      console.error("STK fetch error:", err);
+      alert("❌ STK request failed. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <section className="py-20 px-6 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-black text-center mb-10">
-        Choose Your Growth Tier
-      </h2>
-
-      <div className="grid md:grid-cols-5 gap-4">
-        {plans.map((p, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl shadow text-center">
-            <img src={p.icon} className="w-16 h-16 mx-auto mb-4 rounded-full" />
-            <h3 className="font-bold">{p.name}</h3>
-            <p className="text-xl font-bold mb-4">KES {p.price}</p>
-
-            <button
-              onClick={() => handleClick(p)}
-              className="bg-blue-700 text-white px-4 py-2 rounded-xl w-full"
-            >
-              {isSignedIn ? "Subscribe" : "Sign In to Subscribe"}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-xl w-80">
-            <h3 className="font-bold mb-4">Enter Phone Number</h3>
-
-            <input
-              className="border p-2 w-full mb-4"
-              placeholder="07XXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-
-            <button
-              onClick={sendSTK}
-              className="bg-green-600 text-white w-full py-2 rounded"
-            >
-              Pay KES {selected.price}
-            </button>
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {plans.map((plan) => (
+        <div key={plan.name} className="bg-white shadow-lg rounded-3xl p-6 text-center">
+          <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+          <p className="text-lg font-semibold mb-4">KES {plan.price}</p>
+          <button
+            onClick={() => handleSubscribe(plan.name, plan.price)}
+            disabled={loading}
+            className="bg-blue-700 text-white px-6 py-2 rounded-xl hover:bg-blue-800 transition disabled:opacity-50"
+          >
+            {loading ? "Processing..." : "Sign In to Subscribe"}
+          </button>
         </div>
-      )}
-    </section>
+      ))}
+    </div>
   );
 }

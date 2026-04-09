@@ -3,39 +3,34 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  // Accept multiple param names for flexibility
+  // Accept multiple param names to prevent frontend breakage
   const businessRaw =
-    url.searchParams.get("query") ||
     url.searchParams.get("business") ||
+    url.searchParams.get("query") ||
     url.searchParams.get("name");
 
   if (!businessRaw || businessRaw.trim().length < 2) {
     return NextResponse.json(
-      { error: "No business name" },
+      { error: "No business name provided" },
       { status: 400 }
     );
   }
 
-  // Pick SERPAPI key from available environment variables
-  const apiKey =
-    process.env.SERPAPI_KEY ||
-    process.env.SERP_API_KEY ||
-    process.env.SERPER_API_KEY;
+  // Use only the valid SERPAPI_KEY
+  const apiKey = process.env.SERPAPI_KEY;
 
   if (!apiKey) {
-    console.error("❌ Missing SERPAPI key in environment");
     return NextResponse.json(
-      { error: "Missing SERPAPI key" },
+      { error: "Missing SERPAPI_KEY environment variable" },
       { status: 500 }
     );
   }
-
-  console.log("✅ Using SERPAPI key:", apiKey ? "exists" : "missing");
 
   const business = businessRaw.trim();
   const searchQuery = `${business} Nairobi Kenya`;
 
   try {
+    // Call SerpAPI
     const serpUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(
       searchQuery
     )}&google_domain=google.co.ke&gl=ke&hl=en&api_key=${apiKey}`;
@@ -51,7 +46,8 @@ export async function GET(req: Request) {
 
     const data = await res.json();
 
-    console.log("SERP RAW (first 500 chars):", JSON.stringify(data).slice(0, 500));
+    // Debug: log first 500 characters to check structure
+    console.log("SERP RAW:", JSON.stringify(data).slice(0, 500));
 
     // Safe extraction
     const organic = Array.isArray(data?.organic_results) ? data.organic_results : [];
@@ -93,6 +89,7 @@ export async function GET(req: Request) {
     let seoScore = Math.min((organic.length / 10) * 100, 100);
     const topResultTitle = organic[0]?.title?.toLowerCase() || "";
     const businessLower = business.toLowerCase();
+
     if (topResultTitle.includes(businessLower) || kg?.title) {
       seoScore = Math.max(seoScore, 95);
     }
@@ -112,12 +109,11 @@ export async function GET(req: Request) {
       ];
     }
 
-    // 5️⃣ Final score
+    // 5️⃣ Final visibility score
     let finalScore = Math.floor(
       seoScore * 0.4 + mapsScore * 0.3 + activeSocialCount * 25 * 0.3
     );
 
-    // Boost real brands
     if (kg?.title && finalScore < 85) finalScore = 96;
     if (hasMaps && finalScore < 30) finalScore = 45;
 
@@ -128,7 +124,6 @@ export async function GET(req: Request) {
       mapsPresence: hasMaps,
       social,
       competitors,
-      // Debug info
       debug: {
         organicCount: organic.length,
         localCount: local.length,
@@ -138,10 +133,7 @@ export async function GET(req: Request) {
   } catch (error: any) {
     console.error("API Error:", error);
     return NextResponse.json(
-      {
-        error: "API Failure",
-        message: error?.message || "Unknown error",
-      },
+      { error: "API Failure", message: error?.message || "Unknown error" },
       { status: 500 }
     );
   }

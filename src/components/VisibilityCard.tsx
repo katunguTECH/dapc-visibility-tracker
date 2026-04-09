@@ -1,65 +1,104 @@
-import React from "react";
+"use client";
 
-interface SocialStatus {
-  facebook: boolean;
-  twitter: boolean;
-  instagram: boolean;
-  tiktok: boolean;
-}
+type Props = {
+  data: any;
+};
 
-interface Competitor {
-  name: string;
-  score: number;
-}
+export default function VisibilityCard({ data }: Props) {
+  if (!data) return null;
 
-interface VisibilityCardProps {
-  business: string;
-  score: number;
-  seoScore: number;
-  mapsPresence: boolean;
-  social: SocialStatus;
-  competitors: Competitor[];
-}
+  const { business, score, seoScore, mapsPresence, social, competitors } = data;
 
-export const VisibilityCard: React.FC<VisibilityCardProps> = ({
-  business,
-  score,
-  seoScore,
-  mapsPresence,
-  social,
-  competitors,
-}) => {
+  const socials = [
+    {
+      name: "facebook",
+      active: social?.facebook,
+      icon: "/icons/facebook.svg",
+    },
+    {
+      name: "twitter",
+      active: social?.twitter,
+      icon: "/icons/x.svg", // ✅ using x.svg for Twitter
+    },
+    {
+      name: "instagram",
+      active: social?.instagram,
+      icon: "/icons/instagram.svg",
+    },
+    {
+      name: "tiktok",
+      active: social?.tiktok,
+      icon: "/icons/tiktok.svg",
+    },
+  ];
+
   return (
-    <div style={{ border: "1px solid #ccc", padding: 16, borderRadius: 8, maxWidth: 400 }}>
-      <h2>{business}</h2>
-      <p>
-        <strong>Overall Score:</strong> {score}/100
-      </p>
-      <p>
-        <strong>SEO Score:</strong> {seoScore}/100
-      </p>
-      <p>
-        <strong>Google Maps Presence:</strong> {mapsPresence ? "Yes" : "No"}
-      </p>
-      <div>
-        <strong>Social Media:</strong>
-        <ul>
-          <li>Facebook: {social.facebook ? "Active" : "Missing"}</li>
-          <li>Twitter/X: {social.twitter ? "Active" : "Missing"}</li>
-          <li>Instagram: {social.instagram ? "Active" : "Missing"}</li>
-          <li>TikTok: {social.tiktok ? "Active" : "Missing"}</li>
-        </ul>
+    <div className="mt-10 p-6 rounded-2xl shadow-lg bg-white border">
+      {/* HEADER */}
+      <h2 className="text-2xl font-bold mb-4">
+        Visibility Report: {business}
+      </h2>
+
+      {/* SCORE */}
+      <div className="mb-6">
+        <p className="text-gray-500">Overall Score</p>
+        <h3 className="text-4xl font-bold">{score}/100</h3>
       </div>
-      <div>
-        <strong>Competitors:</strong>
-        <ul>
-          {competitors.map((c) => (
-            <li key={c.name}>
-              {c.name}: {c.score}%
-            </li>
+
+      {/* SEO */}
+      <div className="mb-6">
+        <p className="font-semibold">SEO Performance</p>
+        <p className="text-gray-600">
+          Your business has a visibility score of {seoScore}% compared to local competitors.
+        </p>
+      </div>
+
+      {/* MAPS */}
+      <div className="mb-6">
+        <p className="font-semibold">Google Maps</p>
+        <p className={mapsPresence ? "text-green-600" : "text-red-500"}>
+          {mapsPresence ? "Listed" : "Not Found"}
+        </p>
+      </div>
+
+      {/* SOCIAL */}
+      <div className="mb-6">
+        <p className="font-semibold mb-2">Social Media Footprint</p>
+
+        <div className="flex gap-6">
+          {socials.map((s) => (
+            <div key={s.name} className="text-center">
+              <img
+                src={s.icon}
+                alt={s.name}
+                className={`w-6 h-6 mx-auto mb-1 ${
+                  s.active ? "opacity-100" : "opacity-30 grayscale"
+                }`}
+              />
+              <p className="text-xs capitalize">
+                {s.active ? "Active" : "Missing"}
+              </p>
+            </div>
           ))}
-        </ul>
+        </div>
+      </div>
+
+      {/* COMPETITORS */}
+      <div>
+        <p className="font-semibold mb-2">Local Competitors</p>
+
+        <div className="space-y-2">
+          {competitors?.map((c: any, i: number) => (
+            <div
+              key={i}
+              className="flex justify-between bg-gray-50 p-2 rounded"
+            >
+              <span>{c.name}</span>
+              <span className="font-semibold">{c.score}%</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-};
+}

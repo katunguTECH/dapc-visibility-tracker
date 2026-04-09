@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
+  // 🔹 Debug to confirm this code is running
+  console.log("✅ NEW VISIBILITY API HIT");
+
   const url = new URL(req.url);
 
-  // ✅ Accept multiple param names (prevents breaking frontend)
+  // Accept multiple param names (prevents breaking frontend)
   const businessRaw =
     url.searchParams.get("query") ||
     url.searchParams.get("business") ||
@@ -16,9 +19,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const apiKey =
-    process.env.SERPAPI_KEY ||
-    process.env.SERP_API_KEY;
+  const apiKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json(
@@ -46,53 +47,37 @@ export async function GET(req: Request) {
 
     const data = await res.json();
 
-    // ✅ DEBUG (VERY IMPORTANT for Vercel logs)
+    // 🔹 DEBUG (first 500 chars of raw SERP response)
     console.log("SERP RAW:", JSON.stringify(data).slice(0, 500));
 
-    // --- SAFE EXTRACTION ---
-    const organic = Array.isArray(data?.organic_results)
-      ? data.organic_results
-      : [];
-
-    const local = Array.isArray(data?.local_results)
-      ? data.local_results
-      : [];
-
+    // --- Safe extraction
+    const organic = Array.isArray(data?.organic_results) ? data.organic_results : [];
+    const local = Array.isArray(data?.local_results) ? data.local_results : [];
     const kg = data?.knowledge_graph || {};
     const placeInfo = data?.place_results || data?.place_info;
 
     // =========================
-    // 1. GOOGLE MAPS PRESENCE
+    // 1. Google Maps / Knowledge Graph Presence
     // =========================
-    const hasMaps =
-      !!kg?.title ||
-      local.length > 0 ||
-      !!placeInfo;
-
+    const hasMaps = !!kg?.title || local.length > 0 || !!placeInfo;
     const mapsScore = hasMaps ? 100 : 0;
 
     // =========================
-    // 2. SOCIAL MEDIA DETECTION
+    // 2. Social Media Detection
     // =========================
-    const kgProfiles = Array.isArray(kg?.profiles)
+    const kgProfiles: any[] = Array.isArray(kg?.profiles)
       ? kg.profiles
       : Array.isArray(kg?.social_profiles)
       ? kg.social_profiles
       : [];
 
-    const links = organic.map((r: any) =>
-      (r.link || "").toLowerCase()
-    );
+    const links = organic.map((r: any) => (r.link || "").toLowerCase());
 
     const checkSocial = (platform: string) => {
       const inKG = kgProfiles.some((p: any) =>
         JSON.stringify(p).toLowerCase().includes(platform)
       );
-
-      const inOrganic = links.some((l: string) =>
-        l.includes(platform)
-      );
-
+      const inOrganic = links.some((l: string) => l.includes(platform));
       return inKG || inOrganic;
     };
 
@@ -103,28 +88,21 @@ export async function GET(req: Request) {
       tiktok: checkSocial("tiktok.com"),
     };
 
-    const activeSocialCount =
-      Object.values(social).filter(Boolean).length;
+    const activeSocialCount = Object.values(social).filter(Boolean).length;
 
     // =========================
-    // 3. SEO SCORE
+    // 3. SEO Score
     // =========================
     let seoScore = Math.min((organic.length / 10) * 100, 100);
-
-    const topResultTitle =
-      organic[0]?.title?.toLowerCase() || "";
-
+    const topResultTitle = organic[0]?.title?.toLowerCase() || "";
     const businessLower = business.toLowerCase();
 
-    if (
-      topResultTitle.includes(businessLower) ||
-      kg?.title
-    ) {
+    if (topResultTitle.includes(businessLower) || kg?.title) {
       seoScore = Math.max(seoScore, 95);
     }
 
     // =========================
-    // 4. COMPETITORS
+    // 4. Competitors
     // =========================
     let competitors: any[] = [];
 
@@ -142,23 +120,17 @@ export async function GET(req: Request) {
     }
 
     // =========================
-    // 5. FINAL SCORE
+    // 5. Final Score Calculation
     // =========================
     let finalScore = Math.floor(
-      seoScore * 0.4 +
-        mapsScore * 0.3 +
-        activeSocialCount * 25 * 0.3
+      seoScore * 0.4 + mapsScore * 0.3 + activeSocialCount * 25 * 0.3
     );
 
-    // ✅ Boost real brands (like Safaricom)
-    if (kg?.title && finalScore < 85) {
-      finalScore = 96;
-    }
+    // Boost for real brands
+    if (kg?.title && finalScore < 85) finalScore = 96;
+    if (hasMaps && finalScore < 30) finalScore = 45;
 
-    if (hasMaps && finalScore < 30) {
-      finalScore = 45;
-    }
-
+    // ✅ Response
     return NextResponse.json({
       business,
       score: finalScore,
@@ -167,7 +139,7 @@ export async function GET(req: Request) {
       social,
       competitors,
 
-      // ✅ DEBUG INFO (remove later)
+      // 🔹 Debug info
       debug: {
         organicCount: organic.length,
         localCount: local.length,
@@ -176,12 +148,8 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error("API Error:", error);
-
     return NextResponse.json(
-      {
-        error: "API Failure",
-        message: error?.message || "Unknown error",
-      },
+      { error: "API Failure", message: error?.message || "Unknown error" },
       { status: 500 }
     );
   }

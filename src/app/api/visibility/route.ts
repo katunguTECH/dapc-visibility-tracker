@@ -3,34 +3,32 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  // Accept multiple query param names
+  // ✅ Accept multiple param names
   const businessRaw =
     url.searchParams.get("query") ||
     url.searchParams.get("business") ||
     url.searchParams.get("name");
 
   if (!businessRaw || businessRaw.trim().length < 2) {
-    return NextResponse.json(
-      { error: "No business name provided" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No business name" }, { status: 400 });
   }
 
-  // ✅ Use only the exact Vercel environment variable
-  const apiKey = process.env.SERP_API_KEY;
+  // ------------------------
+  // Debug: check SERP_API_KEY
+  // ------------------------
+  const apiKey = process.env.SERP_API_KEY || process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
+  console.log("SERP_API_KEY in Vercel:", apiKey ? "✅ loaded" : "❌ missing");
 
   if (!apiKey) {
-    console.error("Missing SERPAPI key in environment");
+    console.error("Missing SERPAPI key in environment!");
     return NextResponse.json(
-      { error: "Missing SERPAPI key" },
+      { error: "SERP_API_KEY missing on server" },
       { status: 500 }
     );
   }
 
   const business = businessRaw.trim();
   const searchQuery = `${business} Nairobi Kenya`;
-
-  console.log("Vercel SERPAPI_KEY loaded:", Boolean(apiKey));
   console.log("Search query:", searchQuery);
 
   try {
@@ -38,7 +36,10 @@ export async function GET(req: Request) {
       searchQuery
     )}&google_domain=google.co.ke&gl=ke&hl=en&api_key=${apiKey}`;
 
-    const res = await fetch(serpUrl, { cache: "no-store" });
+    const res = await fetch(serpUrl, { cache: "no-store" }).catch((err) => {
+      console.error("Fetch error:", err);
+      throw new Error("Failed to fetch SerpAPI");
+    });
 
     if (!res.ok) {
       console.error("SerpAPI request failed with status:", res.status);
@@ -51,16 +52,23 @@ export async function GET(req: Request) {
     const data = await res.json();
     console.log("SERP RAW (first 500 chars):", JSON.stringify(data).slice(0, 500));
 
+    // ------------------------
+    // Extract information safely
+    // ------------------------
     const organic = Array.isArray(data?.organic_results) ? data.organic_results : [];
     const local = Array.isArray(data?.local_results) ? data.local_results : [];
     const kg = data?.knowledge_graph || {};
     const placeInfo = data?.place_results || data?.place_info;
 
-    // 1️⃣ Google Maps presence
+    // =========================
+    // 1. GOOGLE MAPS PRESENCE
+    // =========================
     const hasMaps = !!kg?.title || local.length > 0 || !!placeInfo;
     const mapsScore = hasMaps ? 100 : 0;
 
-    // 2️⃣ Social media detection
+    // =========================
+    // 2. SOCIAL MEDIA DETECTION
+    // =========================
     const kgProfiles = Array.isArray(kg?.profiles)
       ? kg.profiles
       : Array.isArray(kg?.social_profiles)
@@ -86,7 +94,9 @@ export async function GET(req: Request) {
 
     const activeSocialCount = Object.values(social).filter(Boolean).length;
 
-    // 3️⃣ SEO score
+    // =========================
+    // 3. SEO SCORE
+    // =========================
     let seoScore = Math.min((organic.length / 10) * 100, 100);
     const topResultTitle = organic[0]?.title?.toLowerCase() || "";
     const businessLower = business.toLowerCase();
@@ -95,7 +105,9 @@ export async function GET(req: Request) {
       seoScore = Math.max(seoScore, 95);
     }
 
-    // 4️⃣ Competitors
+    // =========================
+    // 4. COMPETITORS
+    // =========================
     let competitors: any[] = [];
     if (local.length > 1) {
       competitors = local.slice(0, 3).map((item: any) => ({
@@ -110,7 +122,9 @@ export async function GET(req: Request) {
       ];
     }
 
-    // 5️⃣ Final score
+    // =========================
+    // 5. FINAL SCORE
+    // =========================
     let finalScore = Math.floor(
       seoScore * 0.4 + mapsScore * 0.3 + activeSocialCount * 25 * 0.3
     );

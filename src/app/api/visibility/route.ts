@@ -1,73 +1,66 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+
+  // Accept multiple query param names
+  const businessRaw =
+    url.searchParams.get("query") ||
+    url.searchParams.get("business") ||
+    url.searchParams.get("name");
+
+  if (!businessRaw || businessRaw.trim().length < 2) {
+    return NextResponse.json(
+      { error: "No business name provided" },
+      { status: 400 }
+    );
+  }
+
+  // ✅ Use only the exact Vercel environment variable
+  const apiKey = process.env.SERP_API_KEY;
+
+  if (!apiKey) {
+    console.error("Missing SERPAPI key in environment");
+    return NextResponse.json(
+      { error: "Missing SERPAPI key" },
+      { status: 500 }
+    );
+  }
+
+  const business = businessRaw.trim();
+  const searchQuery = `${business} Nairobi Kenya`;
+
+  console.log("Vercel SERPAPI_KEY loaded:", Boolean(apiKey));
+  console.log("Search query:", searchQuery);
+
   try {
-    const url = new URL(req.url);
-
-    // ✅ Accept multiple param names
-    const businessRaw =
-      url.searchParams.get("query") ||
-      url.searchParams.get("business") ||
-      url.searchParams.get("name");
-
-    if (!businessRaw || businessRaw.trim().length < 2) {
-      return NextResponse.json(
-        { error: "No business name provided" },
-        { status: 400 }
-      );
-    }
-
-    const apiKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
-    if (!apiKey) {
-      console.error("Missing SERPAPI key in environment");
-      return NextResponse.json(
-        { error: "Missing SERPAPI key" },
-        { status: 500 }
-      );
-    }
-
-    const business = businessRaw.trim();
-    const searchQuery = `${business} Nairobi Kenya`;
-
-    console.log("Using SERPAPI key:", apiKey);
-    console.log("Search query:", searchQuery);
-
-    // Call SerpAPI
     const serpUrl = `https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(
       searchQuery
     )}&google_domain=google.co.ke&gl=ke&hl=en&api_key=${apiKey}`;
 
-    let data: any = {};
-    try {
-      const res = await fetch(serpUrl, { cache: "no-store" });
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("SerpAPI request failed", res.status, text);
-        return NextResponse.json(
-          { error: "SerpAPI request failed", status: res.status, body: text },
-          { status: 500 }
-        );
-      }
-      data = await res.json();
-    } catch (err: any) {
-      console.error("Fetch error:", err.stack || err);
+    const res = await fetch(serpUrl, { cache: "no-store" });
+
+    if (!res.ok) {
+      console.error("SerpAPI request failed with status:", res.status);
       return NextResponse.json(
-        { error: "Failed to fetch SerpAPI", message: err?.message || "Unknown" },
+        { error: "SerpAPI request failed", status: res.status },
         { status: 500 }
       );
     }
 
-    // --- SAFE EXTRACTION ---
+    const data = await res.json();
+    console.log("SERP RAW (first 500 chars):", JSON.stringify(data).slice(0, 500));
+
     const organic = Array.isArray(data?.organic_results) ? data.organic_results : [];
     const local = Array.isArray(data?.local_results) ? data.local_results : [];
     const kg = data?.knowledge_graph || {};
     const placeInfo = data?.place_results || data?.place_info;
 
-    // 1. Google Maps presence
+    // 1️⃣ Google Maps presence
     const hasMaps = !!kg?.title || local.length > 0 || !!placeInfo;
     const mapsScore = hasMaps ? 100 : 0;
 
-    // 2. Social media detection
+    // 2️⃣ Social media detection
     const kgProfiles = Array.isArray(kg?.profiles)
       ? kg.profiles
       : Array.isArray(kg?.social_profiles)
@@ -75,6 +68,7 @@ export async function GET(req: Request) {
       : [];
 
     const links = organic.map((r: any) => (r.link || "").toLowerCase());
+
     const checkSocial = (platform: string) => {
       const inKG = kgProfiles.some((p: any) =>
         JSON.stringify(p).toLowerCase().includes(platform)
@@ -92,19 +86,20 @@ export async function GET(req: Request) {
 
     const activeSocialCount = Object.values(social).filter(Boolean).length;
 
-    // 3. SEO Score
+    // 3️⃣ SEO score
     let seoScore = Math.min((organic.length / 10) * 100, 100);
     const topResultTitle = organic[0]?.title?.toLowerCase() || "";
     const businessLower = business.toLowerCase();
+
     if (topResultTitle.includes(businessLower) || kg?.title) {
       seoScore = Math.max(seoScore, 95);
     }
 
-    // 4. Competitors
+    // 4️⃣ Competitors
     let competitors: any[] = [];
     if (local.length > 1) {
       competitors = local.slice(0, 3).map((item: any) => ({
-        name: item.title || "Unknown",
+        name: item.title,
         score: Math.floor(Math.random() * 10 + 85),
       }));
     } else {
@@ -115,14 +110,14 @@ export async function GET(req: Request) {
       ];
     }
 
-    // 5. Final Score
+    // 5️⃣ Final score
     let finalScore = Math.floor(
       seoScore * 0.4 + mapsScore * 0.3 + activeSocialCount * 25 * 0.3
     );
+
     if (kg?.title && finalScore < 85) finalScore = 96;
     if (hasMaps && finalScore < 30) finalScore = 45;
 
-    // Return structured JSON
     return NextResponse.json({
       business,
       score: finalScore,

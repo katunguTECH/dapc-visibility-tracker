@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  // 🔹 Debug to confirm this code is running
-  console.log("✅ NEW VISIBILITY API HIT");
-
   const url = new URL(req.url);
 
-  // Accept multiple param names (prevents breaking frontend)
+  // Accept multiple param names for flexibility
   const businessRaw =
     url.searchParams.get("query") ||
     url.searchParams.get("business") ||
@@ -19,14 +16,21 @@ export async function GET(req: Request) {
     );
   }
 
-  const apiKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
+  // Pick SERPAPI key from available environment variables
+  const apiKey =
+    process.env.SERPAPI_KEY ||
+    process.env.SERP_API_KEY ||
+    process.env.SERPER_API_KEY;
 
   if (!apiKey) {
+    console.error("❌ Missing SERPAPI key in environment");
     return NextResponse.json(
       { error: "Missing SERPAPI key" },
       { status: 500 }
     );
   }
+
+  console.log("✅ Using SERPAPI key:", apiKey ? "exists" : "missing");
 
   const business = businessRaw.trim();
   const searchQuery = `${business} Nairobi Kenya`;
@@ -47,25 +51,20 @@ export async function GET(req: Request) {
 
     const data = await res.json();
 
-    // 🔹 DEBUG (first 500 chars of raw SERP response)
-    console.log("SERP RAW:", JSON.stringify(data).slice(0, 500));
+    console.log("SERP RAW (first 500 chars):", JSON.stringify(data).slice(0, 500));
 
-    // --- Safe extraction
+    // Safe extraction
     const organic = Array.isArray(data?.organic_results) ? data.organic_results : [];
     const local = Array.isArray(data?.local_results) ? data.local_results : [];
     const kg = data?.knowledge_graph || {};
     const placeInfo = data?.place_results || data?.place_info;
 
-    // =========================
-    // 1. Google Maps / Knowledge Graph Presence
-    // =========================
+    // 1️⃣ Google Maps presence
     const hasMaps = !!kg?.title || local.length > 0 || !!placeInfo;
     const mapsScore = hasMaps ? 100 : 0;
 
-    // =========================
-    // 2. Social Media Detection
-    // =========================
-    const kgProfiles: any[] = Array.isArray(kg?.profiles)
+    // 2️⃣ Social media detection
+    const kgProfiles = Array.isArray(kg?.profiles)
       ? kg.profiles
       : Array.isArray(kg?.social_profiles)
       ? kg.social_profiles
@@ -90,22 +89,16 @@ export async function GET(req: Request) {
 
     const activeSocialCount = Object.values(social).filter(Boolean).length;
 
-    // =========================
-    // 3. SEO Score
-    // =========================
+    // 3️⃣ SEO score
     let seoScore = Math.min((organic.length / 10) * 100, 100);
     const topResultTitle = organic[0]?.title?.toLowerCase() || "";
     const businessLower = business.toLowerCase();
-
     if (topResultTitle.includes(businessLower) || kg?.title) {
       seoScore = Math.max(seoScore, 95);
     }
 
-    // =========================
-    // 4. Competitors
-    // =========================
+    // 4️⃣ Competitors
     let competitors: any[] = [];
-
     if (local.length > 1) {
       competitors = local.slice(0, 3).map((item: any) => ({
         name: item.title,
@@ -119,18 +112,15 @@ export async function GET(req: Request) {
       ];
     }
 
-    // =========================
-    // 5. Final Score Calculation
-    // =========================
+    // 5️⃣ Final score
     let finalScore = Math.floor(
       seoScore * 0.4 + mapsScore * 0.3 + activeSocialCount * 25 * 0.3
     );
 
-    // Boost for real brands
+    // Boost real brands
     if (kg?.title && finalScore < 85) finalScore = 96;
     if (hasMaps && finalScore < 30) finalScore = 45;
 
-    // ✅ Response
     return NextResponse.json({
       business,
       score: finalScore,
@@ -138,8 +128,7 @@ export async function GET(req: Request) {
       mapsPresence: hasMaps,
       social,
       competitors,
-
-      // 🔹 Debug info
+      // Debug info
       debug: {
         organicCount: organic.length,
         localCount: local.length,
@@ -149,7 +138,10 @@ export async function GET(req: Request) {
   } catch (error: any) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { error: "API Failure", message: error?.message || "Unknown error" },
+      {
+        error: "API Failure",
+        message: error?.message || "Unknown error",
+      },
       { status: 500 }
     );
   }

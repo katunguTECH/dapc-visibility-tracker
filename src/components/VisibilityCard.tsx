@@ -12,21 +12,25 @@ export default function VisibilityCard({ data }: Props) {
   const socials = [
     {
       name: "facebook",
+      label: "Facebook",
       active: social?.facebook,
       icon: "/icons/facebook.svg",
     },
     {
-      name: "twitter",
+      name: "x",
+      label: "X",
       active: social?.twitter,
-      icon: "/icons/x.svg", // ✅ using x.svg for Twitter
+      icon: "/icons/x.svg",
     },
     {
       name: "instagram",
+      label: "Instagram",
       active: social?.instagram,
       icon: "/icons/instagram.svg",
     },
     {
       name: "tiktok",
+      label: "TikTok",
       active: social?.tiktok,
       icon: "/icons/tiktok.svg",
     },
@@ -34,18 +38,15 @@ export default function VisibilityCard({ data }: Props) {
 
   return (
     <div className="mt-10 p-6 rounded-2xl shadow-lg bg-white border">
-      {/* HEADER */}
       <h2 className="text-2xl font-bold mb-4">
         Visibility Report: {business}
       </h2>
 
-      {/* SCORE */}
       <div className="mb-6">
         <p className="text-gray-500">Overall Score</p>
         <h3 className="text-4xl font-bold">{score}/100</h3>
       </div>
 
-      {/* SEO */}
       <div className="mb-6">
         <p className="font-semibold">SEO Performance</p>
         <p className="text-gray-600">
@@ -53,7 +54,6 @@ export default function VisibilityCard({ data }: Props) {
         </p>
       </div>
 
-      {/* MAPS */}
       <div className="mb-6">
         <p className="font-semibold">Google Maps</p>
         <p className={mapsPresence ? "text-green-600" : "text-red-500"}>
@@ -61,7 +61,6 @@ export default function VisibilityCard({ data }: Props) {
         </p>
       </div>
 
-      {/* SOCIAL */}
       <div className="mb-6">
         <p className="font-semibold mb-2">Social Media Footprint</p>
 
@@ -75,7 +74,8 @@ export default function VisibilityCard({ data }: Props) {
                   s.active ? "opacity-100" : "opacity-30 grayscale"
                 }`}
               />
-              <p className="text-xs capitalize">
+              <p className="text-xs">{s.label}</p>
+              <p className="text-xs">
                 {s.active ? "Active" : "Missing"}
               </p>
             </div>
@@ -83,7 +83,6 @@ export default function VisibilityCard({ data }: Props) {
         </div>
       </div>
 
-      {/* COMPETITORS */}
       <div>
         <p className="font-semibold mb-2">Local Competitors</p>
 

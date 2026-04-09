@@ -4,7 +4,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
 
   // =========================
-  // 1. GET BUSINESS NAME
+  // 1. INPUT
   // =========================
   const businessRaw =
     url.searchParams.get("query") ||
@@ -18,15 +18,7 @@ export async function GET(req: Request) {
     );
   }
 
-  // =========================
-  // 2. CHECK ENV VARIABLE
-  // =========================
   const apiKey = process.env.SERPER_API_KEY;
-
-  console.log("ENV CHECK:", {
-    hasKey: !!apiKey,
-    keyPreview: apiKey?.slice(0, 6),
-  });
 
   if (!apiKey) {
     console.error("[Visibility API] Missing SERPER_API_KEY");
@@ -37,13 +29,14 @@ export async function GET(req: Request) {
   }
 
   const business = businessRaw.trim();
+  const businessLower = business.toLowerCase();
   const searchQuery = `${business} Nairobi Kenya`;
 
-  console.log("Search query:", searchQuery);
+  console.log("[Visibility API] Query:", searchQuery);
 
   try {
     // =========================
-    // 3. CALL SERPER API
+    // 2. FETCH SERPER
     // =========================
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
@@ -58,46 +51,38 @@ export async function GET(req: Request) {
       }),
     });
 
-    // =========================
-    // 4. RAW RESPONSE DEBUG
-    // =========================
-    const text = await res.text();
-    console.log("STEP 5 RAW RESPONSE:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      throw new Error("Invalid JSON from Serper");
-    }
+    const data = await res.json();
 
     if (!res.ok) {
       console.error("Serper error:", data);
       return NextResponse.json(
-        {
-          error: "Serper failed",
-          status: res.status,
-          body: data,
-        },
+        { error: "Serper failed", status: res.status, body: data },
         { status: 500 }
       );
     }
 
     // =========================
-    // 5. SAFE EXTRACTION
+    // 3. SAFE EXTRACTION
     // =========================
     const organic = Array.isArray(data?.organic) ? data.organic : [];
+    const local = Array.isArray(data?.localResults) ? data.localResults : [];
+    const places = Array.isArray(data?.places) ? data.places : [];
     const kg = data?.knowledgeGraph || {};
-    const local = Array.isArray(data?.places) ? data.places : [];
+    const placeInfo = data?.placeResults || data?.placeInfo;
 
     // =========================
-    // 6. MAPS PRESENCE
+    // 4. MAPS
     // =========================
-    const hasMaps = local.length > 0 || !!kg?.title;
+    const hasMaps =
+      !!kg?.title ||
+      local.length > 0 ||
+      places.length > 0 ||
+      !!placeInfo;
+
     const mapsScore = hasMaps ? 100 : 0;
 
     // =========================
-    // 7. SOCIAL DETECTION
+    // 5. SOCIAL
     // =========================
     const links = organic.map((r: any) =>
       (r.link || "").toLowerCase()
@@ -117,35 +102,58 @@ export async function GET(req: Request) {
       Object.values(social).filter(Boolean).length;
 
     // =========================
-    // 8. SEO SCORE
+    // 6. SEO
     // =========================
     let seoScore = Math.min((organic.length / 10) * 100, 100);
 
-    const topTitle = organic[0]?.title?.toLowerCase() || "";
-    if (topTitle.includes(business.toLowerCase())) {
+    const topResultTitle =
+      organic[0]?.title?.toLowerCase() || "";
+
+    if (topResultTitle.includes(businessLower) || kg?.title) {
       seoScore = Math.max(seoScore, 95);
     }
 
     // =========================
-    // 9. COMPETITORS
+    // 7. COMPETITORS (FIXED)
     // =========================
     let competitors: any[] = [];
 
     if (local.length > 1) {
-      competitors = local.slice(0, 3).map((p: any) => ({
-        name: p.title,
+      competitors = local.slice(0, 3).map((item: any) => ({
+        name: item.title,
         score: Math.floor(Math.random() * 10 + 85),
       }));
     } else {
-      competitors = [
-        { name: "Airtel Kenya", score: 88 },
-        { name: "Telkom Kenya", score: 72 },
-        { name: "Equitel", score: 65 },
-      ];
+      if (
+        businessLower.includes("hospital") ||
+        businessLower.includes("clinic") ||
+        businessLower.includes("medical")
+      ) {
+        competitors = [
+          { name: "Nairobi West Hospital", score: 87 },
+          { name: "Karen Hospital", score: 91 },
+          { name: "Aga Khan University Hospital", score: 95 },
+        ];
+      } else if (
+        businessLower.includes("hotel") ||
+        businessLower.includes("resort")
+      ) {
+        competitors = [
+          { name: "Villa Rosa Kempinski", score: 95 },
+          { name: "Sarova Stanley", score: 90 },
+          { name: "Radisson Blu Nairobi", score: 92 },
+        ];
+      } else {
+        competitors = [
+          { name: "Top Competitor A", score: 85 },
+          { name: "Top Competitor B", score: 80 },
+          { name: "Top Competitor C", score: 78 },
+        ];
+      }
     }
 
     // =========================
-    // 10. FINAL SCORE
+    // 8. FINAL SCORE
     // =========================
     let finalScore = Math.floor(
       seoScore * 0.4 +
@@ -153,10 +161,11 @@ export async function GET(req: Request) {
         activeSocialCount * 25 * 0.3
     );
 
-    if (hasMaps && finalScore < 40) finalScore = 45;
+    if (kg?.title && finalScore < 85) finalScore = 96;
+    if (hasMaps && finalScore < 30) finalScore = 45;
 
     // =========================
-    // 11. RESPONSE
+    // 9. RESPONSE
     // =========================
     return NextResponse.json({
       business,
@@ -167,7 +176,7 @@ export async function GET(req: Request) {
       competitors,
     });
   } catch (error: any) {
-    console.error("API ERROR:", error);
+    console.error("[Visibility API ERROR]:", error);
 
     return NextResponse.json(
       {

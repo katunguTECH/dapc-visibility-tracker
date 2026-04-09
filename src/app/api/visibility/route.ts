@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  // ✅ Accept multiple param names (prevents frontend breaks)
+  // =========================
+  // 1. GET BUSINESS NAME
+  // =========================
   const businessRaw =
     url.searchParams.get("query") ||
     url.searchParams.get("business") ||
@@ -16,7 +18,15 @@ export async function GET(req: Request) {
     );
   }
 
+  // =========================
+  // 2. CHECK ENV VARIABLE
+  // =========================
   const apiKey = process.env.SERPER_API_KEY;
+
+  console.log("ENV CHECK:", {
+    hasKey: !!apiKey,
+    keyPreview: apiKey?.slice(0, 6),
+  });
 
   if (!apiKey) {
     console.error("[Visibility API] Missing SERPER_API_KEY");
@@ -29,11 +39,12 @@ export async function GET(req: Request) {
   const business = businessRaw.trim();
   const searchQuery = `${business} Nairobi Kenya`;
 
-  console.log("Using SERPER key:", apiKey.slice(0, 6) + "...");
   console.log("Search query:", searchQuery);
 
   try {
-    // ✅ SERPER REQUEST (CORRECT)
+    // =========================
+    // 3. CALL SERPER API
+    // =========================
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: {
@@ -47,9 +58,18 @@ export async function GET(req: Request) {
       }),
     });
 
-    const data = await res.json();
+    // =========================
+    // 4. RAW RESPONSE DEBUG
+    // =========================
+    const text = await res.text();
+    console.log("STEP 5 RAW RESPONSE:", text);
 
-    console.log("RAW SERPER:", JSON.stringify(data).slice(0, 300));
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Invalid JSON from Serper");
+    }
 
     if (!res.ok) {
       console.error("Serper error:", data);
@@ -64,20 +84,20 @@ export async function GET(req: Request) {
     }
 
     // =========================
-    // SAFE EXTRACTION
+    // 5. SAFE EXTRACTION
     // =========================
     const organic = Array.isArray(data?.organic) ? data.organic : [];
     const kg = data?.knowledgeGraph || {};
     const local = Array.isArray(data?.places) ? data.places : [];
 
     // =========================
-    // 1. MAPS PRESENCE
+    // 6. MAPS PRESENCE
     // =========================
     const hasMaps = local.length > 0 || !!kg?.title;
     const mapsScore = hasMaps ? 100 : 0;
 
     // =========================
-    // 2. SOCIAL DETECTION
+    // 7. SOCIAL DETECTION
     // =========================
     const links = organic.map((r: any) =>
       (r.link || "").toLowerCase()
@@ -97,7 +117,7 @@ export async function GET(req: Request) {
       Object.values(social).filter(Boolean).length;
 
     // =========================
-    // 3. SEO SCORE
+    // 8. SEO SCORE
     // =========================
     let seoScore = Math.min((organic.length / 10) * 100, 100);
 
@@ -107,7 +127,7 @@ export async function GET(req: Request) {
     }
 
     // =========================
-    // 4. COMPETITORS
+    // 9. COMPETITORS
     // =========================
     let competitors: any[] = [];
 
@@ -125,7 +145,7 @@ export async function GET(req: Request) {
     }
 
     // =========================
-    // 5. FINAL SCORE
+    // 10. FINAL SCORE
     // =========================
     let finalScore = Math.floor(
       seoScore * 0.4 +
@@ -135,6 +155,9 @@ export async function GET(req: Request) {
 
     if (hasMaps && finalScore < 40) finalScore = 45;
 
+    // =========================
+    // 11. RESPONSE
+    // =========================
     return NextResponse.json({
       business,
       score: finalScore,

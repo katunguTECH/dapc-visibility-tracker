@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Pricing from "@/components/Pricing";
-import VisibilityCard from "@/components/VisibilityCard";
+import { VisibilityCard } from "@/components/VisibilityCard";
 
 export default function Home() {
   const [query, setQuery] = useState("");

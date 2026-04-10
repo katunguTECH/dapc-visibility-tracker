@@ -3,25 +3,18 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
 
-  // =========================
-  // 1. INPUT
-  // =========================
   const businessRaw =
     url.searchParams.get("query") ||
     url.searchParams.get("business") ||
     url.searchParams.get("name");
 
-  if (!businessRaw || businessRaw.trim().length < 2) {
-    return NextResponse.json(
-      { error: "No business name" },
-      { status: 400 }
-    );
+  if (!businessRaw) {
+    return NextResponse.json({ error: "No business name" }, { status: 400 });
   }
 
   const apiKey = process.env.SERPER_API_KEY;
 
   if (!apiKey) {
-    console.error("[Visibility API] Missing SERPER_API_KEY");
     return NextResponse.json(
       { error: "Missing SERPER_API_KEY" },
       { status: 500 }
@@ -30,14 +23,8 @@ export async function GET(req: Request) {
 
   const business = businessRaw.trim();
   const businessLower = business.toLowerCase();
-  const searchQuery = `${business} Nairobi Kenya`;
-
-  console.log("[Visibility API] Query:", searchQuery);
 
   try {
-    // =========================
-    // 2. FETCH SERPER
-    // =========================
     const res = await fetch("https://google.serper.dev/search", {
       method: "POST",
       headers: {
@@ -45,7 +32,7 @@ export async function GET(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        q: searchQuery,
+        q: `${business} Nairobi Kenya`,
         gl: "ke",
         hl: "en",
       }),
@@ -54,42 +41,37 @@ export async function GET(req: Request) {
     const data = await res.json();
 
     if (!res.ok) {
-      console.error("Serper error:", data);
       return NextResponse.json(
-        { error: "Serper failed", status: res.status, body: data },
+        { error: "Serper failed", body: data },
         { status: 500 }
       );
     }
 
-    // =========================
-    // 3. SAFE EXTRACTION
-    // =========================
-    const organic = Array.isArray(data?.organic) ? data.organic : [];
-    const local = Array.isArray(data?.localResults) ? data.localResults : [];
-    const places = Array.isArray(data?.places) ? data.places : [];
+    const organic = data?.organic || [];
+    const local = data?.localResults || [];
     const kg = data?.knowledgeGraph || {};
-    const placeInfo = data?.placeResults || data?.placeInfo;
 
     // =========================
-    // 4. MAPS
+    // MAPS
     // =========================
-    const hasMaps =
-      !!kg?.title ||
-      local.length > 0 ||
-      places.length > 0 ||
-      !!placeInfo;
-
-    const mapsScore = hasMaps ? 100 : 0;
+    const mapsPresence = local.length > 0 || !!kg?.title;
 
     // =========================
-    // 5. SOCIAL
+    // SOCIAL (IMPROVED)
     // =========================
-    const links = organic.map((r: any) =>
-      (r.link || "").toLowerCase()
-    );
+    const extractLinks = (items: any[]) =>
+      items.map((r) => (r.link || "").toLowerCase());
+
+    const organicLinks = extractLinks(organic);
+
+    const kgLinks = Object.values(kg || {})
+      .filter((v: any) => typeof v === "string")
+      .map((v: string) => v.toLowerCase());
+
+    const allLinks = [...organicLinks, ...kgLinks];
 
     const checkSocial = (platform: string) =>
-      links.some((l: string) => l.includes(platform));
+      allLinks.some((l: string) => l.includes(platform));
 
     const social = {
       facebook: checkSocial("facebook.com"),
@@ -102,19 +84,23 @@ export async function GET(req: Request) {
       Object.values(social).filter(Boolean).length;
 
     // =========================
-    // 6. SEO
+    // SEO (FIXED)
     // =========================
     let seoScore = Math.min((organic.length / 10) * 100, 100);
 
-    const topResultTitle =
-      organic[0]?.title?.toLowerCase() || "";
+    const hasWebsite = organic.some((r: any) =>
+      r.link?.toLowerCase().includes(
+        businessLower.replace(/\s+/g, "")
+      )
+    );
 
-    if (topResultTitle.includes(businessLower) || kg?.title) {
-      seoScore = Math.max(seoScore, 95);
-    }
+    if (hasWebsite) seoScore += 10;
+
+    seoScore = Math.min(seoScore, 100);
+    seoScore = Math.floor(seoScore);
 
     // =========================
-    // 7. COMPETITORS (FIXED)
+    // COMPETITORS
     // =========================
     let competitors: any[] = [];
 
@@ -126,22 +112,12 @@ export async function GET(req: Request) {
     } else {
       if (
         businessLower.includes("hospital") ||
-        businessLower.includes("clinic") ||
-        businessLower.includes("medical")
+        businessLower.includes("clinic")
       ) {
         competitors = [
           { name: "Nairobi West Hospital", score: 87 },
           { name: "Karen Hospital", score: 91 },
           { name: "Aga Khan University Hospital", score: 95 },
-        ];
-      } else if (
-        businessLower.includes("hotel") ||
-        businessLower.includes("resort")
-      ) {
-        competitors = [
-          { name: "Villa Rosa Kempinski", score: 95 },
-          { name: "Sarova Stanley", score: 90 },
-          { name: "Radisson Blu Nairobi", score: 92 },
         ];
       } else {
         competitors = [
@@ -153,36 +129,25 @@ export async function GET(req: Request) {
     }
 
     // =========================
-    // 8. FINAL SCORE
+    // FINAL SCORE
     // =========================
-    let finalScore = Math.floor(
+    const score = Math.floor(
       seoScore * 0.4 +
-        mapsScore * 0.3 +
+        (mapsPresence ? 100 : 0) * 0.3 +
         activeSocialCount * 25 * 0.3
     );
 
-    if (kg?.title && finalScore < 85) finalScore = 96;
-    if (hasMaps && finalScore < 30) finalScore = 45;
-
-    // =========================
-    // 9. RESPONSE
-    // =========================
     return NextResponse.json({
       business,
-      score: finalScore,
-      seoScore: Math.floor(seoScore),
-      mapsPresence: hasMaps,
+      score,
+      seoScore,
+      mapsPresence,
       social,
       competitors,
     });
   } catch (error: any) {
-    console.error("[Visibility API ERROR]:", error);
-
     return NextResponse.json(
-      {
-        error: "API Failure",
-        message: error?.message || "Unknown error",
-      },
+      { error: "API failure", message: error.message },
       { status: 500 }
     );
   }

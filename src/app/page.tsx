@@ -69,7 +69,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ✅ HERO SECTION */}
+      {/* ✅ HERO */}
       <div className="text-center mt-16 px-4">
         <h2 className="text-4xl font-bold mb-4">
           Is Your Business Visible Online?
@@ -79,33 +79,13 @@ export default function Home() {
           Scan your Google Maps, Social Media, and SEO footprint in Nairobi, Kenya.
         </p>
 
-        {/* 🐘 BIG FIVE IMAGE ICONS */}
+        {/* 🐘 BIG FIVE IMAGES */}
         <div className="flex justify-center gap-6 mb-10 flex-wrap">
-          <img
-            src="/icons/supervisibility-lion.jpg"
-            alt="Lion"
-            className="w-16 h-16 object-cover rounded-full shadow"
-          />
-          <img
-            src="/icons/marketleader-elephant.jpg"
-            alt="Elephant"
-            className="w-16 h-16 object-cover rounded-full shadow"
-          />
-          <img
-            src="/icons/starter-cheetah.jpg"
-            alt="Cheetah"
-            className="w-16 h-16 object-cover rounded-full shadow"
-          />
-          <img
-            src="/icons/growthengine-rhino.jpg"
-            alt="Rhino"
-            className="w-16 h-16 object-cover rounded-full shadow"
-          />
-          <img
-            src="/icons/boost-buffalo.jpg"
-            alt="Buffalo"
-            className="w-16 h-16 object-cover rounded-full shadow"
-          />
+          <img src="/icons/supervisibility-lion.jpg" className="w-16 h-16 rounded-full object-cover shadow" />
+          <img src="/icons/marketleader-elephant.jpg" className="w-16 h-16 rounded-full object-cover shadow" />
+          <img src="/icons/starter-cheetah.jpg" className="w-16 h-16 rounded-full object-cover shadow" />
+          <img src="/icons/growthengine-rhino.jpg" className="w-16 h-16 rounded-full object-cover shadow" />
+          <img src="/icons/boost-buffalo.jpg" className="w-16 h-16 rounded-full object-cover shadow" />
         </div>
 
         {/* ✅ SEARCH */}
@@ -133,6 +113,72 @@ export default function Home() {
           <VisibilityCard data={data} />
         </div>
       )}
+
+      {/* 💰 PRICING */}
+      <div className="max-w-6xl mx-auto mt-20 px-4">
+        <h3 className="text-2xl font-bold text-center mb-10">
+          Choose Your Growth Tier
+        </h3>
+
+        <div className="grid md:grid-cols-3 gap-6">
+
+          {/* STARTER */}
+          <div className="border rounded-2xl p-5 shadow hover:shadow-lg transition">
+            <img src="/icons/starter-cheetah.jpg" className="w-16 h-16 rounded-full mb-4" />
+            <h4 className="font-bold text-lg">Starter Listing</h4>
+            <p className="text-gray-500 text-sm mb-2">For small or offline businesses</p>
+            <p className="text-xl font-bold mb-4">KES 1,999</p>
+            <button className="w-full bg-black text-white py-2 rounded-lg">
+              Subscribe
+            </button>
+          </div>
+
+          {/* LOCAL BOOST */}
+          <div className="border rounded-2xl p-5 shadow hover:shadow-lg transition">
+            <img src="/icons/boost-buffalo.jpg" className="w-16 h-16 rounded-full mb-4" />
+            <h4 className="font-bold text-lg">Local Boost</h4>
+            <p className="text-gray-500 text-sm mb-2">Improve Maps & local visibility</p>
+            <p className="text-xl font-bold mb-4">KES 3,999</p>
+            <button className="w-full bg-black text-white py-2 rounded-lg">
+              Subscribe
+            </button>
+          </div>
+
+          {/* GROWTH ENGINE */}
+          <div className="border rounded-2xl p-5 shadow hover:shadow-lg transition">
+            <img src="/icons/growthengine-rhino.jpg" className="w-16 h-16 rounded-full mb-4" />
+            <h4 className="font-bold text-lg">Growth Engine</h4>
+            <p className="text-gray-500 text-sm mb-2">Consistent monthly leads</p>
+            <p className="text-xl font-bold mb-4">KES 5,999</p>
+            <button className="w-full bg-black text-white py-2 rounded-lg">
+              Subscribe
+            </button>
+          </div>
+
+          {/* MARKET LEADER */}
+          <div className="border rounded-2xl p-5 shadow hover:shadow-lg transition">
+            <img src="/icons/marketleader-elephant.jpg" className="w-16 h-16 rounded-full mb-4" />
+            <h4 className="font-bold text-lg">Market Leader</h4>
+            <p className="text-gray-500 text-sm mb-2">Dominate competitive markets</p>
+            <p className="text-xl font-bold mb-4">KES 7,999</p>
+            <button className="w-full bg-black text-white py-2 rounded-lg">
+              Subscribe
+            </button>
+          </div>
+
+          {/* SUPER VISIBILITY */}
+          <div className="border rounded-2xl p-5 shadow hover:shadow-lg transition md:col-span-2">
+            <img src="/icons/supervisibility-lion.jpg" className="w-16 h-16 rounded-full mb-4" />
+            <h4 className="font-bold text-lg">Super Active Visibility</h4>
+            <p className="text-gray-500 text-sm mb-2">Maximum exposure & growth</p>
+            <p className="text-xl font-bold mb-4">KES 10,000</p>
+            <button className="w-full bg-black text-white py-2 rounded-lg">
+              Subscribe
+            </button>
+          </div>
+
+        </div>
+      </div>
     </main>
   );
 }

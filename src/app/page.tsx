@@ -1,119 +1,97 @@
-"use client";
-
-import { useState } from "react";
-import VisibilityCard from "@/components/VisibilityCard";
-import Pricing from "@/components/Pricing"; // ✅ IMPORTANT
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  UserButton,
-} from "@clerk/nextjs";
+// src/app/page.tsx
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSearch = async () => {
-    if (!query) return;
-
-    const count = Number(localStorage.getItem("search_count") || "0");
-
-    if (count >= 5) {
-      alert("You’ve reached the free limit. Please sign in to continue.");
-      return;
-    }
-
-    localStorage.setItem("search_count", (count + 1).toString());
-
-    try {
-      setLoading(true);
-
-      const res = await fetch(
-        `/api/visibility?business=${encodeURIComponent(query)}`
-      );
-
-      const result = await res.json();
-      setData(result);
-    } catch (err) {
-      console.error(err);
-      alert("Audit failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const plans = [
+    {
+      name: "Starter Listing",
+      price: "KES 1999",
+    },
+    {
+      name: "Local Boost",
+      price: "KES 3999",
+    },
+    {
+      name: "Growth Engine",
+      price: "KES 5999",
+    },
+    {
+      name: "Market Leader",
+      price: "KES 7999",
+    },
+    {
+      name: "Super Visibility",
+      price: "KES 10000",
+      icon: "/icons/superactivevisibility-lion.jpg", // ✅ correct path
+    },
+  ];
 
   return (
-    <main>
-      {/* NAVBAR */}
-      <div className="flex justify-between items-center px-6 py-4">
-        <h1 className="font-bold text-xl text-blue-600">DAPC</h1>
-
-        <div className="flex items-center gap-6">
-          <a href="#">Home</a>
-          <a href="#">Exposure</a>
-          <a href="#">Leads</a>
-
-          <SignedOut>
-            <SignInButton>
-              <button className="bg-black text-white px-4 py-2 rounded-lg">
-                Sign In
-              </button>
-            </SignInButton>
-          </SignedOut>
-
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
+    <main className="min-h-screen bg-white text-black flex flex-col items-center justify-center px-4">
+      
+      {/* NAV */}
+      <nav className="w-full max-w-5xl flex justify-between items-center py-4">
+        <h1 className="text-xl font-bold">DAPC</h1>
+        <div className="flex gap-6 text-sm">
+          <span>Home</span>
+          <span>Exposure</span>
+          <span>Leads</span>
         </div>
-      </div>
+      </nav>
 
       {/* HERO */}
-      <div className="text-center mt-20 px-4 max-w-3xl mx-auto">
-        <h2 className="text-5xl font-extrabold leading-tight mb-4">
-          Is Your Business
-          <br />
-          <span className="text-blue-600">Visible Online?</span>
+      <section className="text-center mt-10">
+        <h2 className="text-3xl font-bold mb-4">
+          Is Your Business <br /> Visible Online?
         </h2>
-
-        <p className="text-gray-500 mb-8">
+        <p className="text-gray-600 mb-6">
           Scan your Google Maps, Social Media, and SEO footprint in Nairobi, Kenya.
         </p>
 
-        <div className="w-full">
-          <input
-            type="text"
-            placeholder="Enter business name (e.g. Langata Hospital)"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full border rounded-xl px-4 py-4 mb-4 shadow-sm"
-          />
+        <input
+          placeholder="Enter business name (e.g. Langata Hospital)"
+          className="border px-4 py-2 w-80 rounded-md"
+        />
 
-          <button
-            onClick={handleSearch}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg"
-          >
-            {loading ? "Running Audit..." : "Run Audit"}
+        <div className="mt-4">
+          <button className="bg-black text-white px-6 py-2 rounded-md">
+            Run Audit
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* RESULTS */}
-      {data && (
-        <div className="px-4 mt-12 max-w-4xl mx-auto">
-          <VisibilityCard {...data} />
-        </div>
-      )}
-
-      {/* ✅ PRICING WITH M-PESA */}
-      <div className="max-w-6xl mx-auto mt-20 px-4">
-        <h3 className="text-2xl font-bold text-center mb-10">
+      {/* PRICING */}
+      <section className="mt-12 w-full max-w-5xl">
+        <h3 className="text-xl font-semibold text-center mb-6">
           Choose Your Growth Tier
         </h3>
 
-        <Pricing />
-      </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {plans.map((plan, index) => (
+            <div
+              key={index}
+              className="border rounded-xl p-4 flex flex-col items-center text-center shadow-sm"
+            >
+              
+              {/* ✅ ICON ONLY FOR SUPER VISIBILITY */}
+              {plan.icon && (
+                <img
+                  src={plan.icon}
+                  alt="Super Visibility"
+                  className="w-12 h-12 mb-2"
+                />
+              )}
+
+              <h4 className="font-semibold">{plan.name}</h4>
+              <p className="mt-2">{plan.price}</p>
+
+              <button className="mt-3 bg-black text-white px-4 py-1 rounded">
+                Subscribe
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </main>
   );
 }

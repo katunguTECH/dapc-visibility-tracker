@@ -1,65 +1,95 @@
-import React from "react";
 
-interface SocialStatus {
-  facebook: boolean;
-  twitter: boolean;
-  instagram: boolean;
-  tiktok: boolean;
-}
+import {
+  FaFacebook,
+  FaInstagram,
+  FaTiktok,
+  FaXTwitter,
+  FaMapMarkerAlt,
+} from "react-icons/fa6";
 
-interface Competitor {
-  name: string;
-  score: number;
-}
-
-interface VisibilityCardProps {
-  business: string;
-  score: number;
-  seoScore: number;
-  mapsPresence: boolean;
-  social: SocialStatus;
-  competitors: Competitor[];
-}
-
-export const VisibilityCard: React.FC<VisibilityCardProps> = ({
+export const VisibilityCard = ({
   business,
   score,
   seoScore,
   mapsPresence,
   social,
   competitors,
-}) => {
+}: any) => {
   return (
-    <div style={{ border: "1px solid #ccc", padding: 16, borderRadius: 8, maxWidth: 400 }}>
-      <h2>{business}</h2>
-      <p>
-        <strong>Overall Score:</strong> {score}/100
-      </p>
-      <p>
-        <strong>SEO Score:</strong> {seoScore}/100
-      </p>
-      <p>
-        <strong>Google Maps Presence:</strong> {mapsPresence ? "Yes" : "No"}
-      </p>
+    <div className="bg-white border rounded-2xl p-6 shadow-lg space-y-6">
+
+      {/* HEADER */}
       <div>
-        <strong>Social Media:</strong>
-        <ul>
-          <li>Facebook: {social.facebook ? "Active" : "Missing"}</li>
-          <li>Twitter/X: {social.twitter ? "Active" : "Missing"}</li>
-          <li>Instagram: {social.instagram ? "Active" : "Missing"}</li>
-          <li>TikTok: {social.tiktok ? "Active" : "Missing"}</li>
-        </ul>
+        <h2 className="text-xl font-bold">{business}</h2>
+        <p className="text-gray-500 text-sm">Visibility Report</p>
       </div>
+
+      {/* SCORES */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-blue-50 p-4 rounded-xl">
+          <p className="text-sm">Overall</p>
+          <h3 className="text-2xl font-bold text-blue-600">
+            {score}/100
+          </h3>
+        </div>
+
+        <div className="bg-green-50 p-4 rounded-xl">
+          <p className="text-sm">SEO Score</p>
+          <h3 className="text-2xl font-bold text-green-600">
+            {seoScore}/100
+          </h3>
+        </div>
+      </div>
+
+      {/* MAPS */}
+      <div className="flex items-center gap-2">
+        <FaMapMarkerAlt className="text-red-500" />
+        <span>Google Maps:</span>
+        <span className={mapsPresence ? "text-green-600" : "text-red-500"}>
+          {mapsPresence ? "Listed" : "Missing"}
+        </span>
+      </div>
+
+      {/* SOCIAL */}
+      <div className="grid grid-cols-4 gap-3 text-center">
+        <SocialIcon icon={<FaFacebook />} active={social.facebook} />
+        <SocialIcon icon={<FaXTwitter />} active={social.twitter} />
+        <SocialIcon icon={<FaInstagram />} active={social.instagram} />
+        <SocialIcon icon={<FaTiktok />} active={social.tiktok} />
+      </div>
+
+      {/* COMPETITORS */}
       <div>
-        <strong>Competitors:</strong>
-        <ul>
-          {competitors.map((c) => (
-            <li key={c.name}>
-              {c.name}: {c.score}%
-            </li>
+        <h3 className="font-semibold mb-2">Competitors</h3>
+
+        <div className="space-y-1">
+          {competitors.map((c: any, i: number) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span>{c.name}</span>
+              <span className="font-bold">{c.score}%</span>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
+
     </div>
   );
 };
+
+function SocialIcon({
+  icon,
+  active,
+}: {
+  icon: React.ReactNode;
+  active: boolean;
+}) {
+  return (
+    <div
+      className={`p-3 rounded-xl text-xl flex justify-center ${
+        active ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
+      }`}
+    >
+      {icon}
+    </div>
+  );
+}

@@ -2,135 +2,86 @@
 
 import { useState } from "react";
 
-interface Plan {
-  name: string;
-  price: number;
-  features: string[];
-  icon: string;
-}
-
-const plans: Plan[] = [
-  { name: "Starter Listing", price: 1999, features: ["Local SEO Scan"], icon: "/icons/starter-cheetah.jpg" },
-  { name: "Local Boost", price: 3999, features: ["Competitor Tracking"], icon: "/icons/boost-buffalo.jpg" },
-  { name: "Growth Engine", price: 5999, features: ["Social Media Audit"], icon: "/icons/growthengine-rhino.jpg" },
-  { name: "Market Leader", price: 7999, features: ["Market Intelligence"], icon: "/icons/marketleader-elephant.jpg" },
-  { name: "Super Visibility", price: 10000, features: ["Full Visibility Suite"], icon: "/icons/superactivevisibility-lion.jpg" },
+const plans = [
+  { name: "Starter", price: 1999, icon: "/icons/starter-cheetah.jpg" },
+  { name: "Boost", price: 3999, icon: "/icons/boost-buffalo.jpg" },
+  { name: "Growth", price: 5999, icon: "/icons/growthengine-rhino.jpg" },
+  { name: "Leader", price: 7999, icon: "/icons/marketleader-elephant.jpg" },
+  { name: "Super", price: 10000, icon: "/icons/superactivevisibility-lion.jpg" },
 ];
 
 export default function Pricing() {
   const [phone, setPhone] = useState("");
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubscribeClick = (plan: Plan) => {
-    setCurrentPlan(plan);
-    setShowPhoneInput(true);
-  };
-
-  const formatPhone = (phone: string) => {
-    if (phone.startsWith("0")) return "254" + phone.slice(1);
-    if (phone.startsWith("+")) return phone.replace("+", "");
-    return phone;
-  };
+  const [plan, setPlan] = useState<any>(null);
 
   const sendSTK = async () => {
-    if (!phone || !currentPlan) {
-      alert("Enter phone number");
-      return;
-    }
+    if (!phone || !plan) return alert("Enter phone");
 
-    setLoading(true);
+    const formatted =
+      phone.startsWith("0") ? "254" + phone.slice(1) : phone;
 
-    try {
-      const res = await fetch("/api/mpesa/stk-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: formatPhone(phone),
-          amount: currentPlan.price,
-        }),
-      });
+    const res = await fetch("/api/mpesa/stk-push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: formatted,
+        amount: plan.price,
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (data.success) {
-        alert("✅ STK Push sent! Check your phone.");
-        setShowPhoneInput(false);
-        setPhone("");
-      } else {
-        alert("❌ Failed: " + (data.message || "Try again"));
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Network error sending STK");
-    } finally {
-      setLoading(false);
-    }
+    alert(data.success ? "STK sent!" : "Failed");
+    setPlan(null);
+    setPhone("");
   };
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        {plans.map((plan) => (
-          <div key={plan.name} className="p-6 border rounded-2xl text-center shadow">
-            
-            <img
-              src={plan.icon}
-              className="w-16 h-16 mx-auto mb-4 rounded-full"
-              alt={plan.name}
-            />
+    <div className="grid md:grid-cols-5 gap-4 px-4 mt-10">
 
-            <h3 className="font-bold">{plan.name}</h3>
-            <p className="text-blue-600 font-bold">KES {plan.price}</p>
+      {plans.map((p) => (
+        <div key={p.name} className="border p-4 rounded-xl text-center">
 
-            <button
-              onClick={() => handleSubscribeClick(plan)}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg w-full"
-            >
-              Subscribe
-            </button>
-          </div>
-        ))}
-      </div>
+          <img src={p.icon} className="w-14 h-14 mx-auto mb-2 rounded-full" />
 
-      {/* MODAL */}
-      {showPhoneInput && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl w-80 text-center">
+          <h3 className="font-bold">{p.name}</h3>
+          <p className="text-blue-600">KES {p.price}</p>
 
-            <h3 className="font-bold mb-2">Lipa na M-PESA</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Pay KES {currentPlan?.price} for {currentPlan?.name}
-            </p>
+          <button
+            onClick={() => setPlan(p)}
+            className="bg-blue-600 text-white px-3 py-2 rounded mt-3 w-full"
+          >
+            Subscribe
+          </button>
+
+        </div>
+      ))}
+
+      {plan && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl w-80">
+
+            <h3 className="font-bold mb-2">
+              Pay KES {plan.price}
+            </h3>
 
             <input
-              type="text"
+              className="border w-full p-2 mb-3"
               placeholder="0712345678"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="border p-3 w-full mb-4 rounded"
             />
 
             <button
               onClick={sendSTK}
-              disabled={loading}
-              className="bg-green-600 text-white w-full py-3 rounded-lg"
+              className="bg-green-600 text-white w-full py-2 rounded"
             >
-              {loading ? "Sending STK..." : "Pay Now"}
-            </button>
-
-            <button
-              onClick={() => setShowPhoneInput(false)}
-              className="mt-3 text-sm text-gray-500"
-            >
-              Cancel
+              Pay Now
             </button>
 
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

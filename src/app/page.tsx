@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -11,7 +12,7 @@ export default function Home() {
 
   const handleAudit = async () => {
     if (!query) {
-      alert("Please enter a business name");
+      alert("Enter a business name");
       return;
     }
 
@@ -33,43 +34,39 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main className="min-h-screen bg-white">
 
       {/* NAV */}
-      <div className="flex justify-between items-center px-6 py-4 border-b">
+      <div className="flex justify-between px-6 py-4 border-b">
         <h1 className="font-bold text-xl text-blue-600">DAPC</h1>
-
         <div className="flex gap-6 text-sm">
-          <a href="#">Home</a>
-          <a href="#">Exposure</a>
-          <a href="#">Leads</a>
+          <a>Home</a>
+          <a>Exposure</a>
+          <a>Leads</a>
         </div>
       </div>
 
       {/* HERO */}
-      <div className="text-center mt-16 px-4 max-w-3xl mx-auto">
-        <h2 className="text-5xl font-bold leading-tight">
-          Is Your Business
-          <br />
-          <span className="text-blue-600">Visible Online?</span>
+      <div className="text-center mt-14 max-w-3xl mx-auto px-4">
+        <h2 className="text-4xl font-bold">
+          Is Your Business Visible Online?
         </h2>
 
-        <p className="text-gray-500 mt-4">
-          Scan your Google Maps, Social Media, and SEO footprint in Nairobi, Kenya.
+        <p className="text-gray-500 mt-2">
+          SEO, Maps & Social Media Intelligence for Kenya
         </p>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <input
-            type="text"
+            className="border px-4 py-3 w-full rounded-xl"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter business name (e.g. Langata Hospital)"
-            className="w-full border rounded-xl px-4 py-4"
+            placeholder="Enter business name"
           />
 
           <button
             onClick={handleAudit}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl mt-4 font-semibold"
+            className="bg-blue-600 text-white w-full py-3 mt-3 rounded-xl"
           >
             {loading ? "Running Audit..." : "Run Audit"}
           </button>
@@ -78,17 +75,13 @@ export default function Home() {
 
       {/* RESULTS */}
       {data && (
-        <div className="mt-12 max-w-4xl mx-auto px-4">
+        <div className="mt-10 px-4 max-w-4xl mx-auto">
           <VisibilityCard {...data} />
         </div>
       )}
 
-      {/* PRICING + M-PESA */}
-      <div className="mt-20">
-        <h3 className="text-2xl font-bold text-center mb-8">
-          Choose Your Growth Tier
-        </h3>
-
+      {/* PRICING */}
+      <div className="mt-16">
         <Pricing />
       </div>
 

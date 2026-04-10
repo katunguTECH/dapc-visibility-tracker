@@ -21,26 +21,33 @@ export default function Pricing() {
   const [phone, setPhone] = useState("");
   const [showPhoneInput, setShowPhoneInput] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubscribeClick = (plan: Plan) => {
     setCurrentPlan(plan);
     setShowPhoneInput(true);
   };
 
-  const sendSTK = async () => {
-    if (!phone || !currentPlan) return alert("Enter phone number");
+  const formatPhone = (phone: string) => {
+    if (phone.startsWith("0")) return "254" + phone.slice(1);
+    if (phone.startsWith("+")) return phone.replace("+", "");
+    return phone;
+  };
 
-    let formattedPhone = phone;
-    if (phone.startsWith("0")) {
-      formattedPhone = "254" + phone.slice(1);
+  const sendSTK = async () => {
+    if (!phone || !currentPlan) {
+      alert("Enter phone number");
+      return;
     }
+
+    setLoading(true);
 
     try {
       const res = await fetch("/api/mpesa/stk-push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: formattedPhone,
+          phone: formatPhone(phone),
           amount: currentPlan.price,
         }),
       });
@@ -49,15 +56,17 @@ export default function Pricing() {
 
       if (data.success) {
         alert("✅ STK Push sent! Check your phone.");
+        setShowPhoneInput(false);
+        setPhone("");
       } else {
         alert("❌ Failed: " + (data.message || "Try again"));
       }
 
-      setShowPhoneInput(false);
-      setPhone("");
     } catch (err) {
       console.error(err);
-      alert("❌ Error sending STK");
+      alert("❌ Network error sending STK");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,7 +75,13 @@ export default function Pricing() {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {plans.map((plan) => (
           <div key={plan.name} className="p-6 border rounded-2xl text-center shadow">
-            <img src={plan.icon} className="w-16 h-16 mx-auto mb-4 rounded-full" />
+            
+            <img
+              src={plan.icon}
+              className="w-16 h-16 mx-auto mb-4 rounded-full"
+              alt={plan.name}
+            />
+
             <h3 className="font-bold">{plan.name}</h3>
             <p className="text-blue-600 font-bold">KES {plan.price}</p>
 
@@ -80,26 +95,39 @@ export default function Pricing() {
         ))}
       </div>
 
-      {/* M-PESA MODAL */}
+      {/* MODAL */}
       {showPhoneInput && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-xl w-80 text-center">
-            <h3 className="font-bold mb-4">Lipa na M-PESA</h3>
+
+            <h3 className="font-bold mb-2">Lipa na M-PESA</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Pay KES {currentPlan?.price} for {currentPlan?.name}
+            </p>
 
             <input
               type="text"
               placeholder="0712345678"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="border p-3 w-full mb-4"
+              className="border p-3 w-full mb-4 rounded"
             />
 
             <button
               onClick={sendSTK}
+              disabled={loading}
               className="bg-green-600 text-white w-full py-3 rounded-lg"
             >
-              Pay Now
+              {loading ? "Sending STK..." : "Pay Now"}
             </button>
+
+            <button
+              onClick={() => setShowPhoneInput(false)}
+              className="mt-3 text-sm text-gray-500"
+            >
+              Cancel
+            </button>
+
           </div>
         </div>
       )}

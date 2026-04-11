@@ -1,16 +1,18 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  output: 'standalone',
-  typescript: {
-    ignoreBuildErrors: true,
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    unoptimized: true, // Important for Vercel deployment
   },
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: {
-    unoptimized: true,
+  typescript: {
+    ignoreBuildErrors: true,
   },
-};
+  // Disable static optimization for all routes
+  staticPageGenerationTimeout: 120,
+}
 
-export default nextConfig;
+module.exports = nextConfig

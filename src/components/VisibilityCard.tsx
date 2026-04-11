@@ -1,94 +1,41 @@
-"use client";
+import React from "react";
 
-import {
-  FaFacebook,
-  FaInstagram,
-  FaTiktok,
-  FaXTwitter,
-  FaMapMarkerAlt,
-} from "react-icons/fa6";
-
-export default function VisibilityCard({
-  business = "Unknown Business",
-  score = 0,
-  seoScore = 0,
-  mapsPresence = false,
-  social = {
-    facebook: false,
-    twitter: false,
-    instagram: false,
-    tiktok: false,
-  },
-  competitors = [],
+export function VisibilityCard({
+  business,
+  score,
+  seoScore,
+  mapsPresence,
+  social,
+  competitors,
 }: any) {
+  if (!business) return null; // 🛡️ prevent crash
+
   return (
-    <div className="bg-white border rounded-2xl p-6 shadow-lg space-y-6">
+    <div className="border p-5 rounded-xl shadow bg-white">
+      <h2 className="text-xl font-bold mb-2">{business}</h2>
 
-      <h2 className="text-xl font-bold">{business}</h2>
+      <p><strong>Overall Score:</strong> {score}/100</p>
+      <p><strong>SEO Score:</strong> {seoScore}/100</p>
+      <p><strong>Google Maps:</strong> {mapsPresence ? "Yes" : "No"}</p>
 
-      {/* SCORES */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-blue-50 p-4 rounded-xl">
-          <p>Overall</p>
-          <h3 className="text-2xl font-bold text-blue-600">
-            {score}/100
-          </h3>
-        </div>
-
-        <div className="bg-green-50 p-4 rounded-xl">
-          <p>SEO Score</p>
-          <h3 className="text-2xl font-bold text-green-600">
-            {seoScore}/100
-          </h3>
-        </div>
+      <div className="mt-3">
+        <strong>Social Media:</strong>
+        <ul className="text-sm text-gray-600">
+          <li>Facebook: {social?.facebook ? "Active" : "Missing"}</li>
+          <li>Twitter: {social?.twitter ? "Active" : "Missing"}</li>
+          <li>Instagram: {social?.instagram ? "Active" : "Missing"}</li>
+          <li>TikTok: {social?.tiktok ? "Active" : "Missing"}</li>
+        </ul>
       </div>
 
-      {/* MAPS */}
-      <div className="flex gap-2 items-center">
-        <FaMapMarkerAlt />
-        <span>
-          Google Maps:
-        </span>
-        <span className={mapsPresence ? "text-green-600" : "text-red-500"}>
-          {mapsPresence ? "Listed" : "Missing"}
-        </span>
+      <div className="mt-3">
+        <strong>Competitors:</strong>
+        <ul className="text-sm text-gray-600">
+          {competitors?.map((c: any, i: number) => (
+            <li key={i}>{c.name}: {c.score}%</li>
+          ))}
+        </ul>
       </div>
-
-      {/* SOCIAL */}
-      <div className="grid grid-cols-4 gap-3 text-center">
-        <Icon icon={<FaFacebook />} active={social.facebook} />
-        <Icon icon={<FaXTwitter />} active={social.twitter} />
-        <Icon icon={<FaInstagram />} active={social.instagram} />
-        <Icon icon={<FaTiktok />} active={social.tiktok} />
-      </div>
-
-      {/* COMPETITORS */}
-      <div>
-        <h3 className="font-bold mb-2">Competitors</h3>
-
-        {competitors.length === 0 ? (
-          <p className="text-gray-400 text-sm">No competitors found</p>
-        ) : (
-          competitors.map((c: any, i: number) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span>{c.name}</span>
-              <span className="font-bold">{c.score}%</span>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Icon({ icon, active }: any) {
-  return (
-    <div
-      className={`p-3 rounded-xl flex justify-center text-xl ${
-        active ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
-      }`}
-    >
-      {icon}
     </div>
   );
 }

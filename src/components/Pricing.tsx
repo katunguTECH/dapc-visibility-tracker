@@ -45,32 +45,21 @@ const plans: Plan[] = [
 export default function Pricing() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Plan | null>(null);
 
-  // 🟢 Open modal
-  const handleSubscribe = (plan: Plan) => {
-    setSelectedPlan(plan);
-    setShowModal(true);
+  const openModal = (plan: Plan) => {
+    setSelected(plan);
+    setOpen(true);
   };
 
-  // 🟢 Send STK Push
   const sendSTK = async () => {
-    if (!phone || !selectedPlan) {
-      alert("Enter phone number");
-      return;
-    }
+    if (!selected) return;
+    if (!phone) return alert("Enter phone number");
 
-    let formattedPhone = phone.trim();
-
-    // normalize Kenyan format
-    if (formattedPhone.startsWith("0")) {
-      formattedPhone = "254" + formattedPhone.slice(1);
-    }
-
-    if (!formattedPhone.startsWith("254")) {
-      alert("Use format 07XXXXXXXX or 254XXXXXXXXX");
-      return;
+    let formatted = phone.trim();
+    if (formatted.startsWith("0")) {
+      formatted = "254" + formatted.slice(1);
     }
 
     try {
@@ -80,8 +69,8 @@ export default function Pricing() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: formattedPhone,
-          amount: selectedPlan.price,
+          phone: formatted,
+          amount: selected.price,
         }),
       });
 
@@ -91,25 +80,23 @@ export default function Pricing() {
         throw new Error(data.message || "STK failed");
       }
 
-      alert("✅ STK sent! Check your phone.");
-      setShowModal(false);
+      alert("✅ STK sent to phone");
+      setOpen(false);
       setPhone("");
-      setSelectedPlan(null);
+      setSelected(null);
     } catch (err: any) {
-      console.error(err);
-      alert("❌ Payment failed: " + err.message);
+      alert("❌ Payment error: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-10">
-
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
       {plans.map((plan) => (
         <div
           key={plan.name}
-          className="border rounded-2xl p-5 text-center shadow hover:shadow-lg transition"
+          className="border rounded-xl p-5 text-center shadow"
         >
           <img
             src={plan.icon}
@@ -117,67 +104,53 @@ export default function Pricing() {
             className="w-16 h-16 mx-auto mb-3 rounded-full object-cover"
           />
 
-          <h3 className="font-bold text-lg">{plan.name}</h3>
+          <h3 className="font-bold">{plan.name}</h3>
 
-          <p className="text-blue-600 font-bold mb-2">
+          <p className="text-blue-600 font-bold">
             KES {plan.price.toLocaleString()}
           </p>
 
-          <ul className="text-sm text-gray-500 mb-4">
-            {plan.features.map((f) => (
-              <li key={f}>• {f}</li>
-            ))}
-          </ul>
-
           <button
-            onClick={() => handleSubscribe(plan)}
-            className="bg-blue-600 text-white w-full py-2 rounded-lg font-semibold"
+            onClick={() => openModal(plan)}
+            className="mt-4 bg-blue-600 text-white w-full py-2 rounded-lg"
           >
             Subscribe
           </button>
         </div>
       ))}
 
-      {/* 🔥 M-PESA MODAL */}
-      {showModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      {/* MODAL */}
+      {open && selected && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl w-80 text-center">
-
-            <h2 className="font-bold text-lg mb-2">
-              Pay KES {selectedPlan.price}
-            </h2>
-
-            <p className="text-sm text-gray-500 mb-4">
-              {selectedPlan.name}
-            </p>
+            <h2 className="font-bold mb-2">{selected.name}</h2>
+            <p className="mb-4">KES {selected.price}</p>
 
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. 0712345678"
-              className="border p-3 w-full rounded-lg mb-4"
+              placeholder="0712345678"
+              className="border p-3 w-full mb-4 rounded"
             />
 
             <button
               onClick={sendSTK}
               disabled={loading}
-              className="bg-green-600 text-white w-full py-3 rounded-lg font-semibold"
+              className="bg-green-600 text-white w-full py-3 rounded"
             >
               {loading ? "Sending..." : "Pay Now"}
             </button>
 
             <button
-              onClick={() => setShowModal(false)}
-              className="text-sm text-gray-500 mt-3"
+              onClick={() => setOpen(false)}
+              className="text-sm mt-3 text-gray-500"
             >
               Cancel
             </button>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

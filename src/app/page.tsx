@@ -14,6 +14,7 @@ export default function Home() {
 
     try {
       setLoading(true);
+      setData(null);
 
       const res = await fetch(
         `/api/visibility?business=${encodeURIComponent(query)}`
@@ -23,7 +24,7 @@ export default function Home() {
 
       setData(json);
     } catch (err) {
-      console.error(err);
+      console.error("Audit error:", err);
       setData(null);
     } finally {
       setLoading(false);
@@ -31,15 +32,17 @@ export default function Home() {
   };
 
   return (
-    <main className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">DAPC Audit</h1>
+    <main className="max-w-5xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">DAPC Visibility Audit</h1>
 
+      {/* INPUT (FIXED name/id for accessibility warning) */}
       <input
         id="business"
         name="business"
+        type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Enter business"
+        placeholder="Enter business name"
         className="border p-3 w-full mb-3"
       />
 
@@ -50,12 +53,14 @@ export default function Home() {
         {loading ? "Running..." : "Run Audit"}
       </button>
 
+      {/* RESULTS (SAFE RENDER) */}
       <div className="mt-6">
         {data?.business ? (
           <VisibilityCard {...data} />
         ) : null}
       </div>
 
+      {/* PRICING */}
       <div className="mt-10">
         <Pricing />
       </div>

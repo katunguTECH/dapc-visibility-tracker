@@ -2,7 +2,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    unoptimized: true, // Important for Vercel deployment
+    unoptimized: true,
   },
   output: 'standalone',
   eslint: {
@@ -11,8 +11,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Disable static optimization for all routes
-  staticPageGenerationTimeout: 120,
 }
 
 module.exports = nextConfig

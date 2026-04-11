@@ -1,16 +1,15 @@
-// src/app/page.tsx - Add this line at the VERY TOP, before any imports
+// src/app/page.tsx
+"use client";  // THIS MUST BE FIRST - NO COMMENTS ABOVE IT
+
+// Then add dynamic exports AFTER "use client"
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
-
-// Then your existing code continues...
-"use client";
 
 import { useState, Suspense } from "react";
 import Image from "next/image";
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
-// ... rest of your code
 
 // Loading component
 function LoadingState() {

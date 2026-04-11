@@ -1,11 +1,6 @@
 // src/app/page.tsx
 "use client";
 
-// REMOVED: export const dynamic = 'force-dynamic';
-// REMOVED: export const fetchCache = 'force-no-store';  
-// REMOVED: export const revalidate = 0;
-// These are server-only directives and cannot be used with "use client"
-
 import { useState, Suspense } from "react";
 import Image from "next/image";
 import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
@@ -33,7 +28,7 @@ function ErrorDisplay({ message }: { message: string }) {
       <p className="text-red-600">{message}</p>
       <button 
         onClick={() => window.location.reload()}
-        className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+        className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
       >
         Try Again
       </button>
@@ -79,12 +74,18 @@ function Header() {
             </div>
           </a>
 
-          {/* Navigation and Sign In */}
+          {/* Navigation and Sign In - FIXED SPACING */}
           <div className="flex items-center gap-6">
             <nav className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 transition">About</a>
+              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
+                Features
+              </a>
+              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
+                Pricing
+              </a>
+              <a href="#about" className="text-gray-600 hover:text-gray-900 transition">
+                About
+              </a>
             </nav>
             
             {isSignedIn ? (

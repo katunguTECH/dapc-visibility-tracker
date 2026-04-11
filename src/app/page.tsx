@@ -1,13 +1,14 @@
 // src/app/page.tsx
-"use client";  // THIS MUST BE FIRST - NO COMMENTS ABOVE IT
+"use client";
 
-// Then add dynamic exports AFTER "use client"
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-export const revalidate = 0;
+// REMOVED: export const dynamic = 'force-dynamic';
+// REMOVED: export const fetchCache = 'force-no-store';  
+// REMOVED: export const revalidate = 0;
+// These are server-only directives and cannot be used with "use client"
 
 import { useState, Suspense } from "react";
 import Image from "next/image";
+import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
 
@@ -51,14 +52,16 @@ function NoDataState() {
   );
 }
 
-// Header Component
+// Header Component with Clerk authentication
 function Header() {
+  const { isSignedIn } = useAuth();
+  
   return (
     <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo Section */}
-          <div className="flex items-center gap-3">
+          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
             <div className="relative w-10 h-10">
               <Image
                 src="/dapc-logo.jpg"
@@ -74,7 +77,7 @@ function Header() {
               </h1>
               <p className="text-xs text-gray-500">Visibility Tracker</p>
             </div>
-          </div>
+          </a>
 
           {/* Navigation and Sign In */}
           <div className="flex items-center gap-6">
@@ -83,12 +86,28 @@ function Header() {
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
               <a href="#about" className="text-gray-600 hover:text-gray-900 transition">About</a>
             </nav>
-            <button className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition">
-              Sign In
-            </button>
-            <button className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-sm">
-              Get Started
-            </button>
+            
+            {isSignedIn ? (
+              <>
+                <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
+                  Dashboard
+                </a>
+                <UserButton afterSignOutUrl="/" />
+              </>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <button className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition">
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-sm">
+                    Get Started
+                  </button>
+                </SignUpButton>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -200,8 +219,8 @@ function FeaturesSection() {
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, idx) => (
-          <div key={idx} className="p-6 bg-white rounded-xl border border-gray-100 hover:shadow-lg transition">
-            <div className="text-4xl mb-4">{feature.icon}</div>
+          <div key={idx} className="p-6 bg-white rounded-xl border border-gray-100 hover:shadow-lg transition hover:border-blue-200 group">
+            <div className="text-4xl mb-4 group-hover:scale-110 transition">{feature.icon}</div>
             <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
             <p className="text-gray-600 text-sm">{feature.description}</p>
           </div>

@@ -12,17 +12,8 @@
       "mapsUrl": "https://maps.google.com/?q=Le-Paz+International+School+Syokimau",
       "seoScore": 67,
       "overallScore": 55,
-      "social": {
-        "facebook": false,
-        "instagram": false,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Green Apple Preparatory School", "score": 61 },
-        { "name": "Rocksfields Junior High School", "score": 67 },
-        { "name": "Zaridi School", "score": 73 }
-      ],
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -37,17 +28,8 @@
       "mapsUrl": "https://maps.google.com/?q=Green+Apple+Preparatory+School+Katani+Road+Syokimau",
       "seoScore": 61,
       "overallScore": 60,
-      "social": {
-        "facebook": false,
-        "instagram": true,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Le-Paz International School", "score": 55 },
-        { "name": "Rocksfields Junior High School", "score": 67 },
-        { "name": "Zaridi School", "score": 73 }
-      ],
+      "social": { "facebook": false, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -62,16 +44,8 @@
       "mapsUrl": null,
       "seoScore": 36,
       "overallScore": 30,
-      "social": {
-        "facebook": false,
-        "instagram": false,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Local Schools in Utawala", "score": 45 },
-        { "name": "Nearby Academy", "score": 40 }
-      ],
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -86,17 +60,8 @@
       "mapsUrl": null,
       "seoScore": 67,
       "overallScore": 59,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Le-Paz International School", "score": 55 },
-        { "name": "Green Apple Preparatory School", "score": 61 },
-        { "name": "Zaridi School", "score": 73 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -111,17 +76,8 @@
       "mapsUrl": null,
       "seoScore": 56,
       "overallScore": 47,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Goodlife Pharmacy", "score": 78 },
-        { "name": "Halima Pharmacy", "score": 52 },
-        { "name": "Mediheal Pharmacy", "score": 65 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -136,17 +92,265 @@
       "mapsUrl": null,
       "seoScore": 73,
       "overallScore": 64,
-      "social": {
-        "facebook": false,
-        "instagram": true,
-        "twitter": false,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Le-Paz International School", "score": 55 },
-        { "name": "Green Apple Preparatory School", "score": 61 },
-        { "name": "Rocksfields Junior High School", "score": 67 }
-      ],
+      "social": { "facebook": false, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "smart-angels-community-centre",
+      "name": "Smart Angels community Centre",
+      "canonicalName": "Smart Angels Community Centre",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://mumslovech.co.ke/",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Smart+Angels+Community+Centre",
+      "seoScore": 62,
+      "overallScore": 62,
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "liberty-care-centre",
+      "name": "Liberty care centre",
+      "canonicalName": "Liberty Care Centre",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://libertycarecentre.com/",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Liberty+Care+Centre",
+      "seoScore": 42,
+      "overallScore": 42,
+      "social": { "facebook": true, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "outland-express-services-limited",
+      "name": "Outland express services limited",
+      "canonicalName": "Outland Express Services Limited",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.outlandexpressservices.co.ke/",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 58,
+      "overallScore": 25,
+      "social": { "facebook": true, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "diamond-trust-bank-kenya",
+      "name": "Diamond Trust Bank Kenya",
+      "canonicalName": "Diamond Trust Bank Kenya",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.dtbafrica.com",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Diamond+Trust+Bank+Kenya",
+      "seoScore": 66,
+      "overallScore": 3,
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "miyo-afrique",
+      "name": "MIYO AFRIQUE",
+      "canonicalName": "Miyo Afrique",
+      "address": "Terminal Mall I, Syokimau Katani Road",
+      "phone": "",
+      "email": "",
+      "website": "",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 59,
+      "overallScore": 59,
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "ushow-displays",
+      "name": "USHOW DISPLAYS",
+      "canonicalName": "Ushow Displays",
+      "address": "Keekorok Road",
+      "phone": "",
+      "email": "",
+      "website": "www.ushowdisplays.com",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Ushow+Displays+Keekorok+Road",
+      "seoScore": 62,
+      "overallScore": 65,
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "haven-brands-gift-bags",
+      "name": "Haven Brands & Gift bags",
+      "canonicalName": "Haven Brands & Gift Bags",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.havenbrands.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Haven+Brands+Gift+bags",
+      "seoScore": 58,
+      "overallScore": 3,
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "mamuka-valuers",
+      "name": "Mamuka Valuers (M) Ltd",
+      "canonicalName": "Mamuka Valuers Ltd",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.mamukavaluers.com",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Mamuka+Valuers",
+      "seoScore": 71,
+      "overallScore": 2,
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "old-mutual-kenya",
+      "name": "Old Mutual Kenya",
+      "canonicalName": "Old Mutual Kenya",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.oldmutual.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Old+Mutual+Kenya",
+      "seoScore": 71,
+      "overallScore": 9,
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": true },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "g4s-kenya-limited",
+      "name": "G4S Kenya Limited",
+      "canonicalName": "G4S Kenya Limited",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.g4s.com/en-ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=G4S+Kenya",
+      "seoScore": 61,
+      "overallScore": 9,
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": true },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "onit-microfinance-bank",
+      "name": "Onit microfinance bank",
+      "canonicalName": "Onit Microfinance Bank",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://onitbank.co.ke/",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 40,
+      "overallScore": 9,
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "epicvast-ventures-limited",
+      "name": "Epicvast ventures limited",
+      "canonicalName": "Epicvast Ventures Limited",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 40,
+      "overallScore": 1,
+      "social": { "facebook": false, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14",
+      "notes": "Known as epicvast.events on Instagram"
+    },
+    {
+      "id": "pomp-n-posh-events-protocols",
+      "name": "Pomp n posh events & protocols",
+      "canonicalName": "Pomp N Posh Events & Protocols",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 40,
+      "overallScore": 9,
+      "social": { "facebook": false, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "beyond-garage",
+      "name": "Beyond garage",
+      "canonicalName": "Beyond Garage",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://beyondgarage.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Beyond+Garage",
+      "seoScore": 71,
+      "overallScore": 2,
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "tightknot-communications-ltd",
+      "name": "Tightknot Communications Ltd",
+      "canonicalName": "Tightknot Communications Ltd",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://tightknot.net/",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 48,
+      "overallScore": 2,
+      "social": { "facebook": true, "instagram": false, "twitter": false, "tiktok": false },
+      "competitors": [],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "galaxy-paints",
+      "name": "Galaxy paints",
+      "canonicalName": "Galaxy Paints",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://beyondgarage.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Galaxy+Paints",
+      "seoScore": 71,
+      "overallScore": 2,
+      "social": { "facebook": true, "instagram": true, "twitter": false, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-14"
     },
     {
@@ -161,17 +365,8 @@
       "mapsUrl": "https://maps.google.com/?q=Safaricom+House+Nairobi",
       "seoScore": 92,
       "overallScore": 94,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": true,
-        "tiktok": true
-      },
-      "competitors": [
-        { "name": "Airtel Kenya", "score": 68 },
-        { "name": "Telkom Kenya", "score": 45 },
-        { "name": "Starlink", "score": 52 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": true },
+      "competitors": [],
       "lastVerified": "2026-04-10"
     },
     {
@@ -186,16 +381,8 @@
       "mapsUrl": "https://maps.google.com/?q=Airtel+Plaza+Nairobi",
       "seoScore": 68,
       "overallScore": 72,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": true,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Safaricom", "score": 94 },
-        { "name": "Telkom Kenya", "score": 45 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-10"
     },
     {
@@ -210,16 +397,8 @@
       "mapsUrl": "https://maps.google.com/?q=Equity+Centre+Nairobi",
       "seoScore": 85,
       "overallScore": 88,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": true,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "KCB Bank", "score": 86 },
-        { "name": "Co-operative Bank", "score": 71 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-10"
     },
     {
@@ -234,16 +413,8 @@
       "mapsUrl": "https://maps.google.com/?q=KCB+Centre+Nairobi",
       "seoScore": 83,
       "overallScore": 86,
-      "social": {
-        "facebook": true,
-        "instagram": true,
-        "twitter": true,
-        "tiktok": false
-      },
-      "competitors": [
-        { "name": "Equity Bank", "score": 88 },
-        { "name": "Co-operative Bank", "score": 71 }
-      ],
+      "social": { "facebook": true, "instagram": true, "twitter": true, "tiktok": false },
+      "competitors": [],
       "lastVerified": "2026-04-10"
     }
   ]

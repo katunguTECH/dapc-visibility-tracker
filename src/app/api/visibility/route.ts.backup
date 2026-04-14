@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+// src/app/api/visibility/route.ts
+import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
@@ -49,6 +50,7 @@ function loadDatabase(): BusinessDatabase {
     return cachedDatabase!;
   } catch (error) {
     console.error("Failed to load business database:", error);
+    // Return empty database on error
     return { businesses: [] };
   }
 }
@@ -65,14 +67,14 @@ function findBusinessData(searchName: string): any {
   const db = loadDatabase();
   const normalizedSearch = normalizeBusinessName(searchName);
   
-  // 1. Try exact match
+  // 1. Try exact match on name or canonicalName
   let business = db.businesses.find(
     (b) =>
       normalizeBusinessName(b.name) === normalizedSearch ||
       normalizeBusinessName(b.canonicalName) === normalizedSearch
   );
   
-  // 2. Try partial match
+  // 2. Try partial match (for "Le-Paz" matching "LE-PAZ INTERNATIONAL SCHOOL")
   if (!business) {
     business = db.businesses.find(
       (b) =>
@@ -81,8 +83,9 @@ function findBusinessData(searchName: string): any {
     );
   }
   
-  // 3. If found, return accurate data
+  // 3. If found in database, return accurate data
   if (business) {
+    // Convert social URLs/booleans to consistent format
     const socialStatus = {
       facebook: !!business.social.facebook,
       twitter: !!business.social.twitter,
@@ -107,7 +110,7 @@ function findBusinessData(searchName: string): any {
     };
   }
   
-  // 4. Business not found
+  // 4. Business not found - return structured "needs verification" response
   return {
     business: searchName,
     score: null,
@@ -122,7 +125,7 @@ function findBusinessData(searchName: string): any {
     competitors: [],
     needsVerification: true,
     dataSource: "unknown",
-    message: "This business is not yet in our verified database.",
+    message: "This business is not yet in our verified database. Please submit accurate information.",
     timestamp: Date.now(),
   };
 }
@@ -152,6 +155,7 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("API Error:", error);
     
+    // Safe fallback that clearly indicates an error
     return NextResponse.json({
       business: "Error Loading Data",
       score: 0,

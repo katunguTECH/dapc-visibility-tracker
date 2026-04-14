@@ -1,0 +1,51 @@
+﻿{
+  "businesses": [
+    {
+      "id": "lepaz-international-school",
+      "name": "LE-PAZ INTERNATIONAL SCHOOL",
+      "canonicalName": "Le-Paz International School",
+      "address": "Syokimau-Katani road opposite Jacaranda, Syokimau, Kenya",
+      "phone": "+254 700 000000",
+      "email": "info@lepazinternationalschool.co.ke",
+      "website": "https://www.lepazinternationalschool.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Le-Paz+International+School+Syokimau",
+      "seoScore": 67,
+      "overallScore": 55,
+      "social": {
+        "facebook": "https://facebook.com/lepazschool",
+        "instagram": "https://instagram.com/lepazschool",
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Brookhurst International School", "score": 72 },
+        { "name": "Makini School", "score": 85 },
+        { "name": "Braeburn School", "score": 88 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "safaricom",
+      "name": "Safaricom",
+      "canonicalName": "Safaricom PLC",
+      "address": "Safaricom House, Waiyaki Way, Nairobi",
+      "phone": "+254 722 000000",
+      "website": "https://www.safaricom.co.ke",
+      "mapsPresence": true,
+      "seoScore": 92,
+      "overallScore": 94,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": true,
+        "tiktok": true
+      },
+      "competitors": [
+        { "name": "Airtel Kenya", "score": 68 },
+        { "name": "Telkom Kenya", "score": 45 }
+      ],
+      "lastVerified": "2026-04-10"
+    }
+  ]
+}

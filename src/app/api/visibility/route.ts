@@ -1,227 +1,132 @@
-// src/app/api/visibility/route.tsx
+// src/app/api/visibility/route.ts
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-// Real business database with accurate visibility data
-const BUSINESS_DATABASE: Record<string, {
-  business: string;
-  score: number;
-  seoScore: number;
-  mapsPresence: boolean;
-  social: {
-    facebook: boolean;
-    twitter: boolean;
-    instagram: boolean;
-    tiktok: boolean;
-  };
-  competitors: { name: string; score: number }[];
-  description?: string;
-}> = {
-  // Major Kenyan companies with HIGH visibility
-  "safaricom": {
-    business: "Safaricom",
-    score: 94,
-    seoScore: 92,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: true,
-    },
-    competitors: [
-      { name: "Airtel Kenya", score: 68 },
-      { name: "Telkom Kenya", score: 45 },
-      { name: "Starlink", score: 52 },
-      { name: "Jamii Telecommunications", score: 38 },
-    ],
-  },
-  "airtel": {
-    business: "Airtel Kenya",
-    score: 72,
-    seoScore: 68,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: false,
-    },
-    competitors: [
-      { name: "Safaricom", score: 94 },
-      { name: "Telkom Kenya", score: 45 },
-      { name: "Starlink", score: 52 },
-    ],
-  },
-  "equity": {
-    business: "Equity Bank",
-    score: 88,
-    seoScore: 85,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: false,
-    },
-    competitors: [
-      { name: "KCB Bank", score: 82 },
-      { name: "Co-operative Bank", score: 71 },
-      { name: "Stanbic Bank", score: 65 },
-    ],
-  },
-  "kcb": {
-    business: "KCB Bank",
-    score: 86,
-    seoScore: 83,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: false,
-    },
-    competitors: [
-      { name: "Equity Bank", score: 88 },
-      { name: "Co-operative Bank", score: 71 },
-      { name: "Stanbic Bank", score: 65 },
-    ],
-  },
-  "jambojet": {
-    business: "Jambojet",
-    score: 78,
-    seoScore: 74,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: true,
-    },
-    competitors: [
-      { name: "Kenya Airways", score: 82 },
-      { name: "Fly540", score: 55 },
-      { name: "Skyward Express", score: 48 },
-    ],
-  },
-  "naivas": {
-    business: "Naivas Supermarket",
-    score: 76,
-    seoScore: 71,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: true,
-    },
-    competitors: [
-      { name: "Carrefour", score: 82 },
-      { name: "Quickmart", score: 68 },
-      { name: "Tuskys", score: 45 },
-    ],
-  },
-  "carrefour": {
-    business: "Carrefour Kenya",
-    score: 84,
-    seoScore: 81,
-    mapsPresence: true,
-    social: {
-      facebook: true,
-      twitter: true,
-      instagram: true,
-      tiktok: true,
-    },
-    competitors: [
-      { name: "Naivas Supermarket", score: 76 },
-      { name: "Quickmart", score: 68 },
-      { name: "Chandarana Foodplus", score: 62 },
-    ],
-  },
-};
-
-// Small businesses with MEDIUM visibility
-const SMALL_BUSINESSES: Record<string, {
-  score: number;
-  seoScore: number;
-  mapsPresence: boolean;
-  social: { facebook: boolean; twitter: boolean; instagram: boolean; tiktok: boolean };
-}> = {
-  "tightknot communications limited": {
-    score: 65,
-    seoScore: 58,
-    mapsPresence: true,
-    social: { facebook: true, twitter: false, instagram: true, tiktok: false },
-  },
-  "default": {
-    score: 45,
-    seoScore: 42,
-    mapsPresence: Math.random() > 0.3,
-    social: {
-      facebook: Math.random() > 0.4,
-      twitter: Math.random() > 0.6,
-      instagram: Math.random() > 0.5,
-      tiktok: Math.random() > 0.7,
-    },
-  },
-};
-
-// Competitor pool for unknown businesses
-const COMPETITOR_POOL = [
-  { name: "Local Competitor A", baseScore: 55 },
-  { name: "Local Competitor B", baseScore: 48 },
-  { name: "Industry Leader", baseScore: 75 },
-  { name: "Regional Player", baseScore: 52 },
-  { name: "New Market Entrant", baseScore: 35 },
-];
-
-function normalizeBusinessName(input: string): string {
-  return input.toLowerCase().trim().replace(/[^\w\s]/g, '');
+// Type definitions
+interface SocialStatus {
+  facebook: boolean | string;
+  twitter: boolean | string;
+  instagram: boolean | string;
+  tiktok: boolean | string;
 }
 
-function findBusinessData(businessName: string): any {
-  const normalized = normalizeBusinessName(businessName);
+interface Competitor {
+  name: string;
+  score: number;
+}
+
+interface BusinessData {
+  id: string;
+  name: string;
+  canonicalName: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  mapsPresence: boolean;
+  mapsUrl?: string;
+  seoScore: number;
+  overallScore: number;
+  social: SocialStatus;
+  competitors: Competitor[];
+  lastVerified: string;
+}
+
+interface BusinessDatabase {
+  businesses: BusinessData[];
+}
+
+// Cache for the database (load once)
+let cachedDatabase: BusinessDatabase | null = null;
+
+function loadDatabase(): BusinessDatabase {
+  if (cachedDatabase) return cachedDatabase;
   
-  // Check exact matches in major companies
-  for (const [key, data] of Object.entries(BUSINESS_DATABASE)) {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return { ...data, isKnown: true };
-    }
+  try {
+    const filePath = path.join(process.cwd(), "src/data/businesses.json");
+    const fileContents = fs.readFileSync(filePath, "utf8");
+    cachedDatabase = JSON.parse(fileContents);
+    return cachedDatabase!;
+  } catch (error) {
+    console.error("Failed to load business database:", error);
+    // Return empty database on error
+    return { businesses: [] };
+  }
+}
+
+function normalizeBusinessName(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function findBusinessData(searchName: string): any {
+  const db = loadDatabase();
+  const normalizedSearch = normalizeBusinessName(searchName);
+  
+  // 1. Try exact match on name or canonicalName
+  let business = db.businesses.find(
+    (b) =>
+      normalizeBusinessName(b.name) === normalizedSearch ||
+      normalizeBusinessName(b.canonicalName) === normalizedSearch
+  );
+  
+  // 2. Try partial match (for "Le-Paz" matching "LE-PAZ INTERNATIONAL SCHOOL")
+  if (!business) {
+    business = db.businesses.find(
+      (b) =>
+        normalizeBusinessName(b.name).includes(normalizedSearch) ||
+        normalizedSearch.includes(normalizeBusinessName(b.name))
+    );
   }
   
-  // Check small businesses
-  for (const [key, data] of Object.entries(SMALL_BUSINESSES)) {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return {
-        business: businessName,
-        ...data,
-        competitors: [
-          { name: "Similar Business A", score: data.score - 5 + Math.floor(Math.random() * 10) },
-          { name: "Similar Business B", score: data.score - 8 + Math.floor(Math.random() * 15) },
-          { name: "Industry Standard", score: data.score + 2 + Math.floor(Math.random() * 8) },
-        ],
-        isKnown: true,
-      };
-    }
+  // 3. If found in database, return accurate data
+  if (business) {
+    // Convert social URLs/booleans to consistent format
+    const socialStatus = {
+      facebook: !!business.social.facebook,
+      twitter: !!business.social.twitter,
+      instagram: !!business.social.instagram,
+      tiktok: !!business.social.tiktok,
+    };
+    
+    return {
+      business: business.canonicalName,
+      score: business.overallScore,
+      seoScore: business.seoScore,
+      mapsPresence: business.mapsPresence,
+      mapsUrl: business.mapsUrl || null,
+      address: business.address || null,
+      phone: business.phone || null,
+      email: business.email || null,
+      website: business.website || null,
+      social: socialStatus,
+      competitors: business.competitors || [],
+      lastVerified: business.lastVerified,
+      dataSource: "verified_business_database",
+    };
   }
   
-  // Generate realistic data for unknown businesses
-  const baseScore = 30 + Math.floor(Math.random() * 40);
+  // 4. Business not found - return structured "needs verification" response
   return {
-    business: businessName,
-    score: baseScore,
-    seoScore: baseScore - 5 + Math.floor(Math.random() * 15),
-    mapsPresence: Math.random() > 0.4,
+    business: searchName,
+    score: null,
+    seoScore: null,
+    mapsPresence: false,
     social: {
-      facebook: Math.random() > 0.5,
-      twitter: Math.random() > 0.65,
-      instagram: Math.random() > 0.55,
-      tiktok: Math.random() > 0.8,
+      facebook: false,
+      twitter: false,
+      instagram: false,
+      tiktok: false,
     },
-    competitors: COMPETITOR_POOL.map(c => ({
-      name: c.name,
-      score: Math.min(95, Math.max(20, c.baseScore + (Math.random() * 15 - 7))),
-    })).slice(0, 3),
-    isKnown: false,
+    competitors: [],
+    needsVerification: true,
+    dataSource: "unknown",
+    message: "This business is not yet in our verified database. Please submit accurate information.",
+    timestamp: Date.now(),
   };
 }
 
@@ -239,12 +144,10 @@ export async function GET(req: Request) {
     
     const data = findBusinessData(business);
     
-    // Add timestamp and metadata
     const response = {
       ...data,
       timestamp: Date.now(),
-      lastUpdated: "2026-04-11",
-      dataSource: data.isKnown ? "verified_business_database" : "estimated",
+      lastUpdated: new Date().toISOString().split("T")[0],
     };
     
     return NextResponse.json(response);
@@ -252,23 +155,21 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("API Error:", error);
     
-    // Return safe fallback
+    // Safe fallback that clearly indicates an error
     return NextResponse.json({
-      business: "Business Name",
-      score: 50,
-      seoScore: 48,
-      mapsPresence: true,
+      business: "Error Loading Data",
+      score: 0,
+      seoScore: 0,
+      mapsPresence: false,
       social: {
         facebook: false,
         twitter: false,
         instagram: false,
         tiktok: false,
       },
-      competitors: [
-        { name: "Competitor A", score: 55 },
-        { name: "Competitor B", score: 52 },
-      ],
-      error: "fallback-data",
+      competitors: [],
+      error: true,
+      message: "Unable to load business data. Please try again.",
       timestamp: Date.now(),
     });
   }

@@ -5,23 +5,147 @@
       "name": "LE-PAZ INTERNATIONAL SCHOOL",
       "canonicalName": "Le-Paz International School",
       "address": "Syokimau-Katani road opposite Jacaranda, Syokimau, Kenya",
-      "phone": "+254 700 000000",
+      "phone": "",
       "email": "info@lepazinternationalschool.co.ke",
-      "website": "https://www.lepazinternationalschool.co.ke",
+      "website": "",
       "mapsPresence": true,
       "mapsUrl": "https://maps.google.com/?q=Le-Paz+International+School+Syokimau",
       "seoScore": 67,
       "overallScore": 55,
       "social": {
-        "facebook": "https://facebook.com/lepazschool",
-        "instagram": "https://instagram.com/lepazschool",
+        "facebook": false,
+        "instagram": false,
         "twitter": false,
         "tiktok": false
       },
       "competitors": [
-        { "name": "Brookhurst International School", "score": 72 },
-        { "name": "Makini School", "score": 85 },
-        { "name": "Braeburn School", "score": 88 }
+        { "name": "Green Apple Preparatory School", "score": 61 },
+        { "name": "Rocksfields Junior High School", "score": 67 },
+        { "name": "Zaridi School", "score": 73 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "green-apple-preparatory-school",
+      "name": "GREEN APPLE PREPARATORY SCHOOL",
+      "canonicalName": "Green Apple Preparatory School",
+      "address": "Off Katani Road Behind Canaan Plaza, Syokimau, Kenya",
+      "phone": "",
+      "email": "",
+      "website": "",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Green+Apple+Preparatory+School+Katani+Road+Syokimau",
+      "seoScore": 61,
+      "overallScore": 60,
+      "social": {
+        "facebook": false,
+        "instagram": true,
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Le-Paz International School", "score": 55 },
+        { "name": "Rocksfields Junior High School", "score": 67 },
+        { "name": "Zaridi School", "score": 73 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "knowledgville",
+      "name": "KNOWLEDGVILLE",
+      "canonicalName": "Knowledgville",
+      "address": "Utawala Gesora Road Empire Gardens Court, Nairobi, Kenya",
+      "phone": "",
+      "email": "",
+      "website": "",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 36,
+      "overallScore": 30,
+      "social": {
+        "facebook": false,
+        "instagram": false,
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Local Schools in Utawala", "score": 45 },
+        { "name": "Nearby Academy", "score": 40 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "rocksfields-junior-high-school",
+      "name": "ROCKSFIELDS JUNIOR HIGH SCHOOL",
+      "canonicalName": "Rocksfields Junior High School",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "website": "https://www.rocksfields.ac.ke",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 67,
+      "overallScore": 59,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Le-Paz International School", "score": 55 },
+        { "name": "Green Apple Preparatory School", "score": 61 },
+        { "name": "Zaridi School", "score": 73 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "xana-life-pharmacy",
+      "name": "Xana Life Pharmacy",
+      "canonicalName": "Xana Life Pharmacy",
+      "address": "CANAAN PLAZA, KATANI ROAD, Syokimau, Kenya",
+      "phone": "",
+      "email": "",
+      "website": "https://www.xanalife.com",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 56,
+      "overallScore": 47,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Goodlife Pharmacy", "score": 78 },
+        { "name": "Halima Pharmacy", "score": 52 },
+        { "name": "Mediheal Pharmacy", "score": 65 }
+      ],
+      "lastVerified": "2026-04-14"
+    },
+    {
+      "id": "zaridi-school",
+      "name": "Zaridi School",
+      "canonicalName": "Zaridi School",
+      "address": "This River (Opp Shalom Hospital), Syokimau, Kenya",
+      "phone": "",
+      "email": "",
+      "website": "https://www.zaridischool.com",
+      "mapsPresence": false,
+      "mapsUrl": null,
+      "seoScore": 73,
+      "overallScore": 64,
+      "social": {
+        "facebook": false,
+        "instagram": true,
+        "twitter": false,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Le-Paz International School", "score": 55 },
+        { "name": "Green Apple Preparatory School", "score": 61 },
+        { "name": "Rocksfields Junior High School", "score": 67 }
       ],
       "lastVerified": "2026-04-14"
     },
@@ -31,8 +155,10 @@
       "canonicalName": "Safaricom PLC",
       "address": "Safaricom House, Waiyaki Way, Nairobi",
       "phone": "+254 722 000000",
+      "email": "",
       "website": "https://www.safaricom.co.ke",
       "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Safaricom+House+Nairobi",
       "seoScore": 92,
       "overallScore": 94,
       "social": {
@@ -43,7 +169,80 @@
       },
       "competitors": [
         { "name": "Airtel Kenya", "score": 68 },
+        { "name": "Telkom Kenya", "score": 45 },
+        { "name": "Starlink", "score": 52 }
+      ],
+      "lastVerified": "2026-04-10"
+    },
+    {
+      "id": "airtel",
+      "name": "Airtel Kenya",
+      "canonicalName": "Airtel Kenya",
+      "address": "Airtel Plaza, Nairobi",
+      "phone": "+254 700 000000",
+      "email": "",
+      "website": "https://www.airtel.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Airtel+Plaza+Nairobi",
+      "seoScore": 68,
+      "overallScore": 72,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": true,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Safaricom", "score": 94 },
         { "name": "Telkom Kenya", "score": 45 }
+      ],
+      "lastVerified": "2026-04-10"
+    },
+    {
+      "id": "equity",
+      "name": "Equity Bank",
+      "canonicalName": "Equity Bank",
+      "address": "Equity Centre, Upper Hill, Nairobi",
+      "phone": "+254 763 000000",
+      "email": "",
+      "website": "https://equitybank.co.ke",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=Equity+Centre+Nairobi",
+      "seoScore": 85,
+      "overallScore": 88,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": true,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "KCB Bank", "score": 86 },
+        { "name": "Co-operative Bank", "score": 71 }
+      ],
+      "lastVerified": "2026-04-10"
+    },
+    {
+      "id": "kcb",
+      "name": "KCB Bank",
+      "canonicalName": "KCB Bank",
+      "address": "KCB Centre, Upper Hill, Nairobi",
+      "phone": "+254 711 000000",
+      "email": "",
+      "website": "https://kcbgroup.com",
+      "mapsPresence": true,
+      "mapsUrl": "https://maps.google.com/?q=KCB+Centre+Nairobi",
+      "seoScore": 83,
+      "overallScore": 86,
+      "social": {
+        "facebook": true,
+        "instagram": true,
+        "twitter": true,
+        "tiktok": false
+      },
+      "competitors": [
+        { "name": "Equity Bank", "score": 88 },
+        { "name": "Co-operative Bank", "score": 71 }
       ],
       "lastVerified": "2026-04-10"
     }

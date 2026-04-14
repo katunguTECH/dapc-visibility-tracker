@@ -6,9 +6,10 @@ import Image from "next/image"; // Use Next.js Image for better handling
 
 interface Plan {
   name: string;
-  price: number;
+  price: number | null; // Allow null for custom amount
   features: string[];
   icon: string;
+  isCustomAmount?: boolean; // Flag for custom amount packages
 }
 
 const plans: Plan[] = [
@@ -42,6 +43,13 @@ const plans: Plan[] = [
     features: ["Full Visibility Suite"],
     icon: "/icons/superactivevisibility-lion.jpg",
   },
+  {
+    name: "Custom Corporate Package",
+    price: null, // No fixed amount
+    features: ["Tailored Solutions", "Enterprise Support", "Custom Strategy", "Priority Service"],
+    icon: "/icons/custom-corporate.jpg",
+    isCustomAmount: true,
+  },
 ];
 
 // Component to safely render plan icons
@@ -67,12 +75,14 @@ function PlanIcon({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// Modal component to avoid conditional rendering issues
+// Updated Modal component to handle custom amounts
 function PaymentModal({ 
   selected, 
   phone, 
   setPhone, 
   loading, 
+  customAmount,
+  setCustomAmount,
   sendSTK, 
   onClose 
 }: { 
@@ -80,16 +90,44 @@ function PaymentModal({
   phone: string;
   setPhone: (phone: string) => void;
   loading: boolean;
+  customAmount: string;
+  setCustomAmount: (amount: string) => void;
   sendSTK: () => void;
   onClose: () => void;
 }) {
   if (!selected) return null;
   
+  const isCustomAmountPackage = selected.isCustomAmount === true;
+  const displayAmount = isCustomAmountPackage 
+    ? (customAmount ? parseInt(customAmount) : null)
+    : selected.price;
+  
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white p-6 rounded-xl w-80 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white p-6 rounded-xl w-80 text-center max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-bold mb-2 text-xl">{selected.name}</h2>
-        <p className="mb-4 text-2xl font-bold text-blue-600">KES {selected.price.toLocaleString()}</p>
+        
+        {isCustomAmountPackage ? (
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">Enter your desired amount</p>
+            <input
+              type="number"
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              placeholder="Enter amount in KES"
+              className="border p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg"
+              disabled={loading}
+              min="1"
+            />
+            {customAmount && (
+              <p className="text-xs text-gray-500 mt-2">
+                You will pay: KES {parseInt(customAmount).toLocaleString()}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="mb-4 text-2xl font-bold text-blue-600">KES {selected.price?.toLocaleString()}</p>
+        )}
         
         <p className="text-sm text-gray-600 mb-3">Enter M-Pesa phone number</p>
         <input
@@ -103,10 +141,10 @@ function PaymentModal({
         
         <button
           onClick={sendSTK}
-          disabled={loading || !phone.trim()}
+          disabled={loading || !phone.trim() || (isCustomAmountPackage && (!customAmount || parseInt(customAmount) <= 0))}
           className="bg-green-600 text-white w-full py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
-          {loading ? "Sending..." : `Pay KES ${selected.price.toLocaleString()}`}
+          {loading ? "Sending..." : isCustomAmountPackage && customAmount ? `Pay KES ${parseInt(customAmount).toLocaleString()}` : "Proceed to Payment"}
         </button>
         
         <button
@@ -126,9 +164,11 @@ export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Plan | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
 
   const openModal = (plan: Plan) => {
     setSelected(plan);
+    setCustomAmount(""); // Reset custom amount
     setOpen(true);
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
@@ -138,6 +178,7 @@ export default function Pricing() {
     setOpen(false);
     setSelected(null);
     setPhone("");
+    setCustomAmount("");
     // Restore body scroll
     document.body.style.overflow = 'auto';
   };
@@ -151,6 +192,25 @@ export default function Pricing() {
     if (!phone.trim()) {
       alert("Please enter your M-Pesa phone number");
       return;
+    }
+
+    // Get the amount to charge
+    let amountToCharge: number;
+    
+    if (selected.isCustomAmount) {
+      if (!customAmount || parseInt(customAmount) <= 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+      amountToCharge = parseInt(customAmount);
+      
+      // Optional: Add minimum amount validation
+      if (amountToCharge < 10) {
+        alert("Minimum amount for custom package is KES 10");
+        return;
+      }
+    } else {
+      amountToCharge = selected.price!;
     }
 
     // Validate phone number format
@@ -184,8 +244,9 @@ export default function Pricing() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phone: formatted,
-          amount: selected.price,
+          amount: amountToCharge,
           planName: selected.name,
+          isCustomAmount: selected.isCustomAmount || false,
         }),
       });
 
@@ -208,7 +269,7 @@ export default function Pricing() {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6 text-center">Visibility Plans</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
         {plans.map((plan) => (
           <div
             key={plan.name}
@@ -219,7 +280,11 @@ export default function Pricing() {
             <h3 className="font-bold text-lg mb-2">{plan.name}</h3>
             
             <p className="text-blue-600 font-bold text-xl mb-3">
-              KES {plan.price.toLocaleString()}
+              {plan.price === null ? (
+                <span className="text-base">Custom Amount</span>
+              ) : (
+                `KES ${plan.price.toLocaleString()}`
+              )}
             </p>
             
             <ul className="text-sm text-gray-600 mb-4 space-y-1">
@@ -232,7 +297,7 @@ export default function Pricing() {
               onClick={() => openModal(plan)}
               className="mt-2 bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700 transition font-medium"
             >
-              Subscribe Now
+              {plan.isCustomAmount ? "Request Quote" : "Subscribe Now"}
             </button>
           </div>
         ))}
@@ -245,6 +310,8 @@ export default function Pricing() {
           phone={phone}
           setPhone={setPhone}
           loading={loading}
+          customAmount={customAmount}
+          setCustomAmount={setCustomAmount}
           sendSTK={sendSTK}
           onClose={closeModal}
         />

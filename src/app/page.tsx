@@ -47,7 +47,7 @@ function NoDataState() {
   );
 }
 
-// Header Component with Clerk authentication - MUCH LARGER LOGO
+// Header Component with Clerk authentication - UPDATED LOGO
 function Header() {
   const { isSignedIn } = useAuth();
   
@@ -55,11 +55,11 @@ function Header() {
     <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo Section - MUCH LARGER SIZE */}
+          {/* Logo Section - Using dapc-logo2.jpg */}
           <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
-            <div className="relative w-24 h-24">
+            <div className="relative w-16 h-16">
               <img
-                src="/dapc-logo.jpg"
+                src="/dapc-logo2.jpg"
                 alt="DAPC Logo"
                 className="w-full h-full object-contain rounded-lg"
               />
@@ -114,7 +114,7 @@ function Header() {
   );
 }
 
-// Hero Section - UPDATED
+// Hero Section
 function HeroSection() {
   return (
     <div className="text-center mb-12">
@@ -171,40 +171,71 @@ function StatsSection() {
   );
 }
 
-// Features Section
+// Features Section - UPDATED WITH IMAGE ICONS
 function FeaturesSection() {
   const features = [
     {
-      icon: "🔍",
+      icon: "/powerful features/seo-analysis.jpg",
       title: "SEO Analysis",
       description: "Comprehensive SEO score with actionable recommendations"
     },
     {
-      icon: "📍",
+      icon: "/powerful features/googlemaps-check.jpg",
       title: "Google Maps Check",
       description: "Verify your business presence on Google Maps"
     },
     {
-      icon: "📱",
+      icon: "/powerful features/socialmedia-audit.jpg",
       title: "Social Media Audit",
       description: "Track your brand across Facebook, X, Instagram & TikTok"
     },
     {
-      icon: "🏆",
+      icon: "/powerful features/competitor-tracking.jpg",
       title: "Competitor Tracking",
       description: "Compare your visibility against market competitors"
     },
     {
-      icon: "📊",
-      title: "Real-time Reports",
+      icon: "/powerful features/realtime-reports.jpg",
+      title: "Real-Time Reports",
       description: "Get instant insights with detailed analytics"
     },
     {
-      icon: "🚀",
+      icon: "/powerful features/growth-recommendations.jpg",
       title: "Growth Recommendations",
       description: "Actionable steps to improve your visibility score"
     }
   ];
+
+  // Component to handle image loading errors
+  const FeatureIcon = ({ src, alt }: { src: string; alt: string }) => {
+    const [imgError, setImgError] = useState(false);
+    
+    if (imgError) {
+      // Fallback emoji if image doesn't exist
+      const fallbackIcons: { [key: string]: string } = {
+        "SEO Analysis": "🔍",
+        "Google Maps Check": "📍",
+        "Social Media Audit": "📱",
+        "Competitor Tracking": "🏆",
+        "Real-Time Reports": "📊",
+        "Growth Recommendations": "🚀"
+      };
+      return (
+        <div className="text-4xl mb-4 group-hover:scale-110 transition">
+          {fallbackIcons[alt] || "✨"}
+        </div>
+      );
+    }
+    
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className="w-16 h-16 mx-auto mb-4 object-contain group-hover:scale-110 transition"
+        onError={() => setImgError(true)}
+      />
+    );
+  };
 
   return (
     <div id="features" className="mb-20">
@@ -213,8 +244,8 @@ function FeaturesSection() {
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, idx) => (
-          <div key={idx} className="p-6 bg-white rounded-xl border border-gray-100 hover:shadow-lg transition hover:border-blue-200 group">
-            <div className="text-4xl mb-4 group-hover:scale-110 transition">{feature.icon}</div>
+          <div key={idx} className="p-6 bg-white rounded-xl border border-gray-100 hover:shadow-lg transition hover:border-blue-200 group text-center">
+            <FeatureIcon src={feature.icon} alt={feature.title} />
             <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
             <p className="text-gray-600 text-sm">{feature.description}</p>
           </div>

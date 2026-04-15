@@ -45,7 +45,7 @@ const plans: Plan[] = [
   },
   {
     name: "Custom Corporate Package",
-    price: null, // No fixed amount
+    price: null,
     features: ["Tailored Solutions", "Enterprise Support", "Custom Strategy", "Priority Service"],
     icon: "/icons/custom-corporate.jpg",
     isCustomAmount: true,
@@ -75,7 +75,7 @@ function PlanIcon({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// Updated Modal component to handle custom amounts
+// Modal component to handle custom amounts
 function PaymentModal({ 
   selected, 
   phone, 
@@ -98,13 +98,10 @@ function PaymentModal({
   if (!selected) return null;
   
   const isCustomAmountPackage = selected.isCustomAmount === true;
-  const displayAmount = isCustomAmountPackage 
-    ? (customAmount ? parseInt(customAmount) : null)
-    : selected.price;
   
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white p-6 rounded-xl w-80 text-center max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white p-6 rounded-xl w-80 text-center" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-bold mb-2 text-xl">{selected.name}</h2>
         
         {isCustomAmountPackage ? (
@@ -168,7 +165,7 @@ export default function Pricing() {
 
   const openModal = (plan: Plan) => {
     setSelected(plan);
-    setCustomAmount(""); // Reset custom amount
+    setCustomAmount("");
     setOpen(true);
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';

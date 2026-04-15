@@ -47,7 +47,7 @@ function NoDataState() {
   );
 }
 
-// Header Component with Clerk authentication
+// Header Component with Clerk authentication - MUCH LARGER LOGO
 function Header() {
   const { isSignedIn } = useAuth();
   
@@ -55,26 +55,24 @@ function Header() {
     <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo Section */}
-          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
-            <div className="relative w-10 h-10">
-              <Image
+          {/* Logo Section - MUCH LARGER SIZE */}
+          <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
+            <div className="relative w-24 h-24">
+              <img
                 src="/dapc-logo.jpg"
                 alt="DAPC Logo"
-                fill
-                className="object-contain rounded-lg"
-                priority
+                className="w-full h-full object-contain rounded-lg"
               />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 DAPC
               </h1>
-              <p className="text-xs text-gray-500">Visibility Tracker</p>
+              <p className="text-sm text-gray-500">Visibility Tracker</p>
             </div>
           </a>
 
-          {/* Navigation and Sign In - FIXED SPACING */}
+          {/* Navigation and Sign In */}
           <div className="flex items-center gap-6">
             <nav className="hidden md:flex items-center gap-6">
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
@@ -116,7 +114,7 @@ function Header() {
   );
 }
 
-// Hero Section
+// Hero Section - UPDATED
 function HeroSection() {
   return (
     <div className="text-center mb-12">
@@ -129,16 +127,11 @@ function HeroSection() {
       </div>
       
       <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-        Know Your Digital<br />
+        Are You Visible<br />
         <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Visibility Score
+          Online?
         </span>
       </h1>
-      
-      <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-        Discover how visible your business is across search engines, Google Maps, and social media. 
-        Get actionable insights to dominate your market.
-      </p>
       
       <div className="flex gap-4 justify-center">
         <div className="flex -space-x-2">

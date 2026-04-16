@@ -57,10 +57,12 @@ const plans: Plan[] = [
   },
 ];
 
+// Component to safely render plan icons
 function PlanIcon({ src, alt }: { src: string; alt: string }) {
   const [imgError, setImgError] = useState(false);
   
   if (imgError) {
+    // Fallback if image doesn't exist
     return (
       <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
         {alt.charAt(0)}
@@ -78,6 +80,7 @@ function PlanIcon({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+// Modal component to handle custom amounts
 function PaymentModal({ 
   selected, 
   phone, 
@@ -172,6 +175,7 @@ export default function Pricing() {
     setSelected(plan);
     setCustomAmount("");
     setOpen(true);
+    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
   };
 
@@ -180,7 +184,23 @@ export default function Pricing() {
     setSelected(null);
     setPhone("");
     setCustomAmount("");
+    // Restore body scroll
     document.body.style.overflow = 'auto';
+  };
+
+  // Save subscription to localStorage after successful payment
+  const saveSubscription = (plan: Plan, amountPaid: number) => {
+    const subscription = {
+      packageName: plan.name,
+      amount: amountPaid,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      status: 'active',
+      features: plan.features,
+      isCustomAmount: plan.isCustomAmount || false,
+    };
+    localStorage.setItem('userSubscription', JSON.stringify(subscription));
+    console.log('Subscription saved:', subscription);
   };
 
   const sendSTK = async () => {
@@ -194,6 +214,7 @@ export default function Pricing() {
       return;
     }
 
+    // Get the amount to charge
     let amountToCharge: number;
     
     if (selected.isCustomAmount) {
@@ -206,8 +227,10 @@ export default function Pricing() {
       amountToCharge = selected.price!;
     }
 
+    // Validate phone number format
     let formatted = phone.trim().replace(/\s/g, '');
     
+    // Handle different phone number formats
     if (formatted.startsWith("+254")) {
       formatted = formatted.substring(1);
     } else if (formatted.startsWith("0")) {
@@ -221,6 +244,7 @@ export default function Pricing() {
       return;
     }
     
+    // Basic validation
     if (!formatted.match(/^254[17]\d{8}$/)) {
       alert("Please enter a valid Safaricom phone number");
       return;
@@ -246,8 +270,17 @@ export default function Pricing() {
         throw new Error(data.message || "STK push failed. Please try again.");
       }
 
+      // Save subscription after successful payment
+      saveSubscription(selected, amountToCharge);
+      
       alert(`✅ Payment request sent to ${formatted}\nEnter your M-Pesa PIN to complete payment`);
       closeModal();
+      
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+      
     } catch (err: any) {
       console.error("Payment error:", err);
       alert(`❌ Payment error: ${err.message || "Please try again"}`);
@@ -293,6 +326,7 @@ export default function Pricing() {
         ))}
       </div>
       
+      {/* Modal - rendered separately to avoid issues */}
       {open && (
         <PaymentModal
           selected={selected}

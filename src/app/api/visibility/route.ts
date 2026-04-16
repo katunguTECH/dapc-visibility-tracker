@@ -114,13 +114,11 @@ function findBusinessData(searchName: string): any {
 
 // Real-time search functions
 async function searchGoogleMaps(businessName: string): Promise<{ presence: boolean; url: string | null; address: string | null }> {
-  // Using Google Maps search via custom search or maps API
-  // For demo, we'll simulate realistic results based on business name patterns
   const encodedName = encodeURIComponent(businessName);
   
-  // Simulate API call - in production, use actual Google Places API
-  // This is a simulation that returns realistic data
-  const hasMapsPresence = Math.random() > 0.3; // 70% chance of having maps presence for real businesses
+  // In production, use actual Google Places API
+  // For demo, simulate realistic results
+  const hasMapsPresence = Math.random() > 0.3; // 70% chance of having maps presence
   
   return {
     presence: hasMapsPresence,
@@ -130,10 +128,6 @@ async function searchGoogleMaps(businessName: string): Promise<{ presence: boole
 }
 
 async function checkSocialPresence(businessName: string): Promise<SocialStatus> {
-  // In production, use actual social media APIs
-  // This simulates realistic social media presence checks
-  
-  // Common social media patterns - more established businesses have more presence
   const normalizedName = businessName.toLowerCase();
   const isCommonBusiness = normalizedName.includes('bank') || 
                           normalizedName.includes('school') || 
@@ -149,26 +143,20 @@ async function checkSocialPresence(businessName: string): Promise<SocialStatus> 
 }
 
 async function calculateSEOScore(businessName: string, website: string | null): Promise<number> {
-  // Calculate SEO score based on various factors
-  // In production, use actual SEO APIs like Moz, Ahrefs, or SEMrush
-  
   let score = 50; // Base score
   
-  // Check if business has a website
   if (website && website !== "") {
     score += 20;
   } else {
     score -= 10;
   }
   
-  // Check business name length and keywords
   const nameLower = businessName.toLowerCase();
   const hasKeywords = nameLower.includes('best') || 
                      nameLower.includes('top') || 
                      nameLower.includes('premier');
   if (hasKeywords) score += 5;
   
-  // Domain authority factors (simulated)
   if (website) {
     const domain = website.toLowerCase();
     if (domain.includes('.co.ke') || domain.includes('.ke')) score += 10;
@@ -176,23 +164,16 @@ async function calculateSEOScore(businessName: string, website: string | null): 
     if (!domain.includes('blog') && !domain.includes('wordpress')) score += 5;
   }
   
-  // Add some randomness for realism (between -5 and +5)
   score += Math.floor(Math.random() * 11) - 5;
   
-  // Ensure score is between 0 and 100
   return Math.max(0, Math.min(100, Math.floor(score)));
 }
 
 async function calculateOverallScore(seoScore: number, mapsPresence: boolean, social: SocialStatus): Promise<number> {
   let score = 0;
-  
-  // SEO contributes 40%
   score += seoScore * 0.4;
-  
-  // Maps presence contributes 20%
   score += mapsPresence ? 20 : 0;
   
-  // Social media contributes 40% (10% each for active platforms)
   let socialScore = 0;
   if (social.facebook) socialScore += 10;
   if (social.instagram) socialScore += 10;
@@ -204,17 +185,11 @@ async function calculateOverallScore(seoScore: number, mapsPresence: boolean, so
 }
 
 async function findWebsite(businessName: string): Promise<string | null> {
-  // In production, use Google Custom Search API or similar
-  // This simulates finding a website
-  
   const commonTLDs = ['.co.ke', '.com', '.ke', '.org'];
   const normalizedName = businessName.toLowerCase().replace(/\s+/g, '');
   
-  // Common Kenyan businesses often have .co.ke domains
   for (const tld of commonTLDs) {
     const potentialUrl = `https://${normalizedName}${tld}`;
-    // In production, you would actually check if the URL exists
-    // For demo, we'll simulate realistic results
     if (Math.random() > 0.7) {
       return potentialUrl;
     }
@@ -226,7 +201,6 @@ async function findWebsite(businessName: string): Promise<string | null> {
 async function getRealTimeBusinessData(businessName: string): Promise<any> {
   console.log(`Fetching real-time data for: ${businessName}`);
   
-  // Parallel fetch all data sources
   const [mapsData, socialData, website] = await Promise.all([
     searchGoogleMaps(businessName),
     checkSocialPresence(businessName),
@@ -245,7 +219,7 @@ async function getRealTimeBusinessData(businessName: string): Promise<any> {
     address: mapsData.address,
     website: website,
     social: socialData,
-    competitors: [], // Would be populated in production
+    competitors: [],
     dataSource: "real_time_search",
     lastVerified: new Date().toISOString().split("T")[0],
     note: "Data retrieved from real-time online sources",
@@ -284,7 +258,6 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("API Error:", error);
     
-    // Return a graceful error response
     return NextResponse.json({
       business: "Error Loading Data",
       score: 0,

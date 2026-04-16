@@ -2,14 +2,13 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image"; // Use Next.js Image for better handling
 
 interface Plan {
   name: string;
-  price: number | null; // Allow null for custom amount
+  price: number | null;
   features: string[];
   icon: string;
-  isCustomAmount?: boolean; // Flag for custom amount packages
+  isCustomAmount?: boolean;
 }
 
 const plans: Plan[] = [
@@ -58,12 +57,10 @@ const plans: Plan[] = [
   },
 ];
 
-// Component to safely render plan icons
 function PlanIcon({ src, alt }: { src: string; alt: string }) {
   const [imgError, setImgError] = useState(false);
   
   if (imgError) {
-    // Fallback if image doesn't exist
     return (
       <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
         {alt.charAt(0)}
@@ -81,7 +78,6 @@ function PlanIcon({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// Modal component to handle custom amounts
 function PaymentModal({ 
   selected, 
   phone, 
@@ -176,7 +172,6 @@ export default function Pricing() {
     setSelected(plan);
     setCustomAmount("");
     setOpen(true);
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
   };
 
@@ -185,7 +180,6 @@ export default function Pricing() {
     setSelected(null);
     setPhone("");
     setCustomAmount("");
-    // Restore body scroll
     document.body.style.overflow = 'auto';
   };
 
@@ -200,7 +194,6 @@ export default function Pricing() {
       return;
     }
 
-    // Get the amount to charge
     let amountToCharge: number;
     
     if (selected.isCustomAmount) {
@@ -213,10 +206,8 @@ export default function Pricing() {
       amountToCharge = selected.price!;
     }
 
-    // Validate phone number format
     let formatted = phone.trim().replace(/\s/g, '');
     
-    // Handle different phone number formats
     if (formatted.startsWith("+254")) {
       formatted = formatted.substring(1);
     } else if (formatted.startsWith("0")) {
@@ -230,7 +221,6 @@ export default function Pricing() {
       return;
     }
     
-    // Basic validation
     if (!formatted.match(/^254[17]\d{8}$/)) {
       alert("Please enter a valid Safaricom phone number");
       return;
@@ -303,7 +293,6 @@ export default function Pricing() {
         ))}
       </div>
       
-      {/* Modal - rendered separately to avoid issues */}
       {open && (
         <PaymentModal
           selected={selected}

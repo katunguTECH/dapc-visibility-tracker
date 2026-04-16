@@ -6,6 +6,7 @@ import Image from "next/image";
 import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
+import TermsModal from "@/components/TermsModal";
 
 // Loading component
 function LoadingState() {
@@ -47,70 +48,134 @@ function NoDataState() {
   );
 }
 
-// Header Component with Clerk authentication - Using dapc-logo2.jpg
+// Header Component with Clerk authentication and Terms modal
 function Header() {
   const { isSignedIn } = useAuth();
+  const [showTerms, setShowTerms] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
+  
+  // Store terms acceptance in localStorage
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  
+  // Check localStorage on component mount
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      setHasAcceptedTerms(localStorage.getItem('termsAccepted') === 'true');
+    }
+  });
+
+  const handleTermsAccept = () => {
+    localStorage.setItem('termsAccepted', 'true');
+    setHasAcceptedTerms(true);
+    setShowTerms(false);
+    if (pendingAction === 'signin') {
+      // Trigger sign in
+      const signInButton = document.querySelector('[data-clerk-sign-in]') as HTMLElement;
+      if (signInButton) signInButton.click();
+    } else if (pendingAction === 'signup') {
+      // Trigger sign up
+      const signUpButton = document.querySelector('[data-clerk-sign-up]') as HTMLElement;
+      if (signUpButton) signUpButton.click();
+    }
+    setPendingAction(null);
+  };
+
+  const handleTermsDecline = () => {
+    setShowTerms(false);
+    setPendingAction(null);
+  };
+
+  const handleSignIn = (e: React.MouseEvent) => {
+    if (!hasAcceptedTerms) {
+      e.preventDefault();
+      setPendingAction('signin');
+      setShowTerms(true);
+    }
+  };
+
+  const handleSignUp = (e: React.MouseEvent) => {
+    if (!hasAcceptedTerms) {
+      e.preventDefault();
+      setPendingAction('signup');
+      setShowTerms(true);
+    }
+  };
   
   return (
-    <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo Section - Using dapc-logo2.jpg */}
-          <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
-            <div className="relative w-16 h-16">
-              <img
-                src="/dapc-logo2.jpg"
-                alt="DAPC Logo"
-                className="w-full h-full object-contain rounded-lg"
-              />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                DAPC
-              </h1>
-              <p className="text-sm text-gray-500">Visibility Tracker</p>
-            </div>
-          </a>
+    <>
+      <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo Section */}
+            <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
+              <div className="relative w-16 h-16">
+                <img
+                  src="/dapc-logo2.jpg"
+                  alt="DAPC Logo"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  DAPC
+                </h1>
+                <p className="text-sm text-gray-500">Visibility Tracker</p>
+              </div>
+            </a>
 
-          {/* Navigation and Sign In */}
-          <div className="flex items-center gap-6">
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
-                Features
-              </a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
-                Pricing
-              </a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 transition">
-                About
-              </a>
-            </nav>
-            
-            {isSignedIn ? (
-              <>
-                <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
-                  Dashboard
+            {/* Navigation and Sign In */}
+            <div className="flex items-center gap-6">
+              <nav className="hidden md:flex items-center gap-6">
+                <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
+                  Features
                 </a>
-                <UserButton afterSignOutUrl="/" />
-              </>
-            ) : (
-              <>
-                <SignInButton mode="modal">
-                  <button className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition">
-                    Sign In
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-sm">
-                    Get Started
-                  </button>
-                </SignUpButton>
-              </>
-            )}
+                <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
+                  Pricing
+                </a>
+                <a href="#about" className="text-gray-600 hover:text-gray-900 transition">
+                  About
+                </a>
+              </nav>
+              
+              {isSignedIn ? (
+                <>
+                  <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
+                    Dashboard
+                  </a>
+                  <UserButton afterSignOutUrl="/" />
+                </>
+              ) : (
+                <>
+                  <SignInButton mode="modal">
+                    <button 
+                      onClick={handleSignIn}
+                      className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition"
+                    >
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button 
+                      onClick={handleSignUp}
+                      className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
+                    >
+                      Get Started
+                    </button>
+                  </SignUpButton>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Terms and Conditions Modal */}
+      <TermsModal 
+        isOpen={showTerms}
+        onAccept={handleTermsAccept}
+        onClose={handleTermsDecline}
+      />
+    </>
   );
 }
 
@@ -368,10 +433,11 @@ export default function Home() {
           <Pricing />
         </div>
         
-        {/* Footer */}
+        {/* Footer - UPDATED */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
+          <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Entertainment</p>
         </footer>
       </main>
     </>

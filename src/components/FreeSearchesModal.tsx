@@ -27,7 +27,7 @@ export default function FreeSearchesModal({ isOpen, onClose, remainingSearches }
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Free Searches Exhausted</h2>
           <p className="text-gray-600 mb-4">
-            You've used all {5 - remainingSearches} free searches. Subscribe to continue auditing businesses!
+            You've used all 5 free searches. Subscribe to continue auditing businesses!
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -38,11 +38,8 @@ export default function FreeSearchesModal({ isOpen, onClose, remainingSearches }
         </div>
 
         <div className="space-y-3">
-          <Link href="/#pricing">
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition"
-            >
+          <Link href="/#pricing" onClick={onClose}>
+            <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition">
               View Subscription Plans
             </button>
           </Link>
@@ -51,7 +48,7 @@ export default function FreeSearchesModal({ isOpen, onClose, remainingSearches }
             <button className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
               Sign In to Track Your Searches
             </button>
-          </SignUpButton>
+          </SignInButton>
           
           <button
             onClick={onClose}

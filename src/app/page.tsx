@@ -47,7 +47,7 @@ function NoDataState() {
   );
 }
 
-// Header Component with Clerk authentication - UPDATED LOGO
+// Header Component with Clerk authentication - Using dapc-logo2.jpg
 function Header() {
   const { isSignedIn } = useAuth();
   
@@ -114,8 +114,66 @@ function Header() {
   );
 }
 
-// Hero Section
-function HeroSection() {
+// Search Section Component
+function SearchSection({ 
+  query, 
+  setQuery, 
+  loading, 
+  onSearch 
+}: { 
+  query: string;
+  setQuery: (q: string) => void;
+  loading: boolean;
+  onSearch: () => void;
+}) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !loading) {
+      onSearch();
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl border p-8 mb-12">
+      <h2 className="text-2xl font-bold mb-2 text-center">Run Your Visibility Audit</h2>
+      <p className="text-gray-600 text-center mb-6">Enter any business name to get started</p>
+      
+      <div className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
+        <div className="flex-1">
+          <input
+            id="business"
+            name="business"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="e.g., Safaricom, Java House, KCB Bank"
+            className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+            disabled={loading}
+          />
+        </div>
+        <button
+          onClick={onSearch}
+          disabled={loading || !query.trim()}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+        >
+          {loading ? "Analyzing..." : "Run Audit →"}
+        </button>
+      </div>
+      
+      <p className="text-xs text-gray-400 text-center mt-4">
+        Free audit • No credit card required • Instant results
+      </p>
+    </div>
+  );
+}
+
+// Hero Section - UPDATED with bolder text, blue and black colors, and italics - NO STATS
+function HeroSection({ query, setQuery, loading, onSearch }: { 
+  query: string;
+  setQuery: (q: string) => void;
+  loading: boolean;
+  onSearch: () => void;
+}) {
   return (
     <div className="text-center mb-12">
       <div className="inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full mb-6">
@@ -126,52 +184,23 @@ function HeroSection() {
         <span className="text-sm text-blue-700 font-medium">AI-Powered Analysis</span>
       </div>
       
-      <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-        Are You Visible<br />
-        <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Online?
-        </span>
+      <h1 className="text-5xl md:text-7xl font-black mb-6 italic">
+        <span className="text-black">Are You Visible</span>
+        <br />
+        <span className="text-blue-600">Online?</span>
       </h1>
       
-      <div className="flex gap-4 justify-center">
-        <div className="flex -space-x-2">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 border-2 border-white"></div>
-          ))}
-        </div>
-        <p className="text-sm text-gray-500">
-          Trusted by <span className="font-semibold text-gray-900">500+</span> Kenyan businesses
-        </p>
-      </div>
+      <SearchSection 
+        query={query}
+        setQuery={setQuery}
+        loading={loading}
+        onSearch={onSearch}
+      />
     </div>
   );
 }
 
-// Stats Section
-function StatsSection() {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 py-8 border-y border-gray-100">
-      <div className="text-center">
-        <div className="text-3xl font-bold text-blue-600">94%</div>
-        <div className="text-sm text-gray-500 mt-1">Accuracy Rate</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl font-bold text-blue-600">500+</div>
-        <div className="text-sm text-gray-500 mt-1">Businesses Audited</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl font-bold text-blue-600">10K+</div>
-        <div className="text-sm text-gray-500 mt-1">Audits Completed</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl font-bold text-blue-600">24/7</div>
-        <div className="text-sm text-gray-500 mt-1">Real-time Tracking</div>
-      </div>
-    </div>
-  );
-}
-
-// Features Section - UPDATED WITH IMAGE ICONS
+// Features Section - WITH IMAGE ICONS
 function FeaturesSection() {
   const features = [
     {
@@ -255,59 +284,6 @@ function FeaturesSection() {
   );
 }
 
-// Search Section
-function SearchSection({ 
-  query, 
-  setQuery, 
-  loading, 
-  onSearch 
-}: { 
-  query: string;
-  setQuery: (q: string) => void;
-  loading: boolean;
-  onSearch: () => void;
-}) {
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading) {
-      onSearch();
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-xl border p-8 mb-12">
-      <h2 className="text-2xl font-bold mb-2 text-center">Run Your Visibility Audit</h2>
-      <p className="text-gray-600 text-center mb-6">Enter any business name to get started</p>
-      
-      <div className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
-        <div className="flex-1">
-          <input
-            id="business"
-            name="business"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="e.g., Safaricom, Java House, KCB Bank"
-            className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-            disabled={loading}
-          />
-        </div>
-        <button
-          onClick={onSearch}
-          disabled={loading || !query.trim()}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
-        >
-          {loading ? "Analyzing..." : "Run Audit →"}
-        </button>
-      </div>
-      
-      <p className="text-xs text-gray-400 text-center mt-4">
-        Free audit • No credit card required • Instant results
-      </p>
-    </div>
-  );
-}
-
 export default function Home() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<any | null>(null);
@@ -368,10 +344,7 @@ export default function Home() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <HeroSection />
-        <StatsSection />
-        
-        <SearchSection 
+        <HeroSection 
           query={query}
           setQuery={setQuery}
           loading={loading}

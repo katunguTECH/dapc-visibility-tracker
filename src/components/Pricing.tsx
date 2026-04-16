@@ -46,8 +46,14 @@ const plans: Plan[] = [
   {
     name: "Custom Corporate Package",
     price: null,
-    features: ["Tailored Solutions", "Enterprise Support", "Custom Strategy", "Priority Service"],
-    icon: "/icons/custom-corporate.jpg",
+    features: [
+      "Tailored Solutions", 
+      "Enterprise Support", 
+      "Custom Strategy", 
+      "Priority Service",
+      "Flexible Pricing"
+    ],
+    icon: "/icons/custom corporate package.jpg",
     isCustomAmount: true,
   },
 ];
@@ -101,23 +107,25 @@ function PaymentModal({
   
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white p-6 rounded-xl w-80 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white p-6 rounded-xl w-96 max-w-[90%] text-center" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-bold mb-2 text-xl">{selected.name}</h2>
         
         {isCustomAmountPackage ? (
           <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">Enter your desired amount</p>
+            <p className="text-sm text-gray-600 mb-2">Enter your desired amount in KES</p>
+            <p className="text-xs text-gray-500 mb-3">You will enter this amount at the M-Pesa prompt</p>
             <input
               type="number"
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
-              placeholder="Enter amount in KES"
+              placeholder="Enter amount e.g., 5000"
               className="border p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center text-lg"
               disabled={loading}
-              min="1"
+              min="10"
+              step="100"
             />
-            {customAmount && (
-              <p className="text-xs text-gray-500 mt-2">
+            {customAmount && parseInt(customAmount) > 0 && (
+              <p className="text-sm text-green-600 mt-2 font-semibold">
                 You will pay: KES {parseInt(customAmount).toLocaleString()}
               </p>
             )}
@@ -126,7 +134,8 @@ function PaymentModal({
           <p className="mb-4 text-2xl font-bold text-blue-600">KES {selected.price?.toLocaleString()}</p>
         )}
         
-        <p className="text-sm text-gray-600 mb-3">Enter M-Pesa phone number</p>
+        <p className="text-sm text-gray-600 mb-2">Enter M-Pesa phone number</p>
+        <p className="text-xs text-gray-400 mb-3">You will receive a prompt to enter your PIN</p>
         <input
           type="tel"
           value={phone}
@@ -138,10 +147,10 @@ function PaymentModal({
         
         <button
           onClick={sendSTK}
-          disabled={loading || !phone.trim() || (isCustomAmountPackage && (!customAmount || parseInt(customAmount) <= 0))}
+          disabled={loading || !phone.trim() || (isCustomAmountPackage && (!customAmount || parseInt(customAmount) < 10))}
           className="bg-green-600 text-white w-full py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
-          {loading ? "Sending..." : isCustomAmountPackage && customAmount ? `Pay KES ${parseInt(customAmount).toLocaleString()}` : "Proceed to Payment"}
+          {loading ? "Sending M-Pesa Prompt..." : isCustomAmountPackage && customAmount ? `Pay KES ${parseInt(customAmount).toLocaleString()}` : "Proceed to Payment"}
         </button>
         
         <button
@@ -195,17 +204,11 @@ export default function Pricing() {
     let amountToCharge: number;
     
     if (selected.isCustomAmount) {
-      if (!customAmount || parseInt(customAmount) <= 0) {
-        alert("Please enter a valid amount");
+      if (!customAmount || parseInt(customAmount) < 10) {
+        alert("Please enter a valid amount (minimum KES 10)");
         return;
       }
       amountToCharge = parseInt(customAmount);
-      
-      // Optional: Add minimum amount validation
-      if (amountToCharge < 10) {
-        alert("Minimum amount for custom package is KES 10");
-        return;
-      }
     } else {
       amountToCharge = selected.price!;
     }
@@ -278,7 +281,7 @@ export default function Pricing() {
             
             <p className="text-blue-600 font-bold text-xl mb-3">
               {plan.price === null ? (
-                <span className="text-base">Custom Amount</span>
+                <span className="text-base">Pay What You Want</span>
               ) : (
                 `KES ${plan.price.toLocaleString()}`
               )}
@@ -294,7 +297,7 @@ export default function Pricing() {
               onClick={() => openModal(plan)}
               className="mt-2 bg-blue-600 text-white w-full py-2 rounded-lg hover:bg-blue-700 transition font-medium"
             >
-              {plan.isCustomAmount ? "Request Quote" : "Subscribe Now"}
+              {plan.isCustomAmount ? "Pay Custom Amount" : "Subscribe Now"}
             </button>
           </div>
         ))}

@@ -7,6 +7,8 @@ import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
 import TermsModal from "@/components/TermsModal";
+import { useFreeSearches } from "@/components/FreeSearchesTracker";
+import FreeSearchesModal from "@/components/FreeSearchesModal";
 
 // Loading component
 function LoadingState() {
@@ -347,6 +349,15 @@ export default function Home() {
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFreeSearchesModal, setShowFreeSearchesModal] = useState(false);
+  
+  const { 
+    canPerformSearch, 
+    useFreeSearch, 
+    getRemainingFreeSearches,
+    hasSubscription,
+    freeSearches 
+  } = useFreeSearches();
 
   const runAudit = async () => {
     setError(null);
@@ -354,6 +365,12 @@ export default function Home() {
 
     if (!query.trim()) {
       setError("Please enter a business name");
+      return;
+    }
+
+    // Check if user can perform search
+    if (!canPerformSearch()) {
+      setShowFreeSearchesModal(true);
       return;
     }
 
@@ -388,6 +405,10 @@ export default function Home() {
       };
 
       setData(validatedData);
+      
+      // Use one free search
+      useFreeSearch();
+      
     } catch (err: any) {
       console.error("Audit error:", err);
       setError(err.message || "Failed to run visibility audit. Please try again.");
@@ -409,6 +430,37 @@ export default function Home() {
           onSearch={runAudit}
         />
         
+        {/* Show remaining free searches for non-subscribers */}
+        {!hasSubscription && freeSearches.remainingSearches > 0 && (
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full">
+              <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-orange-700">
+                Free searches remaining today: <strong>{freeSearches.remainingSearches}</strong> of 5
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Free searches reset daily at midnight
+            </p>
+          </div>
+        )}
+        
+        {/* Show unlimited for subscribers */}
+        {hasSubscription && (
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full">
+              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-green-700">
+                Unlimited searches • Active Subscription
+              </span>
+            </div>
+          </div>
+        )}
+        
         {error && <ErrorDisplay message={error} />}
         
         {loading && <LoadingState />}
@@ -426,13 +478,18 @@ export default function Home() {
           <Pricing />
         </div>
         
-        {/* Footer - UPDATED with new subsidiary name */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
           <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
         </footer>
       </main>
+
+      <FreeSearchesModal 
+        isOpen={showFreeSearchesModal}
+        onClose={() => setShowFreeSearchesModal(false)}
+        remainingSearches={getRemainingFreeSearches()}
+      />
     </>
   );
 }

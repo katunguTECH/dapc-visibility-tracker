@@ -379,6 +379,18 @@ export default function Pricing() {
     document.body.style.overflow = 'auto';
   };
 
+  // Reset free searches after subscription
+  const resetFreeSearchesAfterSubscription = () => {
+    // Clear free searches for signed-in user
+    const userId = localStorage.getItem('clerk_user_id');
+    if (userId) {
+      const storageKey = `freeSearches_${userId}`;
+      localStorage.removeItem(storageKey);
+    }
+    // Also clear anonymous
+    localStorage.removeItem('freeSearches_anonymous');
+  };
+
   // Save subscription to localStorage after successful payment
   const saveSubscription = (plan: Plan, amountPaid: number) => {
     const subscription = {
@@ -391,6 +403,10 @@ export default function Pricing() {
       isCustomAmount: plan.isCustomAmount || false,
     };
     localStorage.setItem('userSubscription', JSON.stringify(subscription));
+    
+    // Reset free searches after subscription
+    resetFreeSearchesAfterSubscription();
+    
     console.log('Subscription saved:', subscription);
   };
 

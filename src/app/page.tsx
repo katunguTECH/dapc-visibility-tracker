@@ -69,11 +69,9 @@ function Header() {
     setHasAcceptedTerms(true);
     setShowTerms(false);
     if (pendingAction === 'signin') {
-      // Trigger sign in
       const signInButton = document.querySelector('[data-clerk-sign-in]') as HTMLElement;
       if (signInButton) signInButton.click();
     } else if (pendingAction === 'signup') {
-      // Trigger sign up
       const signUpButton = document.querySelector('[data-clerk-sign-up]') as HTMLElement;
       if (signUpButton) signUpButton.click();
     }
@@ -106,7 +104,6 @@ function Header() {
       <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo Section */}
             <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
               <div className="relative w-16 h-16">
                 <img
@@ -123,7 +120,6 @@ function Header() {
               </div>
             </a>
 
-            {/* Navigation and Sign In */}
             <div className="flex items-center gap-6">
               <nav className="hidden md:flex items-center gap-6">
                 <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
@@ -169,7 +165,6 @@ function Header() {
         </div>
       </header>
 
-      {/* Terms and Conditions Modal */}
       <TermsModal 
         isOpen={showTerms}
         onAccept={handleTermsAccept}
@@ -232,7 +227,7 @@ function SearchSection({
   );
 }
 
-// Hero Section - UPDATED with bolder text, blue and black colors, and italics - NO STATS
+// Hero Section
 function HeroSection({ query, setQuery, loading, onSearch }: { 
   query: string;
   setQuery: (q: string) => void;
@@ -265,7 +260,7 @@ function HeroSection({ query, setQuery, loading, onSearch }: {
   );
 }
 
-// Features Section - WITH IMAGE ICONS
+// Features Section
 function FeaturesSection() {
   const features = [
     {
@@ -300,12 +295,10 @@ function FeaturesSection() {
     }
   ];
 
-  // Component to handle image loading errors
   const FeatureIcon = ({ src, alt }: { src: string; alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
     if (imgError) {
-      // Fallback emoji if image doesn't exist
       const fallbackIcons: { [key: string]: string } = {
         "SEO Analysis": "🔍",
         "Google Maps Check": "📍",
@@ -433,11 +426,11 @@ export default function Home() {
           <Pricing />
         </div>
         
-        {/* Footer - UPDATED */}
+        {/* Footer - UPDATED with new subsidiary name */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
-          <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Entertainment</p>
+          <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
         </footer>
       </main>
     </>

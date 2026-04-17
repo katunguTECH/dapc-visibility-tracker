@@ -1,7 +1,7 @@
 // src/app/admin-reports/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Admin password
@@ -18,6 +18,7 @@ interface Subscriber {
   endDate: string;
   status: string;
   mpesaReceipt?: string;
+  transactionDate?: string;
 }
 
 interface Transaction {
@@ -28,6 +29,8 @@ interface Transaction {
   transactionDate: string;
   status: string;
   mpesaReceipt?: string;
+  customerName?: string;
+  customerEmail?: string;
 }
 
 export default function AdminReportsPage() {
@@ -37,201 +40,124 @@ export default function AdminReportsPage() {
   const [activeTab, setActiveTab] = useState<'subscribers' | 'transactions'>('subscribers');
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({ start: '2026-04-01', end: '' });
+  const [stats, setStats] = useState({
+    totalSubscribers: 0,
+    activeSubscribers: 0,
+    totalRevenue: 0,
+    totalTransactions: 0,
+    revenueSinceApril1: 0,
+    transactionsSinceApril1: 0,
+  });
 
-  // Sample subscriber data
-  const subscribers: Subscriber[] = [
-    {
-      id: '1',
-      name: 'John Mwangi',
-      email: 'john.mwangi@example.com',
-      phone: '0712345678',
-      packageName: 'Starter Listing',
-      amount: 1999,
-      startDate: '2026-03-01',
-      endDate: '2026-03-31',
-      status: 'active',
-      mpesaReceipt: 'MPESA001',
-    },
-    {
-      id: '2',
-      name: 'Mary Wanjiku',
-      email: 'mary.wanjiku@example.com',
-      phone: '0723456789',
-      packageName: 'Local Boost',
-      amount: 3999,
-      startDate: '2026-02-15',
-      endDate: '2026-03-15',
-      status: 'expired',
-      mpesaReceipt: 'MPESA002',
-    },
-    {
-      id: '3',
-      name: 'Peter Ochieng',
-      email: 'peter.ochieng@example.com',
-      phone: '0734567890',
-      packageName: 'Growth Engine',
-      amount: 5999,
-      startDate: '2026-03-10',
-      endDate: '2026-04-10',
-      status: 'active',
-      mpesaReceipt: 'MPESA003',
-    },
-    {
-      id: '4',
-      name: 'Sarah Kimani',
-      email: 'sarah.kimani@example.com',
-      phone: '0745678901',
-      packageName: 'Market Leader',
-      amount: 7999,
-      startDate: '2026-01-01',
-      endDate: '2026-01-31',
-      status: 'cancelled',
-      mpesaReceipt: 'MPESA004',
-    },
-    {
-      id: '5',
-      name: 'David Otieno',
-      email: 'david.otieno@example.com',
-      phone: '0756789012',
-      packageName: 'Super Visibility',
-      amount: 10000,
-      startDate: '2026-03-05',
-      endDate: '2026-04-05',
-      status: 'active',
-      mpesaReceipt: 'MPESA005',
-    },
-    {
-      id: '6',
-      name: 'Grace Nduta',
-      email: 'grace.nduta@example.com',
-      phone: '0767890123',
-      packageName: 'Custom Corporate Package',
-      amount: 25000,
-      startDate: '2026-03-12',
-      endDate: '2026-04-12',
-      status: 'active',
-      mpesaReceipt: 'MPESA006',
-    },
-    {
-      id: '7',
-      name: 'James Kariuki',
-      email: 'james.kariuki@example.com',
-      phone: '0778901234',
-      packageName: 'Local Boost',
-      amount: 3999,
-      startDate: '2026-03-15',
-      endDate: '2026-04-15',
-      status: 'active',
-      mpesaReceipt: 'MPESA007',
-    },
-    {
-      id: '8',
-      name: 'Lucy Wambui',
-      email: 'lucy.wambui@example.com',
-      phone: '0789012345',
-      packageName: 'Starter Listing',
-      amount: 1999,
-      startDate: '2026-03-08',
-      endDate: '2026-04-08',
-      status: 'active',
-      mpesaReceipt: 'MPESA008',
-    },
-  ];
+  // Load real data from localStorage
+  const loadRealData = () => {
+    setLoading(true);
+    
+    // Load subscribers from localStorage
+    const storedSubscribers = localStorage.getItem('dapc_subscribers');
+    let loadedSubscribers: Subscriber[] = [];
+    
+    if (storedSubscribers) {
+      loadedSubscribers = JSON.parse(storedSubscribers);
+    } else {
+      // Check for userSubscription as fallback
+      const userSub = localStorage.getItem('userSubscription');
+      if (userSub) {
+        const sub = JSON.parse(userSub);
+        if (sub.packageName) {
+          loadedSubscribers = [{
+            id: '1',
+            name: sub.name || 'Customer',
+            email: sub.email || 'unknown@email.com',
+            phone: sub.phone || 'N/A',
+            packageName: sub.packageName,
+            amount: sub.amount,
+            startDate: sub.startDate || new Date().toISOString().split('T')[0],
+            endDate: sub.endDate || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+            status: sub.status || 'active',
+            mpesaReceipt: sub.mpesaReceipt,
+            transactionDate: sub.startDate,
+          }];
+        }
+      }
+    }
+    
+    // Load transactions from localStorage
+    const storedTransactions = localStorage.getItem('dapc_transactions');
+    let loadedTransactions: Transaction[] = [];
+    
+    if (storedTransactions) {
+      loadedTransactions = JSON.parse(storedTransactions);
+    } else {
+      // Check for any payment records
+      const payments = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('payment') || key.includes('mpesa') || key.includes('transaction'))) {
+          try {
+            const payment = JSON.parse(localStorage.getItem(key) || '{}');
+            if (payment.amount) {
+              payments.push(payment);
+            }
+          } catch (e) {}
+        }
+      }
+      loadedTransactions = payments.map((p, idx) => ({
+        id: idx.toString(),
+        phone: p.phone || 'N/A',
+        amount: p.amount,
+        planName: p.planName || 'Unknown',
+        transactionDate: p.date || new Date().toISOString(),
+        status: p.status || 'completed',
+        mpesaReceipt: p.receipt || `MPESA${Date.now()}`,
+      }));
+    }
+    
+    // Calculate statistics
+    const april1 = new Date('2026-04-01');
+    const transactionsSinceApril1 = loadedTransactions.filter(t => 
+      new Date(t.transactionDate) >= april1 && t.status === 'completed'
+    );
+    const revenueSinceApril1 = transactionsSinceApril1.reduce((sum, t) => sum + t.amount, 0);
+    
+    setSubscribers(loadedSubscribers);
+    setTransactions(loadedTransactions);
+    setStats({
+      totalSubscribers: loadedSubscribers.length,
+      activeSubscribers: loadedSubscribers.filter(s => s.status === 'active').length,
+      totalRevenue: loadedSubscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0),
+      totalTransactions: loadedTransactions.length,
+      revenueSinceApril1: revenueSinceApril1,
+      transactionsSinceApril1: transactionsSinceApril1.length,
+    });
+    setLoading(false);
+  };
 
-  // Sample transaction data
-  const transactions: Transaction[] = [
-    {
-      id: '1',
-      phone: '0712345678',
-      amount: 1999,
-      planName: 'Starter Listing',
-      transactionDate: '2026-03-01T10:30:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA001',
-    },
-    {
-      id: '2',
-      phone: '0723456789',
-      amount: 3999,
-      planName: 'Local Boost',
-      transactionDate: '2026-02-15T14:45:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA002',
-    },
-    {
-      id: '3',
-      phone: '0734567890',
-      amount: 5999,
-      planName: 'Growth Engine',
-      transactionDate: '2026-03-10T09:15:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA003',
-    },
-    {
-      id: '4',
-      phone: '0745678901',
-      amount: 7999,
-      planName: 'Market Leader',
-      transactionDate: '2026-01-01T16:20:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA004',
-    },
-    {
-      id: '5',
-      phone: '0756789012',
-      amount: 10000,
-      planName: 'Super Visibility',
-      transactionDate: '2026-03-05T11:00:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA005',
-    },
-    {
-      id: '6',
-      phone: '0767890123',
-      amount: 25000,
-      planName: 'Custom Corporate Package',
-      transactionDate: '2026-03-12T13:30:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA006',
-    },
-    {
-      id: '7',
-      phone: '0778901234',
-      amount: 3999,
-      planName: 'Local Boost',
-      transactionDate: '2026-03-15T15:45:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA007',
-    },
-    {
-      id: '8',
-      phone: '0789012345',
-      amount: 1999,
-      planName: 'Starter Listing',
-      transactionDate: '2026-03-08T12:00:00Z',
-      status: 'completed',
-      mpesaReceipt: 'MPESA008',
-    },
-  ];
-
+  // Handle password submit
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setIsAuthorized(true);
       setPasswordError('');
       setPassword('');
+      loadRealData();
     } else {
       setPasswordError('Incorrect password. Please try again.');
       setPassword('');
     }
   };
 
+  // Export to CSV
   const exportToCSV = () => {
     let headers: string[] = [];
     let data: any[][] = [];
 
     if (activeTab === 'subscribers') {
-      headers = ['Name', 'Email', 'Phone', 'Package', 'Amount (KES)', 'Start Date', 'End Date', 'Status', 'MPesa Receipt'];
+      headers = ['Name', 'Email', 'Phone', 'Package', 'Amount (KES)', 'Start Date', 'End Date', 'Status', 'MPesa Receipt', 'Transaction Date'];
       data = filteredSubscribers.map(sub => [
         sub.name,
         sub.email,
@@ -242,9 +168,10 @@ export default function AdminReportsPage() {
         sub.endDate,
         sub.status,
         sub.mpesaReceipt || 'N/A',
+        sub.transactionDate || 'N/A',
       ]);
     } else {
-      headers = ['Date', 'Phone', 'Amount (KES)', 'Plan', 'Status', 'Receipt'];
+      headers = ['Date', 'Phone', 'Amount (KES)', 'Plan', 'Status', 'Receipt', 'Customer Name', 'Customer Email'];
       data = filteredTransactions.map(trans => [
         new Date(trans.transactionDate).toLocaleDateString(),
         trans.phone,
@@ -252,6 +179,8 @@ export default function AdminReportsPage() {
         trans.planName,
         trans.status,
         trans.mpesaReceipt || 'N/A',
+        trans.customerName || 'N/A',
+        trans.customerEmail || 'N/A',
       ]);
     }
 
@@ -265,6 +194,7 @@ export default function AdminReportsPage() {
     window.URL.revokeObjectURL(url);
   };
 
+  // Filter subscribers
   const filteredSubscribers = subscribers.filter(sub => {
     if (filter !== 'all' && sub.status !== filter) return false;
     if (searchTerm) {
@@ -279,7 +209,16 @@ export default function AdminReportsPage() {
     return true;
   });
 
+  // Filter transactions by date range
   const filteredTransactions = transactions.filter(trans => {
+    if (dateRange.start) {
+      const transDate = new Date(trans.transactionDate).toISOString().split('T')[0];
+      if (transDate < dateRange.start) return false;
+    }
+    if (dateRange.end) {
+      const transDate = new Date(trans.transactionDate).toISOString().split('T')[0];
+      if (transDate > dateRange.end) return false;
+    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return (
@@ -290,13 +229,6 @@ export default function AdminReportsPage() {
     }
     return true;
   });
-
-  const stats = {
-    totalSubscribers: subscribers.length,
-    activeSubscribers: subscribers.filter(s => s.status === 'active').length,
-    totalRevenue: subscribers.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0),
-    totalTransactions: transactions.length,
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -320,7 +252,7 @@ export default function AdminReportsPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Admin Reports</h1>
-            <p className="text-gray-600 mt-2">Enter the admin password to access reports</p>
+            <p className="text-gray-600 mt-2">Enter the admin password to access real-time reports</p>
           </div>
 
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -354,7 +286,14 @@ export default function AdminReportsPage() {
     );
   }
 
-  // Main reports page
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -365,9 +304,9 @@ export default function AdminReportsPage() {
               <img src="/dapc-logo2.jpg" alt="DAPC Logo" className="w-10 h-10 object-contain rounded-lg" />
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Admin Reports Dashboard
+                  Real-Time Admin Reports
                 </h1>
-                <p className="text-xs text-gray-500">Subscriber & Transaction Management</p>
+                <p className="text-xs text-gray-500">Live Subscriber & Transaction Data</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -390,61 +329,30 @@ export default function AdminReportsPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Subscribers</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalSubscribers}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-500">Total Subscribers</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.totalSubscribers}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Active Subscribers</p>
-                <p className="text-2xl font-bold text-green-600">{stats.activeSubscribers}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-500">Active Subscribers</p>
+            <p className="text-2xl font-bold text-green-600">{stats.activeSubscribers}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-600">KES {stats.totalRevenue.toLocaleString()}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-500">Total Revenue</p>
+            <p className="text-xl font-bold text-purple-600">KES {stats.totalRevenue.toLocaleString()}</p>
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Transactions</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.totalTransactions}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <p className="text-xs text-gray-500">Total Transactions</p>
+            <p className="text-2xl font-bold text-orange-600">{stats.totalTransactions}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 bg-green-50">
+            <p className="text-xs text-gray-600">Revenue Since Apr 1</p>
+            <p className="text-xl font-bold text-green-700">KES {stats.revenueSinceApril1.toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 bg-blue-50">
+            <p className="text-xs text-gray-600">Transactions Since Apr 1</p>
+            <p className="text-2xl font-bold text-blue-700">{stats.transactionsSinceApril1}</p>
           </div>
         </div>
 
@@ -506,6 +414,12 @@ export default function AdminReportsPage() {
                   >
                     Export CSV
                   </button>
+                  <button
+                    onClick={loadRealData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Refresh Data
+                  </button>
                 </div>
               </div>
             </div>
@@ -526,25 +440,33 @@ export default function AdminReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredSubscribers.map((sub) => (
-                      <tr key={sub.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">{sub.name}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-gray-600">{sub.email}</div>
-                          <div className="text-xs text-gray-400">{sub.phone}</div>
+                    {filteredSubscribers.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                          No subscribers found. Data will appear when users subscribe.
                         </td>
-                        <td className="px-6 py-4 text-gray-700">{sub.packageName}</td>
-                        <td className="px-6 py-4 text-gray-700">KES {sub.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 text-gray-500">{sub.startDate}</td>
-                        <td className="px-6 py-4 text-gray-500">{sub.endDate}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(sub.status)}`}>
-                            {sub.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-gray-500">{sub.mpesaReceipt || 'N/A'}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredSubscribers.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 font-medium text-gray-900">{sub.name}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-gray-600">{sub.email}</div>
+                            <div className="text-xs text-gray-400">{sub.phone}</div>
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">{sub.packageName}</td>
+                          <td className="px-6 py-4 text-gray-700">KES {sub.amount.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-gray-500">{sub.startDate}</td>
+                          <td className="px-6 py-4 text-gray-500">{sub.endDate}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(sub.status)}`}>
+                              {sub.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-gray-500">{sub.mpesaReceipt || 'N/A'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -557,19 +479,47 @@ export default function AdminReportsPage() {
           <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex flex-wrap gap-4 items-center justify-between">
-                <input
-                  type="text"
-                  placeholder="Search by phone, plan, or receipt..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-64"
-                />
-                <button
-                  onClick={exportToCSV}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
-                >
-                  Export CSV
-                </button>
+                <div className="flex gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">From Date</label>
+                    <input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">To Date</label>
+                    <input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Search by phone, plan, or receipt..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-64"
+                  />
+                  <button
+                    onClick={exportToCSV}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={loadRealData}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Refresh Data
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -587,28 +537,46 @@ export default function AdminReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredTransactions.map((trans) => (
-                      <tr key={trans.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-gray-500">
-                          {new Date(trans.transactionDate).toLocaleDateString()}
+                    {filteredTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                          No transactions found for the selected date range.
                         </td>
-                        <td className="px-6 py-4 text-gray-700">{trans.phone}</td>
-                        <td className="px-6 py-4 text-gray-700">{trans.planName}</td>
-                        <td className="px-6 py-4 text-gray-700">KES {trans.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trans.status)}`}>
-                            {trans.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-gray-500">{trans.mpesaReceipt || 'N/A'}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredTransactions.map((trans) => (
+                        <tr key={trans.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-gray-500">
+                            {new Date(trans.transactionDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-gray-700">{trans.phone}</td>
+                          <td className="px-6 py-4 text-gray-700">{trans.planName}</td>
+                          <td className="px-6 py-4 text-gray-700">KES {trans.amount.toLocaleString()}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(trans.status)}`}>
+                              {trans.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-gray-500">{trans.mpesaReceipt || 'N/A'}</td>
+                        </td>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           </>
         )}
+
+        {/* Note about real data */}
+        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-sm text-yellow-800">
+            📊 <strong>Note:</strong> This dashboard shows real data from your localStorage. 
+            Transactions are saved when users complete M-Pesa payments. 
+            Use the <strong>"Refresh Data"</strong> button to load the latest information.
+            Date filter defaults to April 1, 2026 for "Since April 1" statistics.
+          </p>
+        </div>
       </main>
     </div>
   );

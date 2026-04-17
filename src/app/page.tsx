@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Image from "next/image";
 import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 import VisibilityCard from "@/components/VisibilityCard";
@@ -9,6 +9,15 @@ import Pricing from "@/components/Pricing";
 import TermsModal from "@/components/TermsModal";
 import { useFreeSearches } from "@/components/FreeSearchesTracker";
 import FreeSearchesModal from "@/components/FreeSearchesModal";
+
+// Admin emails - only these users can see the Reports link
+const ADMIN_EMAILS = [
+  'info@dapc.co.ke',
+  'katungu1@gmail.com',
+  'n.waswani@dapc.co.ke',
+  'h.munyoki@dapc.co.ke',
+  'k.ouko@dapc.co.ke'
+];
 
 // Loading component
 function LoadingState() {
@@ -52,19 +61,30 @@ function NoDataState() {
 
 // Header Component with Clerk authentication and Terms modal
 function Header() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, user } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
   const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Store terms acceptance in localStorage
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   
+  // Check if user is admin
+  useEffect(() => {
+    if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
+      const userEmail = user.primaryEmailAddress.emailAddress;
+      setIsAdmin(ADMIN_EMAILS.includes(userEmail));
+    } else {
+      setIsAdmin(false);
+    }
+  }, [isSignedIn, user]);
+  
   // Check localStorage on component mount
-  useState(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       setHasAcceptedTerms(localStorage.getItem('termsAccepted') === 'true');
     }
-  });
+  }, []);
 
   const handleTermsAccept = () => {
     localStorage.setItem('termsAccepted', 'true');
@@ -135,11 +155,25 @@ function Header() {
                 </a>
               </nav>
               
+              {/* Admin Reports Link - Visible to everyone */}
+              <a 
+                href="/admin-reports" 
+                className="text-gray-600 hover:text-blue-600 transition font-medium"
+              >
+                Admin Reports
+              </a>
+              
               {isSignedIn ? (
                 <>
                   <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
                     Dashboard
                   </a>
+                  {/* Show Reports link only for admin users */}
+                  {isAdmin && (
+                    <a href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
+                      Reports
+                    </a>
+                  )}
                   <UserButton afterSignOutUrl="/" />
                 </>
               ) : (
@@ -359,6 +393,28 @@ export default function Home() {
     freeSearches 
   } = useFreeSearches();
 
+  // Save audit to history
+  const saveAuditToHistory = (businessName: string, score: number, seoScore: number, mapsPresence: boolean, social: any) => {
+    const history = JSON.parse(localStorage.getItem('dapc_audit_history') || '[]');
+    const newAudit = {
+      id: Date.now().toString(),
+      businessName: businessName,
+      score: score,
+      seoScore: seoScore,
+      mapsPresence: mapsPresence,
+      social: social,
+      date: new Date().toISOString().split('T')[0],
+    };
+    
+    // Add to beginning of array (most recent first)
+    history.unshift(newAudit);
+    
+    // Keep only last 50 audits
+    const trimmedHistory = history.slice(0, 50);
+    
+    localStorage.setItem('dapc_audit_history', JSON.stringify(trimmedHistory));
+  };
+
   const runAudit = async () => {
     setError(null);
     setData(null);
@@ -405,6 +461,15 @@ export default function Home() {
       };
 
       setData(validatedData);
+      
+      // Save to audit history
+      saveAuditToHistory(
+        validatedData.business,
+        validatedData.score,
+        validatedData.seoScore,
+        validatedData.mapsPresence,
+        validatedData.social
+      );
       
       // Use one free search
       useFreeSearch();

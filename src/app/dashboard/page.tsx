@@ -16,6 +16,15 @@ interface Subscription {
   isCustomAmount?: boolean;
 }
 
+// Admin emails - only these users can see the Reports link
+const ADMIN_EMAILS = [
+  'info@dapc.co.ke',
+  'katungu1@gmail.com',
+  'n.waswani@dapc.co.ke',
+  'h.munyoki@dapc.co.ke',
+  'k.ouko@dapc.co.ke'
+];
+
 // Plan details based on the pricing structure
 const planDetails: Record<string, {
   description: string;
@@ -114,6 +123,7 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -128,6 +138,12 @@ export default function DashboardPage() {
       setUserName(`${user.firstName} ${user.lastName || ''}`);
     } else {
       setUserName("Valued Customer");
+    }
+
+    // Check if user is admin
+    if (user?.primaryEmailAddress?.emailAddress) {
+      const userEmail = user.primaryEmailAddress.emailAddress;
+      setIsAdmin(ADMIN_EMAILS.includes(userEmail));
     }
 
     // Load subscription from localStorage
@@ -219,6 +235,12 @@ export default function DashboardPage() {
               <Link href="/" className="text-gray-600 hover:text-gray-900 transition">
                 Home
               </Link>
+              {/* Show Reports link only for admin users */}
+              {isAdmin && (
+                <Link href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
+                  Reports
+                </Link>
+              )}
               <UserButton afterSignOutUrl="/" />
             </div>
           </div>

@@ -438,11 +438,11 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm text-orange-700">
-                Free searches remaining today: <strong>{freeSearches.remainingSearches}</strong> of 5
+                Free searches remaining: <strong>{freeSearches.remainingSearches}</strong> of 5
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Free searches reset daily at midnight
+              Lifetime free searches • Sign up for more features
             </p>
           </div>
         )}

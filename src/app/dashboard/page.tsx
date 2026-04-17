@@ -324,21 +324,26 @@ export default function DashboardPage() {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Run New Audit</h3>
               <p className="text-sm text-gray-600">Check your current visibility score</p>
+              <span className="inline-block mt-3 text-blue-600 text-sm font-medium group-hover:text-blue-700">
+                Run Audit →
+              </span>
             </div>
           </Link>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition group">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          <Link href="/dashboard/reports" className="block">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition group">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">View Reports</h3>
+              <p className="text-sm text-gray-600">Access detailed visibility reports and audit history</p>
+              <span className="inline-block mt-3 text-purple-600 text-sm font-medium group-hover:text-purple-700">
+                View All Reports →
+              </span>
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">View Reports</h3>
-            <p className="text-sm text-gray-600">Access detailed visibility reports</p>
-            <button className="text-purple-600 text-sm font-medium hover:text-purple-700 mt-2">
-              Coming Soon →
-            </button>
-          </div>
+          </Link>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition group">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
@@ -348,7 +353,7 @@ export default function DashboardPage() {
             </div>
             <h3 className="font-semibold text-gray-900 mb-2">Support</h3>
             <p className="text-sm text-gray-600">Get help with your subscription</p>
-            <button className="text-green-600 text-sm font-medium hover:text-green-700 mt-2">
+            <button className="inline-block mt-3 text-green-600 text-sm font-medium hover:text-green-700">
               Contact Support →
             </button>
           </div>

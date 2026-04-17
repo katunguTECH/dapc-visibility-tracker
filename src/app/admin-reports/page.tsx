@@ -103,7 +103,9 @@ export default function AdminReportsPage() {
             if (payment.amount) {
               payments.push(payment);
             }
-          } catch (e) {}
+          } catch (e) {
+            // Skip invalid JSON
+          }
         }
       }
       loadedTransactions = payments.map((p, idx) => ({
@@ -384,7 +386,7 @@ export default function AdminReportsPage() {
 
         {/* Subscribers Tab */}
         {activeTab === 'subscribers' && (
-          <>
+          <div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex flex-wrap gap-2">
@@ -471,12 +473,12 @@ export default function AdminReportsPage() {
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Transactions Tab */}
         {activeTab === 'transactions' && (
-          <>
+          <div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex gap-3">
@@ -558,14 +560,14 @@ export default function AdminReportsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-xs text-gray-500">{trans.mpesaReceipt || 'N/A'}</td>
-                        </td>
+                        </tr>
                       ))
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Note about real data */}
@@ -573,8 +575,8 @@ export default function AdminReportsPage() {
           <p className="text-sm text-yellow-800">
             📊 <strong>Note:</strong> This dashboard shows real data from your localStorage. 
             Transactions are saved when users complete M-Pesa payments. 
-            Use the <strong>"Refresh Data"</strong> button to load the latest information.
-            Date filter defaults to April 1, 2026 for "Since April 1" statistics.
+            Use the <strong>&quot;Refresh Data&quot;</strong> button to load the latest information.
+            Date filter defaults to April 1, 2026 for &quot;Since April 1&quot; statistics.
           </p>
         </div>
       </main>

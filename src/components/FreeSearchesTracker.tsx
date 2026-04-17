@@ -7,7 +7,6 @@ import { useAuth } from '@clerk/nextjs';
 interface FreeSearchesData {
   remainingSearches: number;
   totalSearchesUsed: number;
-  lastResetDate: string;
   hasUsedFreeSearches: boolean;
 }
 
@@ -18,7 +17,6 @@ export function useFreeSearches() {
   const [freeSearches, setFreeSearches] = useState<FreeSearchesData>({
     remainingSearches: MAX_FREE_SEARCHES,
     totalSearchesUsed: 0,
-    lastResetDate: new Date().toISOString().split('T')[0],
     hasUsedFreeSearches: false,
   });
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -31,26 +29,15 @@ export function useFreeSearches() {
       
       if (stored) {
         const data = JSON.parse(stored);
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Reset if it's a new day
-        if (data.lastResetDate !== today) {
-          const resetData = {
-            remainingSearches: MAX_FREE_SEARCHES,
-            totalSearchesUsed: 0,
-            lastResetDate: today,
-            hasUsedFreeSearches: false,
-          };
-          localStorage.setItem(storageKey, JSON.stringify(resetData));
-          setFreeSearches(resetData);
-        } else {
-          setFreeSearches(data);
-        }
+        setFreeSearches({
+          remainingSearches: data.remainingSearches,
+          totalSearchesUsed: data.totalSearchesUsed,
+          hasUsedFreeSearches: data.hasUsedFreeSearches,
+        });
       } else {
         const initialData = {
           remainingSearches: MAX_FREE_SEARCHES,
           totalSearchesUsed: 0,
-          lastResetDate: new Date().toISOString().split('T')[0],
           hasUsedFreeSearches: false,
         };
         localStorage.setItem(storageKey, JSON.stringify(initialData));
@@ -104,7 +91,6 @@ export function useFreeSearches() {
 
     const storageKey = isSignedIn && userId ? `freeSearches_${userId}` : 'freeSearches_anonymous';
     const updatedData = {
-      ...freeSearches,
       remainingSearches: freeSearches.remainingSearches - 1,
       totalSearchesUsed: freeSearches.totalSearchesUsed + 1,
       hasUsedFreeSearches: true,
@@ -120,7 +106,6 @@ export function useFreeSearches() {
     const resetData = {
       remainingSearches: MAX_FREE_SEARCHES,
       totalSearchesUsed: 0,
-      lastResetDate: new Date().toISOString().split('T')[0],
       hasUsedFreeSearches: false,
     };
     localStorage.setItem(storageKey, JSON.stringify(resetData));

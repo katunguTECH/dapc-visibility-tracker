@@ -39,7 +39,7 @@ export default function TermsModal({ isOpen, onAccept, onClose }: TermsModalProp
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-          <h2 className="text-2xl font-bold text-center">Terms and Conditions</h2>
+          <h2 className="text-2xl font-bold text-center text-gray-900">Terms and Conditions</h2>
           <p className="text-sm text-gray-500 text-center mt-1">
             DRIVE AFRICA PERFORMANCE CENTRE (DAPC)
           </p>
@@ -55,12 +55,10 @@ export default function TermsModal({ isOpen, onAccept, onClose }: TermsModalProp
         >
           <div className="prose prose-sm max-w-none">
             {/* Acceptance Section */}
-            <div className="bg-blue-50 p-4 rounded-lg mb-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">1. ACCEPTANCE OF TERMS</h3>
-              <p className="text-blue-800">
-                By using DAPC services, you confirm that:
-              </p>
-              <ul className="list-disc pl-5 mt-2 text-blue-800">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">1. ACCEPTANCE OF TERMS</h3>
+              <p className="text-gray-700 mb-2">By using DAPC services, you confirm that:</p>
+              <ul className="list-disc pl-5 text-gray-700">
                 <li>You have read and understood these Terms</li>
                 <li>You agree to be bound by them</li>
                 <li>You are authorized to act on behalf of your business (if applicable)</li>
@@ -153,18 +151,18 @@ export default function TermsModal({ isOpen, onAccept, onClose }: TermsModalProp
             </div>
 
             {/* Limitation of Liability */}
-            <div className="bg-red-50 p-4 rounded-lg mb-6">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">8. LIMITATION OF LIABILITY</h3>
-              <p className="text-red-800">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">8. LIMITATION OF LIABILITY</h3>
+              <p className="text-gray-700 mb-2">
                 To the fullest extent permitted by law, DAPC shall <strong>not be liable</strong> for:
               </p>
-              <ul className="list-disc pl-5 mt-2 text-red-800">
+              <ul className="list-disc pl-5 text-gray-700">
                 <li>Loss of business or revenue</li>
                 <li>Indirect or consequential damages</li>
                 <li>Loss arising from reliance on search engine results</li>
                 <li>Actions of third-party platforms (e.g., Google)</li>
               </ul>
-              <p className="text-red-800 font-semibold mt-3">
+              <p className="text-gray-700 font-semibold mt-3">
                 Total liability shall not exceed: The amount paid by the client in the last 30 days with a 
                 minimum subscription of 12 months.
               </p>
@@ -252,7 +250,7 @@ export default function TermsModal({ isOpen, onAccept, onClose }: TermsModalProp
             </div>
 
             {/* Contact Information */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">18. CONTACT INFORMATION</h3>
               <p className="text-gray-700">
                 <strong>Drive Africa Performance Centre (DAPC)</strong><br />
@@ -341,7 +339,7 @@ export default function TermsModal({ isOpen, onAccept, onClose }: TermsModalProp
                 This policy is governed by the laws of <strong>Kenya</strong>.
               </p>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">13. CONTACT</h3>
                 <p className="text-gray-700">
                   <strong>Drive Africa Performance Centre (DAPC)</strong><br />

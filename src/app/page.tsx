@@ -543,10 +543,39 @@ export default function Home() {
           <Pricing />
         </div>
         
+        {/* Footer with WhatsApp and email contact */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
           <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
+          
+          {/* Contact section with WhatsApp and email */}
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <a 
+                href="https://wa.me/254722973020?text=Hello!%20I%20need%20assistance%20with%20the%20DAPC%20Visibility%20Tracker.%20Can%20you%20help%20me%3F" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-700 transition-colors font-medium"
+              >
+                Chat with us on WhatsApp
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <a 
+                href="mailto:info@dapc.co.ke" 
+                className="text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                info@dapc.co.ke
+              </a>
+            </div>
+          </div>
         </footer>
       </main>
 

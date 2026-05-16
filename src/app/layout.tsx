@@ -12,17 +12,12 @@ export const metadata: Metadata = {
   description: "Track your business visibility online",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
           {children}
-          {/* Add WhatsApp button globally */}
           <WhatsAppButton
             phoneNumber="254722973020"
             position="right"

@@ -1,8 +1,5 @@
 // src/app/documents/page.tsx
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-
-"use client"; // Keep client component as before
+"use client";
 
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";

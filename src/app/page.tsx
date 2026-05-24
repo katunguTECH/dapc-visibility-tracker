@@ -48,7 +48,7 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-// No data state
+// No data state (now shown only for authenticated users)
 function NoDataState() {
   return (
     <div className="mt-6 p-8 bg-gray-50 rounded-2xl text-center border border-gray-200">
@@ -215,15 +215,17 @@ function SearchSection({
   query, 
   setQuery, 
   loading, 
-  onSearch 
+  onSearch,
+  isSignedIn
 }: { 
   query: string;
   setQuery: (q: string) => void;
   loading: boolean;
   onSearch: () => void;
+  isSignedIn: boolean;
 }) {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !loading) {
+    if (e.key === "Enter" && !loading && isSignedIn) {
       onSearch();
     }
   };
@@ -233,42 +235,60 @@ function SearchSection({
       <h2 className="text-2xl font-bold mb-2 text-center">Run Your Visibility Audit</h2>
       <p className="text-gray-600 text-center mb-6">Enter any business name to get started</p>
       
-      <div className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
-        <div className="flex-1">
-          <input
-            id="business"
-            name="business"
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="e.g., Safaricom, Java House, KCB Bank"
-            className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
-            disabled={loading}
-          />
+      {!isSignedIn ? (
+        <div className="text-center">
+          <p className="text-red-600 mb-4">🔒 Please sign in to run a visibility audit</p>
+          <SignUpButton mode="modal">
+            <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-lg">
+              Sign Up for Free
+            </button>
+          </SignUpButton>
         </div>
-        <button
-          onClick={onSearch}
-          disabled={loading || !query.trim()}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
-        >
-          {loading ? "Analyzing..." : "Run Audit →"}
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
+          <div className="flex-1">
+            <input
+              id="business"
+              name="business"
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="e.g., Safaricom, Java House, KCB Bank"
+              className="w-full border border-gray-300 p-4 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-lg"
+              disabled={loading}
+            />
+          </div>
+          <button
+            onClick={onSearch}
+            disabled={loading || !query.trim()}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg"
+          >
+            {loading ? "Analyzing..." : "Run Audit →"}
+          </button>
+        </div>
+      )}
       
       <p className="text-xs text-gray-400 text-center mt-4">
-        Free audit • No credit card required • Instant results
+        {isSignedIn ? "Free audit • Subscription unlocks unlimited searches" : "Sign in to start your free visibility audit"}
       </p>
     </div>
   );
 }
 
 // Hero Section
-function HeroSection({ query, setQuery, loading, onSearch }: { 
+function HeroSection({ 
+  query, 
+  setQuery, 
+  loading, 
+  onSearch,
+  isSignedIn
+}: { 
   query: string;
   setQuery: (q: string) => void;
   loading: boolean;
   onSearch: () => void;
+  isSignedIn: boolean;
 }) {
   return (
     <div className="text-center mb-12">
@@ -291,6 +311,7 @@ function HeroSection({ query, setQuery, loading, onSearch }: {
         setQuery={setQuery}
         loading={loading}
         onSearch={onSearch}
+        isSignedIn={isSignedIn}
       />
     </div>
   );
@@ -395,16 +416,8 @@ export default function Home() {
     freeSearches 
   } = useFreeSearches();
 
-  // Redirect signed-in users to their dashboard
-  useEffect(() => {
-    if (isSignedIn) {
-      router.push('/dashboard');
-    }
-  }, [isSignedIn, router]);
-
-  // Save audit to localStorage (legacy) and to Clerk metadata (if signed in)
+  // Save audit to localStorage (backup) and to Clerk metadata if signed in
   const saveAuditToHistory = (businessName: string, score: number, seoScore: number, mapsPresence: boolean, social: any) => {
-    // Local storage backup (optional)
     const history = JSON.parse(localStorage.getItem('dapc_audit_history') || '[]');
     const newAudit = {
       id: Date.now().toString(),
@@ -421,6 +434,12 @@ export default function Home() {
   };
 
   const runAudit = async () => {
+    // 🔒 Enforce sign-in before any search
+    if (!isSignedIn) {
+      setError("Please sign in or create an account to run a visibility audit.");
+      return;
+    }
+
     setError(null);
     setData(null);
 
@@ -429,7 +448,7 @@ export default function Home() {
       return;
     }
 
-    // Check if user can perform search (free tier logic)
+    // Check free search limit (only applies to non-subscribers)
     if (!canPerformSearch()) {
       setShowFreeSearchesModal(true);
       return;
@@ -467,7 +486,7 @@ export default function Home() {
 
       setData(validatedData);
       
-      // Save to audit history (local storage)
+      // Save to local history
       saveAuditToHistory(
         validatedData.business,
         validatedData.score,
@@ -476,10 +495,10 @@ export default function Home() {
         validatedData.social
       );
       
-      // Use one free search (for non-authenticated users)
+      // Consume one free search (if not subscribed)
       useFreeSearch();
 
-      // If user is signed in, save profile to Clerk metadata
+      // If user is signed in, save visibility profile to Clerk metadata
       if (isSignedIn && user) {
         try {
           await fetch('/api/user/update-visibility', {
@@ -518,10 +537,11 @@ export default function Home() {
           setQuery={setQuery}
           loading={loading}
           onSearch={runAudit}
+          isSignedIn={!!isSignedIn}
         />
         
-        {/* Show remaining free searches for non-subscribers */}
-        {!hasSubscription && freeSearches.remainingSearches > 0 && (
+        {/* Show remaining free searches for non-subscribers (only if signed in) */}
+        {isSignedIn && !hasSubscription && freeSearches.remainingSearches > 0 && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full">
               <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -538,7 +558,7 @@ export default function Home() {
         )}
         
         {/* Show unlimited for subscribers */}
-        {hasSubscription && (
+        {isSignedIn && hasSubscription && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full">
               <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -558,7 +578,14 @@ export default function Home() {
         <div className="mt-6">
           <Suspense fallback={<LoadingState />}>
             {!loading && !error && data && <VisibilityCard {...data} />}
-            {!loading && !error && !data && <NoDataState />}
+            {!loading && !error && !data && isSignedIn && <NoDataState />}
+            {!loading && !error && !data && !isSignedIn && (
+              <div className="mt-6 p-8 bg-gray-50 rounded-2xl text-center border border-gray-200">
+                <p className="text-gray-600">
+                  Sign in above to run your first visibility audit.
+                </p>
+              </div>
+            )}
           </Suspense>
         </div>
         
@@ -568,12 +595,12 @@ export default function Home() {
           <Pricing />
         </div>
         
+        {/* Footer with WhatsApp and email contact */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
           <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
           
-          {/* Footer WhatsApp and email contact (same as before) */}
           <div className="mt-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

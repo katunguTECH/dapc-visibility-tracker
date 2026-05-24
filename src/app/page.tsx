@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { SignInButton, SignUpButton, UserButton, useAuth, useUser } from '@clerk/nextjs';
+import { useAuth, useUser, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import Link from "next/link";
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
 import TermsModal from "@/components/TermsModal";
@@ -49,7 +50,7 @@ function ErrorDisplay({ message }: { message: string }) {
   );
 }
 
-// No data state (now shown only for authenticated users)
+// No data state (shown only for authenticated users)
 function NoDataState() {
   return (
     <div className="mt-6 p-8 bg-gray-50 rounded-2xl text-center border border-gray-200">
@@ -60,17 +61,14 @@ function NoDataState() {
   );
 }
 
-// Header Component with Clerk authentication and Terms modal
+// Header Component – now uses plain <Link> instead of Clerk modals
 function Header() {
   const { isSignedIn, user } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
   const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  // Store terms acceptance in localStorage
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
-  
-  // Check if user is admin
+
   useEffect(() => {
     if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
       const userEmail = user.primaryEmailAddress.emailAddress;
@@ -79,8 +77,7 @@ function Header() {
       setIsAdmin(false);
     }
   }, [isSignedIn, user]);
-  
-  // Check localStorage on component mount
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setHasAcceptedTerms(localStorage.getItem('termsAccepted') === 'true');
@@ -92,11 +89,9 @@ function Header() {
     setHasAcceptedTerms(true);
     setShowTerms(false);
     if (pendingAction === 'signin') {
-      const signInButton = document.querySelector('[data-clerk-sign-in]') as HTMLElement;
-      if (signInButton) signInButton.click();
+      window.location.href = '/sign-in';
     } else if (pendingAction === 'signup') {
-      const signUpButton = document.querySelector('[data-clerk-sign-up]') as HTMLElement;
-      if (signUpButton) signUpButton.click();
+      window.location.href = '/sign-up';
     }
     setPendingAction(null);
   };
@@ -106,7 +101,7 @@ function Header() {
     setPendingAction(null);
   };
 
-  const handleSignIn = (e: React.MouseEvent) => {
+  const handleSignInClick = (e: React.MouseEvent) => {
     if (!hasAcceptedTerms) {
       e.preventDefault();
       setPendingAction('signin');
@@ -114,20 +109,20 @@ function Header() {
     }
   };
 
-  const handleSignUp = (e: React.MouseEvent) => {
+  const handleSignUpClick = (e: React.MouseEvent) => {
     if (!hasAcceptedTerms) {
       e.preventDefault();
       setPendingAction('signup');
       setShowTerms(true);
     }
   };
-  
+
   return (
     <>
       <header className="border-b border-gray-100 bg-white/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <a href="/" className="flex items-center gap-4 hover:opacity-90 transition">
+            <Link href="/" className="flex items-center gap-4 hover:opacity-90 transition">
               <div className="relative w-16 h-16">
                 <img
                   src="/dapc-logo2.jpg"
@@ -141,60 +136,56 @@ function Header() {
                 </h1>
                 <p className="text-sm text-gray-500">Visibility Tracker</p>
               </div>
-            </a>
+            </Link>
 
             <div className="flex items-center gap-6">
               <nav className="hidden md:flex items-center gap-6">
-                <a href="#features" className="text-gray-600 hover:text-gray-900 transition">
+                <Link href="#features" className="text-gray-600 hover:text-gray-900 transition">
                   Features
-                </a>
-                <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
+                </Link>
+                <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
                   Pricing
-                </a>
-                <a href="#about" className="text-gray-600 hover:text-gray-900 transition">
+                </Link>
+                <Link href="#about" className="text-gray-600 hover:text-gray-900 transition">
                   About
-                </a>
+                </Link>
               </nav>
-              
-              {/* Admin Reports Link - Visible to everyone */}
-              <a 
+
+              <Link 
                 href="/admin-reports" 
                 className="text-gray-600 hover:text-blue-600 transition font-medium"
               >
                 Admin Reports
-              </a>
-              
+              </Link>
+
               {isSignedIn ? (
                 <>
-                  <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
+                  <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
                     Dashboard
-                  </a>
-                  {/* Show Reports link only for admin users */}
+                  </Link>
                   {isAdmin && (
-                    <a href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
+                    <Link href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
                       Reports
-                    </a>
+                    </Link>
                   )}
                   <UserButton afterSignOutUrl="/" />
                 </>
               ) : (
                 <>
-                  <SignInButton mode="modal">
-                    <button 
-                      onClick={handleSignIn}
-                      className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition"
-                    >
-                      Sign In
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button 
-                      onClick={handleSignUp}
-                      className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
-                    >
-                      Get Started
-                    </button>
-                  </SignUpButton>
+                  <Link 
+                    href="/sign-in" 
+                    onClick={handleSignInClick}
+                    className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={handleSignUpClick}
+                    className="px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-sm"
+                  >
+                    Get Started
+                  </Link>
                 </>
               )}
             </div>
@@ -211,7 +202,7 @@ function Header() {
   );
 }
 
-// Search Section Component
+// Search Section Component (only shows input if user is signed in)
 function SearchSection({ 
   query, 
   setQuery, 
@@ -239,11 +230,11 @@ function SearchSection({
       {!isSignedIn ? (
         <div className="text-center">
           <p className="text-red-600 mb-4">🔒 Please sign in to run a visibility audit</p>
-          <SignUpButton mode="modal">
+          <Link href="/sign-up">
             <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition shadow-lg">
               Sign Up for Free
             </button>
-          </SignUpButton>
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col md:flex-row gap-4 max-w-3xl mx-auto">
@@ -318,7 +309,7 @@ function HeroSection({
   );
 }
 
-// Features Section
+// Features Section (unchanged)
 function FeaturesSection() {
   const features = [
     {
@@ -418,7 +409,7 @@ export default function Home() {
     freeSearches 
   } = useFreeSearches();
 
-  // Handle post-signup redirect
+  // Check if the user just signed up (flag from sign-up flow)
   useEffect(() => {
     const justSignedUp = localStorage.getItem('dapc_just_signed_up') === 'true';
     if (justSignedUp && isSignedIn) {
@@ -427,7 +418,7 @@ export default function Home() {
     }
   }, [isSignedIn]);
 
-  // Save audit to localStorage (backup) and to Clerk metadata if signed in
+  // Save audit to localStorage and Clerk metadata
   const saveAuditToHistory = (businessName: string, score: number, seoScore: number, mapsPresence: boolean, social: any) => {
     const history = JSON.parse(localStorage.getItem('dapc_audit_history') || '[]');
     const newAudit = {
@@ -453,17 +444,15 @@ export default function Home() {
       return;
     }
 
-    // NEW: If user just signed up after their first free audit, allow them to continue
+    // If user just signed up after first audit, allow this search (the second one)
     if (userJustSignedUp) {
       setUserJustSignedUp(false);
-      // Allow the audit to proceed without further checks
-    }
-    // If not signed in at all, redirect to sign up
+      // Continue with audit
+    } 
+    // If not signed in at all, redirect to sign-up page
     else if (!isSignedIn) {
-      // Store the current query and results in session storage to restore after signup
+      // Store the query in sessionStorage to pre-fill after sign-up
       sessionStorage.setItem('pendingAuditQuery', query);
-      sessionStorage.setItem('pendingAuditResults', JSON.stringify(data));
-      // Set flag to indicate user is signing up after first audit
       localStorage.setItem('dapc_just_signed_up', 'true');
       router.push('/sign-up');
       return;
@@ -487,10 +476,6 @@ export default function Home() {
 
       const json = await res.json();
 
-      if (!json || typeof json !== "object") {
-        throw new Error("Invalid API response format");
-      }
-
       const validatedData = {
         business: json.business || query.trim(),
         score: typeof json.score === "number" ? json.score : 0,
@@ -506,8 +491,6 @@ export default function Home() {
       };
 
       setData(validatedData);
-      
-      // Save to local history
       saveAuditToHistory(
         validatedData.business,
         validatedData.score,
@@ -516,15 +499,15 @@ export default function Home() {
         validatedData.social
       );
       
-      // Mark first audit as completed if this is the user's first time
+      // Mark first audit as completed
       if (!hasCompletedFirstAudit()) {
         markFirstAuditCompleted();
       }
       
-      // Consume one free search (if not subscribed)
+      // Use one free search
       useFreeSearch();
 
-      // If user is signed in, save visibility profile to Clerk metadata
+      // Save profile to Clerk metadata if signed in
       if (isSignedIn && user) {
         try {
           await fetch('/api/user/update-visibility', {
@@ -538,7 +521,6 @@ export default function Home() {
               social: validatedData.social,
             }),
           });
-          console.log("Profile saved to Clerk metadata");
         } catch (err) {
           console.error("Failed to save profile:", err);
         }
@@ -566,7 +548,7 @@ export default function Home() {
           isSignedIn={!!isSignedIn}
         />
         
-        {/* Show remaining free searches for non-subscribers (only if signed in) */}
+        {/* Free searches counter (only for signed-in non-subscribers) */}
         {isSignedIn && !hasSubscription && freeSearches.remainingSearches > 0 && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full">
@@ -578,12 +560,12 @@ export default function Home() {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Lifetime free searches • Sign up for more features
+              Upgrade to a plan for unlimited searches
             </p>
           </div>
         )}
         
-        {/* Show unlimited for subscribers */}
+        {/* Unlimited banner for subscribers */}
         {isSignedIn && hasSubscription && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full">
@@ -598,7 +580,6 @@ export default function Home() {
         )}
         
         {error && <ErrorDisplay message={error} />}
-        
         {loading && <LoadingState />}
         
         <div className="mt-6">

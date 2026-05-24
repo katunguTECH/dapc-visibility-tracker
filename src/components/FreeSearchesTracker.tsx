@@ -4,121 +4,119 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 
-interface FreeSearchesData {
-  remainingSearches: number;
-  totalSearchesUsed: number;
-  hasUsedFreeSearches: boolean;
-}
-
+// Maximum free searches allowed
 const MAX_FREE_SEARCHES = 5;
 
+// Storage keys
+const FREE_SEARCHES_KEY = 'dapc_free_searches_remaining';
+const SUBSCRIPTION_KEY = 'userSubscription';
+
+interface FreeSearchesState {
+  remainingSearches: number;
+  totalUsed: number;
+}
+
+interface Subscription {
+  status: 'active' | 'expired' | 'cancelled';
+  endDate?: string;
+}
+
 export function useFreeSearches() {
-  const { isSignedIn, userId } = useAuth();
-  const [freeSearches, setFreeSearches] = useState<FreeSearchesData>({
+  const { isSignedIn } = useAuth();
+  const [freeSearches, setFreeSearches] = useState<FreeSearchesState>({
     remainingSearches: MAX_FREE_SEARCHES,
-    totalSearchesUsed: 0,
-    hasUsedFreeSearches: false,
+    totalUsed: 0,
   });
   const [hasSubscription, setHasSubscription] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load free searches from localStorage
-  useEffect(() => {
-    const loadFreeSearches = () => {
-      const storageKey = isSignedIn && userId ? `freeSearches_${userId}` : 'freeSearches_anonymous';
-      const stored = localStorage.getItem(storageKey);
-      
-      if (stored) {
-        const data = JSON.parse(stored);
-        setFreeSearches({
-          remainingSearches: data.remainingSearches,
-          totalSearchesUsed: data.totalSearchesUsed,
-          hasUsedFreeSearches: data.hasUsedFreeSearches,
-        });
-      } else {
-        const initialData = {
-          remainingSearches: MAX_FREE_SEARCHES,
-          totalSearchesUsed: 0,
-          hasUsedFreeSearches: false,
-        };
-        localStorage.setItem(storageKey, JSON.stringify(initialData));
-        setFreeSearches(initialData);
-      }
-    };
-
-    // Check if user has an active subscription
-    const checkSubscription = () => {
-      const subscription = localStorage.getItem('userSubscription');
-      if (subscription) {
-        const subData = JSON.parse(subscription);
-        const today = new Date().toISOString().split('T')[0];
-        if (subData.status === 'active' && subData.endDate >= today) {
-          setHasSubscription(true);
-        } else {
-          setHasSubscription(false);
-        }
-      } else {
-        setHasSubscription(false);
-      }
-    };
-
-    loadFreeSearches();
-    checkSubscription();
-  }, [isSignedIn, userId]);
-
-  const canPerformSearch = (): boolean => {
-    // If user has active subscription, always allow
-    if (hasSubscription) {
-      return true;
+  // Load free searches count from localStorage
+  const loadFreeSearches = () => {
+    if (typeof window === 'undefined') return { remaining: MAX_FREE_SEARCHES, used: 0 };
+    
+    const saved = localStorage.getItem(FREE_SEARCHES_KEY);
+    if (saved) {
+      const remaining = parseInt(saved, 10);
+      const used = MAX_FREE_SEARCHES - remaining;
+      return { remaining: isNaN(remaining) ? MAX_FREE_SEARCHES : remaining, used };
     }
-    // Otherwise check free searches remaining
+    return { remaining: MAX_FREE_SEARCHES, used: 0 };
+  };
+
+  // Load subscription status from localStorage (or later from API)
+  const loadSubscription = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const subJson = localStorage.getItem(SUBSCRIPTION_KEY);
+    if (!subJson) return false;
+    try {
+      const sub: Subscription = JSON.parse(subJson);
+      if (sub.status === 'active') {
+        // Check if expired
+        if (sub.endDate && new Date(sub.endDate) < new Date()) {
+          localStorage.removeItem(SUBSCRIPTION_KEY);
+          return false;
+        }
+        return true;
+      }
+    } catch (e) {
+      console.error('Error parsing subscription', e);
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    const { remaining } = loadFreeSearches();
+    const used = MAX_FREE_SEARCHES - remaining;
+    setFreeSearches({ remainingSearches: remaining, totalUsed: used });
+    setHasSubscription(loadSubscription());
+    setIsLoading(false);
+  }, []);
+
+  // Save free searches count to localStorage
+  const saveFreeSearches = (remaining: number) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(FREE_SEARCHES_KEY, remaining.toString());
+  };
+
+  // Use one free search (decrement counter)
+  const useFreeSearch = () => {
+    if (hasSubscription) return true; // Unlimited, no decrement
+    
+    const currentRemaining = freeSearches.remainingSearches;
+    if (currentRemaining <= 0) return false;
+    
+    const newRemaining = currentRemaining - 1;
+    const newUsed = MAX_FREE_SEARCHES - newRemaining;
+    setFreeSearches({ remainingSearches: newRemaining, totalUsed: newUsed });
+    saveFreeSearches(newRemaining);
+    return true;
+  };
+
+  // Check if user can perform a search
+  const canPerformSearch = (): boolean => {
+    if (hasSubscription) return true;
     return freeSearches.remainingSearches > 0;
   };
 
+  // Get remaining free searches (for display)
   const getRemainingFreeSearches = (): number => {
     if (hasSubscription) return Infinity;
     return freeSearches.remainingSearches;
   };
 
-  const useFreeSearch = (): boolean => {
-    if (hasSubscription) {
-      // Subscribed users have unlimited searches
-      return true;
-    }
-    
-    if (freeSearches.remainingSearches <= 0) {
-      return false;
-    }
-
-    const storageKey = isSignedIn && userId ? `freeSearches_${userId}` : 'freeSearches_anonymous';
-    const updatedData = {
-      remainingSearches: freeSearches.remainingSearches - 1,
-      totalSearchesUsed: freeSearches.totalSearchesUsed + 1,
-      hasUsedFreeSearches: true,
-    };
-    
-    localStorage.setItem(storageKey, JSON.stringify(updatedData));
-    setFreeSearches(updatedData);
-    return true;
-  };
-
+  // Reset free searches (e.g., after subscription expiry – optional)
   const resetFreeSearches = () => {
-    const storageKey = isSignedIn && userId ? `freeSearches_${userId}` : 'freeSearches_anonymous';
-    const resetData = {
-      remainingSearches: MAX_FREE_SEARCHES,
-      totalSearchesUsed: 0,
-      hasUsedFreeSearches: false,
-    };
-    localStorage.setItem(storageKey, JSON.stringify(resetData));
-    setFreeSearches(resetData);
+    setFreeSearches({ remainingSearches: MAX_FREE_SEARCHES, totalUsed: 0 });
+    saveFreeSearches(MAX_FREE_SEARCHES);
   };
 
   return {
     freeSearches,
     hasSubscription,
+    isLoading,
+    useFreeSearch,
     canPerformSearch,
     getRemainingFreeSearches,
-    useFreeSearch,
     resetFreeSearches,
-    MAX_FREE_SEARCHES,
   };
 }

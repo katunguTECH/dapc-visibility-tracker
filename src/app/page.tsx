@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, UserButton, useAuth, useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import VisibilityCard from "@/components/VisibilityCard";
 import Pricing from "@/components/Pricing";
 import TermsModal from "@/components/TermsModal";
@@ -65,8 +66,10 @@ function Header() {
   const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
+  // Store terms acceptance in localStorage
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   
+  // Check if user is admin
   useEffect(() => {
     if (isSignedIn && user?.primaryEmailAddress?.emailAddress) {
       const userEmail = user.primaryEmailAddress.emailAddress;
@@ -76,6 +79,7 @@ function Header() {
     }
   }, [isSignedIn, user]);
   
+  // Check localStorage on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setHasAcceptedTerms(localStorage.getItem('termsAccepted') === 'true');
@@ -151,6 +155,7 @@ function Header() {
                 </a>
               </nav>
               
+              {/* Admin Reports Link - Visible to everyone */}
               <a 
                 href="/admin-reports" 
                 className="text-gray-600 hover:text-blue-600 transition font-medium"
@@ -163,6 +168,7 @@ function Header() {
                   <a href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
                     Dashboard
                   </a>
+                  {/* Show Reports link only for admin users */}
                   {isAdmin && (
                     <a href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
                       Reports
@@ -373,6 +379,8 @@ function FeaturesSection() {
 }
 
 export default function Home() {
+  const { isSignedIn, user } = useUser();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
@@ -387,7 +395,16 @@ export default function Home() {
     freeSearches 
   } = useFreeSearches();
 
+  // Redirect signed-in users to their dashboard
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push('/dashboard');
+    }
+  }, [isSignedIn, router]);
+
+  // Save audit to localStorage (legacy) and to Clerk metadata (if signed in)
   const saveAuditToHistory = (businessName: string, score: number, seoScore: number, mapsPresence: boolean, social: any) => {
+    // Local storage backup (optional)
     const history = JSON.parse(localStorage.getItem('dapc_audit_history') || '[]');
     const newAudit = {
       id: Date.now().toString(),
@@ -412,6 +429,7 @@ export default function Home() {
       return;
     }
 
+    // Check if user can perform search (free tier logic)
     if (!canPerformSearch()) {
       setShowFreeSearchesModal(true);
       return;
@@ -448,6 +466,8 @@ export default function Home() {
       };
 
       setData(validatedData);
+      
+      // Save to audit history (local storage)
       saveAuditToHistory(
         validatedData.business,
         validatedData.score,
@@ -455,7 +475,29 @@ export default function Home() {
         validatedData.mapsPresence,
         validatedData.social
       );
+      
+      // Use one free search (for non-authenticated users)
       useFreeSearch();
+
+      // If user is signed in, save profile to Clerk metadata
+      if (isSignedIn && user) {
+        try {
+          await fetch('/api/user/update-visibility', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              business: validatedData.business,
+              score: validatedData.score,
+              seoScore: validatedData.seoScore,
+              mapsPresence: validatedData.mapsPresence,
+              social: validatedData.social,
+            }),
+          });
+          console.log("Profile saved to Clerk metadata");
+        } catch (err) {
+          console.error("Failed to save profile:", err);
+        }
+      }
       
     } catch (err: any) {
       console.error("Audit error:", err);
@@ -478,6 +520,7 @@ export default function Home() {
           onSearch={runAudit}
         />
         
+        {/* Show remaining free searches for non-subscribers */}
         {!hasSubscription && freeSearches.remainingSearches > 0 && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full">
@@ -494,6 +537,7 @@ export default function Home() {
           </div>
         )}
         
+        {/* Show unlimited for subscribers */}
         {hasSubscription && (
           <div className="mb-6 text-center">
             <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full">
@@ -508,6 +552,7 @@ export default function Home() {
         )}
         
         {error && <ErrorDisplay message={error} />}
+        
         {loading && <LoadingState />}
         
         <div className="mt-6">
@@ -523,12 +568,12 @@ export default function Home() {
           <Pricing />
         </div>
         
-        {/* Footer with WhatsApp and email contact */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
           <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
           
+          {/* Footer WhatsApp and email contact (same as before) */}
           <div className="mt-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

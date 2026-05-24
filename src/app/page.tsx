@@ -9,6 +9,7 @@ import Pricing from "@/components/Pricing";
 import TermsModal from "@/components/TermsModal";
 import { useFreeSearches } from "@/components/FreeSearchesTracker";
 import FreeSearchesModal from "@/components/FreeSearchesModal";
+import { hasCompletedFirstAudit, markFirstAuditCompleted } from "@/utils/audit-storage";
 
 // Admin emails - only these users can see the Reports link
 const ADMIN_EMAILS = [
@@ -407,6 +408,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFreeSearchesModal, setShowFreeSearchesModal] = useState(false);
+  const [userJustSignedUp, setUserJustSignedUp] = useState(false);
   
   const { 
     canPerformSearch, 
@@ -415,6 +417,15 @@ export default function Home() {
     hasSubscription,
     freeSearches 
   } = useFreeSearches();
+
+  // Handle post-signup redirect
+  useEffect(() => {
+    const justSignedUp = localStorage.getItem('dapc_just_signed_up') === 'true';
+    if (justSignedUp && isSignedIn) {
+      setUserJustSignedUp(true);
+      localStorage.removeItem('dapc_just_signed_up');
+    }
+  }, [isSignedIn]);
 
   // Save audit to localStorage (backup) and to Clerk metadata if signed in
   const saveAuditToHistory = (businessName: string, score: number, seoScore: number, mapsPresence: boolean, social: any) => {
@@ -434,17 +445,27 @@ export default function Home() {
   };
 
   const runAudit = async () => {
-    // 🔒 Enforce sign-in before any search
-    if (!isSignedIn) {
-      setError("Please sign in or create an account to run a visibility audit.");
-      return;
-    }
-
     setError(null);
     setData(null);
 
     if (!query.trim()) {
       setError("Please enter a business name");
+      return;
+    }
+
+    // NEW: If user just signed up after their first free audit, allow them to continue
+    if (userJustSignedUp) {
+      setUserJustSignedUp(false);
+      // Allow the audit to proceed without further checks
+    }
+    // If not signed in at all, redirect to sign up
+    else if (!isSignedIn) {
+      // Store the current query and results in session storage to restore after signup
+      sessionStorage.setItem('pendingAuditQuery', query);
+      sessionStorage.setItem('pendingAuditResults', JSON.stringify(data));
+      // Set flag to indicate user is signing up after first audit
+      localStorage.setItem('dapc_just_signed_up', 'true');
+      router.push('/sign-up');
       return;
     }
 
@@ -494,6 +515,11 @@ export default function Home() {
         validatedData.mapsPresence,
         validatedData.social
       );
+      
+      // Mark first audit as completed if this is the user's first time
+      if (!hasCompletedFirstAudit()) {
+        markFirstAuditCompleted();
+      }
       
       // Consume one free search (if not subscribed)
       useFreeSearch();

@@ -61,7 +61,7 @@ function NoDataState() {
   );
 }
 
-// Header Component – now uses plain <Link> instead of Clerk modals
+// Header Component – now includes "Documents" link
 function Header() {
   const { isSignedIn, user } = useAuth();
   const [showTerms, setShowTerms] = useState(false);
@@ -148,6 +148,13 @@ function Header() {
                 </Link>
                 <Link href="#about" className="text-gray-600 hover:text-gray-900 transition">
                   About
+                </Link>
+                {/* NEW: Documents link */}
+                <Link 
+                  href="/documents" 
+                  className="text-gray-600 hover:text-blue-600 transition font-medium"
+                >
+                  Documents
                 </Link>
               </nav>
 

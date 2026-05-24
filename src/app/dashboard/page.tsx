@@ -27,8 +27,14 @@ interface Recommendation {
   priority: 'high' | 'medium' | 'low';
 }
 
-// Admin emails (keep existing)
-const ADMIN_EMAILS = [ ... ]; // same as before
+// Admin emails – only these users can see the Reports link
+const ADMIN_EMAILS = [
+  'info@dapc.co.ke',
+  'katungu1@gmail.com',
+  'n.waswani@dapc.co.ke',
+  'h.munyoki@dapc.co.ke',
+  'k.ouko@dapc.co.ke'
+];
 
 export default function DashboardPage() {
   const { isSignedIn } = useAuth();
@@ -143,7 +149,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header (same as before) */}
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -249,7 +255,7 @@ export default function DashboardPage() {
               </Link>
               <button
                 onClick={() => window.location.href = "/subscribe"}
-                className="block"
+                className="block w-full text-left"
               >
                 <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-md transition text-center">
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">

@@ -1,13 +1,9 @@
+// src/components/DocumentUpload.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function DocumentUpload({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const { user } = useUser();
@@ -17,14 +13,28 @@ export default function DocumentUpload({ onUploadComplete }: { onUploadComplete?
   const [tags, setTags] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [supabase, setSupabase] = useState<any>(null);
+
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      setSupabase(supabaseClient);
+    }
+  }, []);
 
   const handleUpload = async () => {
-    if (!file || !user) return;
+    if (!file || !user || !supabase) {
+      setError("Please select a file and ensure you're logged in.");
+      return;
+    }
     setUploading(true);
     setError("");
 
     try {
-      // 1. Upload to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -33,12 +43,8 @@ export default function DocumentUpload({ onUploadComplete }: { onUploadComplete?
 
       if (uploadError) throw uploadError;
 
-      // 2. Get public URL (but bucket is private, so we'll generate signed URLs later)
-      const { data: urlData } = supabase.storage
-        .from("documents")
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
 
-      // 3. Save metadata to your database via API
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,13 +54,12 @@ export default function DocumentUpload({ onUploadComplete }: { onUploadComplete?
           fileUrl: urlData.publicUrl,
           fileType: file.type,
           fileSize: file.size,
-          tags: tags.split(",").map(t => t.trim()),
+          tags: tags.split(",").map((t) => t.trim()),
         }),
       });
 
       if (!res.ok) throw new Error("Failed to save document metadata");
 
-      // 4. Reset form
       setFile(null);
       setTitle("");
       setDescription("");
@@ -91,7 +96,7 @@ export default function DocumentUpload({ onUploadComplete }: { onUploadComplete?
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+          <label className="block text-sm font-medium text-gray-700">Tags (comma‑separated)</label>
           <input
             type="text"
             value={tags}

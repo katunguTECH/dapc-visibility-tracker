@@ -1,4 +1,8 @@
-"use client";
+// src/app/documents/page.tsx
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
+"use client"; // Keep client component as before
 
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
@@ -31,6 +35,8 @@ export default function DocumentsPage() {
   useEffect(() => {
     if (isSignedIn) {
       fetchDocuments();
+    } else {
+      setLoading(false);
     }
   }, [isSignedIn]);
 
@@ -49,14 +55,10 @@ export default function DocumentsPage() {
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
         <h1 className="text-3xl font-bold mb-6">My Documents</h1>
-
         <div className="grid md:grid-cols-3 gap-6">
-          {/* Upload Form */}
           <div className="md:col-span-1">
             <DocumentUpload onUploadComplete={fetchDocuments} />
           </div>
-
-          {/* Document List */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-xl shadow p-6">
               <h2 className="text-xl font-semibold mb-4">All Documents</h2>

@@ -1,14 +1,17 @@
-"use client"
+// src/app/subscribe/page.tsx
+"use client";
 
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
 
 const dapcPlans = [
   {
     name: "Starter Listing",
     target: "Small or offline businesses",
     price: "1,999",
-    icon: "/icons/publiciconsstarter-cheetah.jpg", // Adjusted to match your uploaded filename
+    icon: "/icons/publiciconsstarter-cheetah.jpg",
     accent: "#60a5fa",
     features: [
       "Proper business set up and visible online",
@@ -69,10 +72,76 @@ const dapcPlans = [
       "Priority optimization",
       "Clear monthly performance insights"
     ]
+  },
+  {
+    name: "Custom Corporate Package",
+    target: "Large enterprises with specific needs",
+    price: "Pay What You Want",
+    icon: "/icons/publiciconscustom-corporate.jpg", // Add your own icon
+    accent: "#4f46e5",
+    features: [
+      "Tailored Solutions",
+      "Enterprise Support",
+      "Custom Strategy",
+      "Priority Service",
+      "Flexible Pricing"
+    ],
+    isCustom: true
   }
 ];
 
 export default function SubscribePage() {
+  const { user } = useUser();
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [email, setEmail] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [customAmount, setCustomAmount] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Pre-fill email if user is signed in
+  const openCustomModal = () => {
+    if (user?.primaryEmailAddress?.emailAddress) {
+      setEmail(user.primaryEmailAddress.emailAddress);
+    }
+    setShowCustomModal(true);
+  };
+
+  const handleCustomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !companyName) {
+      alert("Please enter both email and company name.");
+      return;
+    }
+    setIsSubmitting(true);
+
+    try {
+      // Send details to your backend (or store in localStorage)
+      const response = await fetch("/api/custom-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          companyName,
+          amount: customAmount || "custom",
+          userId: user?.id || null,
+        }),
+      });
+      if (response.ok) {
+        setSubmitted(true);
+        // Store in localStorage to remember for this session
+        localStorage.setItem("customSubscriptionDetails", JSON.stringify({ email, companyName }));
+      } else {
+        alert("Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const scrollToPayment = () => {
     document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -107,7 +176,6 @@ export default function SubscribePage() {
               )}
               
               <div className="flex items-center gap-4 mb-8">
-                {/* ICON CONTAINER */}
                 <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-100 shadow-inner flex-shrink-0 bg-slate-200 relative">
                   <Image 
                     src={plan.icon} 
@@ -127,7 +195,7 @@ export default function SubscribePage() {
               <div className="mb-8">
                 <span className="text-sm font-bold text-slate-400">KES</span>
                 <span className="text-5xl font-black text-slate-900 mx-1">{plan.price}</span>
-                <span className="text-sm font-medium text-slate-400">/mo</span>
+                {!plan.isCustom && <span className="text-sm font-medium text-slate-400">/mo</span>}
               </div>
 
               <ul className="space-y-4 mb-10 flex-grow">
@@ -139,21 +207,30 @@ export default function SubscribePage() {
                 ))}
               </ul>
 
-              <button 
-                onClick={scrollToPayment}
-                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${
-                  plan.popular 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
-                  : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
-                }`}
-              >
-                Subscribe Now
-              </button>
+              {plan.isCustom ? (
+                <button 
+                  onClick={openCustomModal}
+                  className="w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg bg-purple-600 text-white hover:bg-purple-700 shadow-purple-200"
+                >
+                  Pay Custom Amount
+                </button>
+              ) : (
+                <button 
+                  onClick={scrollToPayment}
+                  className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${
+                    plan.popular 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
+                    : 'bg-slate-900 text-white hover:bg-black shadow-slate-200'
+                  }`}
+                >
+                  Subscribe Now
+                </button>
+              )}
             </div>
           ))}
         </div>
 
-        {/* M-Pesa Payment Section */}
+        {/* M-Pesa Payment Section (visible for all plans) */}
         <section id="payment-section" className="max-w-3xl mx-auto scroll-mt-24">
           <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden text-left">
             <div className="bg-blue-600 py-6 px-10">
@@ -194,6 +271,88 @@ export default function SubscribePage() {
           </footer>
         </section>
       </div>
+
+      {/* Modal for Custom Corporate Package */}
+      {showCustomModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Custom Corporate Package</h2>
+            <p className="text-gray-600 text-sm mb-6">Please provide your details to proceed with payment.</p>
+            
+            {!submitted ? (
+              <form onSubmit={handleCustomSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="your@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="Your Company Ltd"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Custom Amount (KES)</label>
+                  <input
+                    type="number"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    placeholder="Enter amount (optional)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave blank to discuss pricing later</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? "Submitting..." : "Continue to Payment"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCustomModal(false)}
+                  className="w-full text-gray-500 text-sm py-2 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div className="text-center py-4">
+                <div className="text-green-600 text-5xl mb-3">✓</div>
+                <h3 className="text-lg font-semibold text-gray-900">Details Received!</h3>
+                <p className="text-gray-600 text-sm mt-2">
+                  Thank you for choosing the Custom Corporate Package. Please proceed with the M-Pesa payment above using the Paybill number.
+                </p>
+                <p className="text-gray-500 text-xs mt-3">
+                  A confirmation email has been sent to <strong>{email}</strong>.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowCustomModal(false);
+                    scrollToPayment();
+                  }}
+                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                >
+                  View Payment Details
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

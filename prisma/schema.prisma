@@ -69,3 +69,15 @@ model Document {
 
   @@index([ownerId])
 }
+// Add this model into your existing prisma/schema.prisma file
+// (don't overwrite the file — just paste this model in alongside what's already there).
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  phone     String?
+  placeId   String   @unique
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}

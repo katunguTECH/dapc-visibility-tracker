@@ -1,11 +1,11 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
-    experimental: {
-        serverComponentsExternalPackages: ['@prisma/client', 'prisma']
-    },
+    serverExternalPackages: ['@prisma/client', 'prisma'],
+    experimental: {},
     webpack: (config, { isServer }) => {
         if (isServer) {
-            // Fix for require() of ES modules
+            config.resolve.extensions = ['.js', '.jsx', '.ts', '.tsx', '.cjs', '.mjs'];
+            // Add alias for @
             config.resolve.alias['@'] = __dirname + '/src';
         }
         return config;

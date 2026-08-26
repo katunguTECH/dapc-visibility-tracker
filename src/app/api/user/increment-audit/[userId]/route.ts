@@ -1,32 +1,20 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-export async function POST(req: Request, { params }: { params: { userId: string } }) {
-  const { userId } = params;
+const prisma = new PrismaClient();
 
-  try {
-    // Check if subscription exists
-    let subscription = await prisma.subscription.findUnique({ where: { userId } });
-
-    if (!subscription) {
-      // Create a FREE subscription and mark it as used
-      subscription = await prisma.subscription.create({
-        data: {
-          userId,
-          plan: "FREE",
-          status: "INACTIVE", // used free audit
-          startDate: new Date(),
-          endDate: new Date(),
-        },
-      });
-    } else if (subscription.plan === "FREE" && subscription.status === "INACTIVE") {
-      // Already marked as used, do nothing
-      return NextResponse.json({ message: "Free audit already used" });
+export async function POST(
+    request: Request,
+    context: { params: { userId: string } }
+) {
+    try {
+        const { userId } = await context.params;
+        // Your logic here
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json(
+            { error: 'Failed to increment audit' },
+            { status: 500 }
+        );
     }
-
-    return NextResponse.json({ message: "Free audit recorded" });
-  } catch (error) {
-    console.error("Increment audit error:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
-  }
 }

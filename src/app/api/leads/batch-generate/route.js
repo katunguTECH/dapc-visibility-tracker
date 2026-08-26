@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import path from 'path';
-
-// Use absolute path from project root
-const projectRoot = process.cwd();
-const generatorPath = path.join(projectRoot, 'src/services/aiSiteGenerator.cjs');
-const { AISiteGenerator } = require(generatorPath);
+import { AISiteGenerator } from '@/services/aiSiteGenerator.cjs';
 
 const prisma = new PrismaClient();
 

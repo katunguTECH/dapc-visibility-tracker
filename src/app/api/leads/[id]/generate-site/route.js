@@ -1,17 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import path from 'path';
-
-// Use absolute path from project root
-const projectRoot = process.cwd();
-const generatorPath = path.join(projectRoot, 'src/services/aiSiteGenerator.cjs');
-const { AISiteGenerator } = require(generatorPath);
+import { AISiteGenerator } from '@/services/aiSiteGenerator.cjs';
 
 const prisma = new PrismaClient();
 
 export async function POST(request, { params }) {
     try {
-        const { id } = params;
+        const { id } = await params;
         const generator = new AISiteGenerator();
         
         const result = await generator.generateAndAttachToLead(id);

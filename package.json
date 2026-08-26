@@ -10,7 +10,7 @@
                     "create-lead":  "node scripts/create-test-lead.js",
                     "test-site":  "node scripts/test-site-generation.js",
                     "list-sites":  "node scripts/list-sites.js",
-                    "vercel-build":  "prisma generate \u0026\u0026 next build",
+                    "vercel-build":  "next build",
                     "postinstall":  "prisma generate"
                 },
     "dependencies":  {

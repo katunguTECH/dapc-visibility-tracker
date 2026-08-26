@@ -1,12 +1,11 @@
-// prisma/schema.prisma
-generator client {
+﻿generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider  = "postgresql"
-  url       = env("PRISMA_DATABASE_URL")
-  directUrl = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("PRISMA_DATABASE_URL")
 }
 
 model User {
@@ -19,7 +18,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   searches  Search[]
-  documents Document[]  // 👈 Add relation
+  documents Document[]
 }
 
 model Business {
@@ -51,26 +50,23 @@ model Payment {
   createdAt   DateTime @default(now())
 }
 
-// 👇 New Document model
 model Document {
   id          String    @id @default(cuid())
   title       String
   description String?
-  fileUrl     String    // URL in cloud storage
-  fileType    String    // MIME type
-  fileSize    Int       // in bytes
-  ownerId     String    // clerkId or userId (we'll use userId relation)
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  ownerId     String
   owner       User      @relation(fields: [ownerId], references: [id])
-  folder      String?   // optional folder name
-  tags        String[]  // array of tags for search
+  folder      String?
+  tags        String[]
   isPublic    Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([ownerId])
 }
-// Add this model into your existing prisma/schema.prisma file
-// (don't overwrite the file — just paste this model in alongside what's already there).
 
 model Lead {
   id        String   @id @default(cuid())

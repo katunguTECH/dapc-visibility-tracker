@@ -166,6 +166,13 @@ function Header() {
                 Admin Reports
               </Link>
 
+                <Link
+                  href="/prospects"
+                  className="text-gray-600 hover:text-blue-600 transition font-medium"
+                >
+                  AI Site Creator
+                </Link>
+
               {isSignedIn ? (
                 <>
                   <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 transition">
@@ -174,11 +181,6 @@ function Header() {
                   {isAdmin && (
                     <Link href="/admin/reports" className="text-gray-600 hover:text-blue-600 transition font-medium">
                       Reports
-                    </Link>
-                  )}
-                  {isAdmin && (
-                    <Link href="/prospects" className="text-gray-600 hover:text-blue-600 transition font-medium">
-                      AI Site Creator
                     </Link>
                   )}
                   <UserButton afterSignOutUrl="/" />

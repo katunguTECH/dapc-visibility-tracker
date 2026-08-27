@@ -176,6 +176,11 @@ function Header() {
                       Reports
                     </Link>
                   )}
+                  {isAdmin && (
+                    <Link href="/prospects" className="text-gray-600 hover:text-blue-600 transition font-medium">
+                      AI Site Creator
+                    </Link>
+                  )}
                   <UserButton afterSignOutUrl="/" />
                 </>
               ) : (

@@ -1,12 +1,10 @@
 import { Client } from "@googlemaps/google-maps-services-js";
-import { PrismaClient } from "@prisma/client";
 
 const client = new Client({});
-const prisma = new PrismaClient();
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("query"); // e.g. "salons in Westlands, Nairobi"
+  const query = searchParams.get("query");
 
   if (!query) {
     return Response.json({ error: "Missing query param" }, { status: 400 });
@@ -19,8 +17,6 @@ export async function GET(req) {
 
     const leads = [];
     for (const place of searchResp.data.results) {
-      // Only fetch details (costs more) for candidates from the initial search,
-      // not for every listing in a broad area.
       const details = await client.placeDetails({
         params: {
           place_id: place.place_id,
@@ -40,8 +36,7 @@ export async function GET(req) {
       }
     }
 
-    const saved = await prisma.lead.createMany({ data: leads, skipDuplicates: true });
-    return Response.json({ found: leads.length, saved: saved.count, leads });
+    return Response.json({ found: leads.length, leads });
   } catch (err) {
     console.error(err);
     return Response.json({ error: "Search failed" }, { status: 500 });

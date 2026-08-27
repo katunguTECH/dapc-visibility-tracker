@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 
-export default function LeadsPage() {
+export default function ProspectsPage() {
   const [query, setQuery] = useState("");
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+  const [savedIds, setSavedIds] = useState([]);
 
   async function handleSearch(e) {
     e.preventDefault();
@@ -28,6 +30,24 @@ export default function LeadsPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveLead(lead) {
+    setSavingId(lead.placeId);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lead),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save lead");
+      setSavedIds((prev) => [...prev, lead.placeId]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -62,13 +82,36 @@ export default function LeadsPage() {
 
       <ul className="space-y-3">
         {leads.map((lead) => (
-          <li key={lead.placeId} className="border rounded p-3">
-            <p className="font-medium">{lead.name}</p>
-            <p className="text-sm text-gray-600">{lead.address}</p>
-            {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
+          <li key={lead.placeId} className="border rounded p-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium">{lead.name}</p>
+              <p className="text-sm text-gray-600">{lead.address}</p>
+              {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
+            </div>
+            <button
+              onClick={() => handleSaveLead(lead)}
+              disabled={savingId === lead.placeId || savedIds.includes(lead.placeId)}
+              className="shrink-0 bg-blue-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+            >
+              {savedIds.includes(lead.placeId)
+                ? "Saved ✓"
+                : savingId === lead.placeId
+                ? "Saving..."
+                : "Save Lead"}
+            </button>
           </li>
         ))}
       </ul>
+
+      {savedIds.length > 0 && (
+        <p className="text-sm text-gray-500 mt-6">
+          Saved leads can be found on the{" "}
+          <a href="/admin/leads" className="text-blue-600 underline">
+            Leads dashboard
+          </a>
+          .
+        </p>
+      )}
     </div>
   );
 }

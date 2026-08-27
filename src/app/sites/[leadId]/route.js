@@ -5,9 +5,9 @@ import path from 'path';
 
 export async function GET(request, { params }) {
   try {
-    const { leadId } = params;
+    const { leadId } = await params;
     const sitePath = path.join(process.cwd(), 'public', 'sites', `${leadId}.html`);
-    
+
     try {
       const html = await readFile(sitePath, 'utf-8');
       return new NextResponse(html, {
@@ -16,7 +16,6 @@ export async function GET(request, { params }) {
         },
       });
     } catch (error) {
-      // Generate on-the-fly if not found
       return NextResponse.json({
         error: 'Site not found. Please generate it first.'
       }, { status: 404 });

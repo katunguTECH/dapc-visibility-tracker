@@ -63,7 +63,8 @@ function NoDataState() {
 
 // Header Component – now includes "Documents" link
 function Header() {
-  const { isSignedIn, user } = useAuth();
+  const { isSignedIn } = useAuth();
+    const { user } = useUser();
   const [showTerms, setShowTerms] = useState(false);
   const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);

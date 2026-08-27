@@ -33,12 +33,8 @@ export default function SignUpPage() {
         lastName,
       });
 
-      // Add custom metadata (company name) before sending verification email
-      await signUp.update({
-        publicMetadata: {
-          companyName: companyName.trim(),
-        },
-      });
+      // Company name is saved server-side after email verification completes (see /sign-up/verify)
+      sessionStorage.setItem("pendingCompanyName", companyName.trim());
 
       // Send verification email
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });

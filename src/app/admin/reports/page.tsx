@@ -1,7 +1,7 @@
-﻿// src/app/admin/reports/page.tsx
+// src/app/admin/reports/page.tsx
 "use client";
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -41,7 +41,8 @@ interface Transaction {
 }
 
 export default function AdminReportsPage() {
-  const { isSignedIn, user } = useAuth();
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);

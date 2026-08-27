@@ -1,18 +1,15 @@
 // src/app/sign-up/verify/page.tsx
 "use client";
-
 import { useState } from "react";
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
 export default function VerifyPage() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
@@ -23,6 +20,17 @@ export default function VerifyPage() {
       });
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
+
+        const companyName = sessionStorage.getItem("pendingCompanyName");
+        if (companyName) {
+          await fetch("/api/user/set-company", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ companyName }),
+          });
+          sessionStorage.removeItem("pendingCompanyName");
+        }
+
         router.push("/dashboard");
       }
     } catch (err: any) {
@@ -31,7 +39,6 @@ export default function VerifyPage() {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">

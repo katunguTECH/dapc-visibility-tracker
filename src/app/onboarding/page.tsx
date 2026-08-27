@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Checkbox } from "@/components/ui/checkbox"; // Assuming shadcn/ui or use a standard <input>
 
 export default function OnboardingPage() {
   const { user } = useUser();
@@ -17,9 +16,7 @@ export default function OnboardingPage() {
 
     try {
       // Update Clerk Metadata
-      await user.update({
-        publicMetadata: { termsAccepted: true, acceptedAt: new Date().toISOString() }
-      });
+      await fetch("/api/user/accept-terms", { method: "POST" });
       
       // Force a session refresh so middleware sees the update
       await user.reload();

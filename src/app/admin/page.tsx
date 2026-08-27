@@ -17,16 +17,16 @@ export default async function AdminDashboard() {
   }
 
   // Fetch Data from Prisma Postgres
-  const transactions = await prisma.transaction.findMany({
+  const transactions = await prisma.payment.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50
   });
 
-  const activeSubscriptions = await prisma.subscription.count({
-    where: { status: "ACTIVE" }
+  const activeSubscriptions = await prisma.user.count({
+    where: { hasPaid: true }
   });
 
-  const totalRevenue = await prisma.transaction.aggregate({
+  const totalRevenue = await prisma.payment.aggregate({
     where: { status: "COMPLETED" },
     _sum: { amount: true }
   });
@@ -119,7 +119,7 @@ export default async function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-10 py-8 font-mono text-blue-600">
-                        {tx.mpesaReceipt || "---"}
+                        {tx.checkoutId || "---"}
                       </td>
                     </tr>
                   ))

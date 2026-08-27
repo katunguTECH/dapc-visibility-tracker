@@ -1,37 +1,25 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
 
-export async function GET(req: Request, { params }: { params: { userId: string } }) {
-  const { userId } = params;
+export async function POST(req: Request) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  try {
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId },
-    });
+  const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    if (!subscription) {
-      // No subscription, allow 1 free audit
-      return NextResponse.json({
-        canAudit: true,
-        message: "You have 1 free audit available!",
-      });
-    }
+  const body = await req.json();
+  const { title, fileUrl, fileType, fileSize } = body;
 
-    // Check subscription status
-    if (subscription.status === "ACTIVE") {
-      return NextResponse.json({
-        canAudit: true,
-        message: "Your subscription is active. You can run unlimited audits!",
-      });
-    } else {
-      // INACTIVE or EXPIRED
-      return NextResponse.json({
-        canAudit: false,
-        message: "Your free audit has been used. Subscribe to run more audits.",
-      });
-    }
-  } catch (error) {
-    console.error("User status error:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
-  }
+  const document = await prisma.document.create({
+    data: {
+      title,
+      fileUrl,
+      fileType,
+      fileSize,
+      ownerId: user.id,
+    },
+  });
+  return NextResponse.json(document);
 }

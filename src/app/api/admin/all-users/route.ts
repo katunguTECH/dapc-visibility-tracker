@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   const users = await client.users.getUserList();
-  const enrichedUsers = users.map(user => {
+  const enrichedUsers = users.data.map(user => {
     const metadata = user.publicMetadata as any;
     return {
       id: user.id,

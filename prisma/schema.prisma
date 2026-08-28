@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("PRISMA_DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -60,7 +59,7 @@ model Document {
   ownerId     String
   owner       User      @relation(fields: [ownerId], references: [id])
   folder      String?
-  tags        String[]
+  tags        String    @default("[]")
   isPublic    Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -76,4 +75,5 @@ model Lead {
   placeId   String   @unique
   status    String   @default("new")
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

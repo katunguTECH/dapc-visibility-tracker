@@ -1,30 +1,41 @@
 ﻿// src/services/aiSiteGenerator.cjs
 const { PrismaClient } = require('@prisma/client');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { createClient } = require('@supabase/supabase-js');
 
 const prisma = new PrismaClient();
 
 class AISiteGenerator {
   constructor() {
-    this.provider = process.env.AI_PROVIDER || 'ollama';
-    this.ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434/api/generate';
-    this.ollamaModel = process.env.OLLAMA_MODEL || 'tinyllama';
-    console.log(`🤖 Using AI Provider: ${this.provider}`);
-    console.log(`📦 Model: ${this.ollamaModel}`);
-    console.log(`💾 Storage: ${process.env.AI_SITES_STORAGE || 'local'}`);
+    this.provider = process.env.AI_PROVIDER || 'gemini';
+    this.geminiApiKey = process.env.GEMINI_API_KEY;
+    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+
+    if (!this.geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not set');
+    }
+    this.genAI = new GoogleGenerativeAI(this.geminiApiKey);
+
+    this.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    this.supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    this.storageBucket = process.env.AI_SITES_BUCKET || 'sites';
+
+    if (!this.supabaseUrl || !this.supabaseServiceKey) {
+      throw new Error('Supabase storage is not configured');
+    }
+    this.supabase = createClient(this.supabaseUrl, this.supabaseServiceKey);
+
+    console.log(`🤖 Using AI Provider: ${this.provider} (${this.geminiModel})`);
+    console.log(`💾 Storage: supabase (${this.storageBucket})`);
   }
 
   async getDefaultUser() {
     try {
-      // Try to find an existing user
       let user = await prisma.user.findFirst({
         where: { clerkId: 'default-clerk-id' }
       });
 
       if (!user) {
-        // Create a default user if none exists
         user = await prisma.user.create({
           data: {
             clerkId: 'default-clerk-id',
@@ -43,44 +54,27 @@ class AISiteGenerator {
     }
   }
 
-  async generateWithOllama(prompt) {
+  async generateWithGemini(prompt) {
     try {
-      const response = await axios.post(
-        this.ollamaUrl,
-        {
-          model: this.ollamaModel,
-          prompt: prompt,
-          stream: false,
-          options: {
-            temperature: 0.7,
-            num_predict: 500
-          }
-        },
-        {
-          timeout: 120000
-        }
-      );
-      
-      return response.data.response || '';
+      const model = this.genAI.getGenerativeModel({ model: this.geminiModel });
+      const result = await model.generateContent(prompt);
+      return result.response.text() || '';
     } catch (error) {
-      if (error.code === 'ECONNREFUSED') {
-        console.log("❌ Ollama is not running. Please start Ollama from your Start Menu.");
-        throw new Error('Ollama service not available');
-      }
-      console.error('Ollama error:', error.response?.data || error.message);
-      throw error;
+      console.error('Gemini error:', error.message);
+      throw new Error('AI generation failed: ' + error.message);
     }
   }
 
   async generateBusinessProfile(lead) {
     try {
+      const phone = lead.phone || '+254 700 000 000';
       const prompt = `
         Create a detailed business profile for a garage/auto repair business in Kenya.
-        
+
         Business Name: ${lead.name}
         Location: ${lead.address}
-        Phone: ${lead.phone || '+254 700 000 000'}
-        
+        Phone: ${phone}
+
         Generate a JSON object with these fields:
         {
           "description": "Professional business description (50-80 words)",
@@ -89,11 +83,11 @@ class AISiteGenerator {
           "hours": "Mon-Sat 8am-6pm",
           "tagline": "Catchy tagline (5-7 words)"
         }
-        
-        Return ONLY the JSON object, no additional text.
+
+        Return ONLY the JSON object, no additional text, no markdown code fences.
       `;
 
-      const text = await this.generateWithOllama(prompt);
+      const text = await this.generateWithGemini(prompt);
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
@@ -107,9 +101,12 @@ class AISiteGenerator {
 
   async generateOnePageSite(profile) {
     try {
+      const phone = profile.phone || '+254 700 000 000';
+      const whatsappNumber = phone.replace(/\D/g, '');
+
       const prompt = `
         Generate a complete, professional, mobile-responsive HTML/CSS one-page website for a garage/auto repair business in Kenya.
-        
+
         Business Details:
         - Name: ${profile.businessName || 'Auto Care Garage'}
         - Tagline: ${profile.tagline || 'Quality Service You Can Trust'}
@@ -118,8 +115,8 @@ class AISiteGenerator {
         - Unique Selling Points: ${profile.usp ? profile.usp.join(', ') : 'Professional team, Quality parts, Fast service'}
         - Hours: ${profile.hours || 'Mon-Sat 8am-6pm'}
         - Address: ${profile.address || 'Nairobi, Kenya'}
-        - Phone: ${profile.phone || '+254 700 000 000'}
-        
+        - Phone: ${phone}
+
         Design Requirements:
         - Modern, clean design with a color scheme suitable for an auto garage
         - Mobile-responsive (use CSS flexbox/grid)
@@ -129,17 +126,17 @@ class AISiteGenerator {
         - Professional typography
         - Use inline CSS (no external dependencies except Google Fonts)
         - Include a "Claim This Listing" button
-        - Include WhatsApp link using "https://wa.me/${profile.phone.replace(/\D/g, '')}"
-        
-        Return ONLY the complete HTML code with embedded CSS.
+        - Include WhatsApp link using "https://wa.me/${whatsappNumber}"
+
+        Return ONLY the complete HTML code with embedded CSS, no markdown code fences.
       `;
 
-      let html = await this.generateWithOllama(prompt);
+      let html = await this.generateWithGemini(prompt);
       html = html.replace(/```html/g, '').replace(/```/g, '').trim();
       html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
       html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
-      html = html.replace(/\[PHONE\]/g, profile.phone || '+254 700 000 000');
-      
+      html = html.replace(/\[PHONE\]/g, phone);
+
       return html;
     } catch (error) {
       console.error('Error generating site HTML:', error);
@@ -149,30 +146,32 @@ class AISiteGenerator {
 
   async storeSiteHtml(leadId, html) {
     const filename = `${leadId}.html`;
-    
-    const siteDir = path.join(process.cwd(), 'public', 'sites');
-    if (!fs.existsSync(siteDir)) {
-      fs.mkdirSync(siteDir, { recursive: true });
+
+    const { error: uploadError } = await this.supabase.storage
+      .from(this.storageBucket)
+      .upload(filename, html, {
+        contentType: 'text/html',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error('Failed to upload site to storage: ' + uploadError.message);
     }
 
-    const localPath = path.join(siteDir, filename);
-    fs.writeFileSync(localPath, html);
-    
-    const localUrl = `/sites/${filename}`;
-    console.log(`✅ Site saved locally: ${localUrl}`);
-    
-    return {
-      fileUrl: localUrl,
-      path: localPath,
-      publicUrl: `http://localhost:3000${localUrl}`,
-    };
+    const { data: publicUrlData } = this.supabase.storage
+      .from(this.storageBucket)
+      .getPublicUrl(filename);
+
+    const publicUrl = publicUrlData.publicUrl;
+    console.log(`✅ Site uploaded to Supabase: ${publicUrl}`);
+
+    return { publicUrl };
   }
 
   async generateAndAttachToLead(leadId) {
     try {
-      // Get or create default user
       const defaultUser = await this.getDefaultUser();
-      
+
       const lead = await prisma.lead.findUnique({
         where: { id: leadId }
       });
@@ -182,7 +181,7 @@ class AISiteGenerator {
       console.log("📝 Generating business profile...");
       const profile = await this.generateBusinessProfile(lead);
       console.log("✅ Business profile generated");
-      
+
       console.log("🌐 Generating website HTML...");
       const html = await this.generateOnePageSite({
         businessName: lead.name,
@@ -192,7 +191,7 @@ class AISiteGenerator {
       });
       console.log("✅ Website HTML generated");
 
-      console.log("💾 Saving HTML file...");
+      console.log("💾 Uploading HTML to storage...");
       const storageResult = await this.storeSiteHtml(leadId, html);
 
       console.log("📝 Saving to database...");
@@ -205,7 +204,7 @@ class AISiteGenerator {
           fileSize: Buffer.byteLength(html, 'utf8'),
           ownerId: defaultUser.id,
           folder: 'ai-generated-sites',
-          tags: ['ai-generated', 'one-page', 'prospect'],
+          tags: JSON.stringify(['ai-generated', 'one-page', 'prospect']),
           isPublic: true,
         }
       });
@@ -222,7 +221,6 @@ class AISiteGenerator {
         businessName: lead.name,
         documentId: document.id,
       };
-
     } catch (error) {
       console.error('AI Site Generation Error:', error);
       throw error;
@@ -231,3 +229,4 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
+

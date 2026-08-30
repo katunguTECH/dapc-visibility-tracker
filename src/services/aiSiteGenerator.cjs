@@ -9,7 +9,7 @@ class AISiteGenerator {
   constructor() {
     // Groq AI Configuration
     this.groqApiKey = process.env.GROQ_API_KEY;
-    this.groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    this.groqModel = process.env.GROQ_MODEL || 'llama3-70b-8192';
     this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
     // Supabase Storage Configuration
@@ -245,3 +245,4 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
+

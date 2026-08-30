@@ -40,6 +40,64 @@ class AISiteGenerator {
   getFallbackHTML(profile) {
     const phone = profile.phone || '+254 700 000 000';
     const whatsappNumber = phone.replace(/\D/g, '');
+    // Return a clean, professional fallback template
+    return '<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>' + (profile.businessName || 'Auto Care Garage') + '</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: "Inter", sans-serif; background: #f8f9fa; color: #1a1a2e; }
+    .hero { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 80px 20px; text-align: center; }
+    .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 10px; }
+    .hero p { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+    .btn { display: inline-block; background: #d42020; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+    section { padding: 60px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .card h3 { margin-bottom: 10px; }
+    .footer { background: #1a1a2e; color: white; text-align: center; padding: 30px; }
+    @media (max-width: 768px) { .hero h1 { font-size: 2rem; } }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="container">
+      <h1>' + (profile.businessName || 'Auto Care Garage') + '</h1>
+      <p>' + (profile.tagline || 'Quality Service You Can Trust') + '</p>
+      <a href="https://wa.me/' + whatsappNumber + '" class="btn">📱 WhatsApp Us</a>
+    </div>
+  </div>
+  <div class="container">
+    <section>
+      <h2>About Us</h2>
+      <p>' + (profile.description || 'Professional auto repair services in Kenya.') + '</p>
+    </section>
+    <section>
+      <h2>Our Services</h2>
+      <div class="grid">
+        ' + (profile.services || ['General Repairs', 'Diagnostics', 'Tire Services']).map(s => '<div class="card"><h3>' + s + '</h3></div>').join('') + '
+      </div>
+    </section>
+    <section>
+      <h2>Contact Us</h2>
+      <p><strong>Phone:</strong> ' + phone + '</p>
+      <p><strong>Address:</strong> ' + (profile.address || 'Nairobi, Kenya') + '</p>
+      <a href="https://wa.me/' + whatsappNumber + '" style="display:inline-block;background:#25D366;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;margin-top:10px;">Chat on WhatsApp</a>
+    </section>
+  </div>
+  <div class="footer">
+    <p>&copy; ' + new Date().getFullYear() + ' ' + (profile.businessName || 'Auto Care Garage') + '</p>
+  </div>
+</body>
+</html>';
+  }
+    const phone = profile.phone || '+254 700 000 000';
+    const whatsappNumber = phone.replace(/\D/g, '');
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,7 +341,7 @@ class AISiteGenerator {
     const { error: uploadError } = await this.supabase.storage
       .from(this.storageBucket)
       .upload(filename, cleanHtml, {
-        contentType: 'text/html; charset=utf-8',
+        contentType: 'text/html',
         cacheControl: '3600',
         upsert: true,
       });
@@ -363,3 +421,5 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
+
+

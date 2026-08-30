@@ -25,12 +25,11 @@ class AISiteGenerator {
 
     this.supabase = createClient(this.supabaseUrl, this.supabaseServiceKey);
 
-    console.log(`ðŸ¤– Using AI Provider: Groq (${this.groqModel})`);
-    console.log(`ðŸ’¾ Storage: Supabase (${this.storageBucket})`);
+    console.log(`🤖 Using AI Provider: Groq (${this.groqModel})`);
+    console.log(`💾 Storage: Supabase (${this.storageBucket})`);
   }
 
   cleanResponse(text) {
-    // Remove XML/HTML tags like <think>, <thought>, etc.
     let cleaned = text.replace(/<[^>]*>/g, '');
     cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '');
     cleaned = cleaned.trim();
@@ -69,7 +68,7 @@ class AISiteGenerator {
     <div class="container">
       <h1>${profile.businessName || 'Auto Care Garage'}</h1>
       <p>${profile.tagline || 'Quality Service You Can Trust'}</p>
-      <a href="https://wa.me/${whatsappNumber}" class="btn">ðŸ“± WhatsApp Us</a>
+      <a href="https://wa.me/${whatsappNumber}" class="btn">📱 WhatsApp Us</a>
     </div>
   </div>
   <div class="container">
@@ -113,7 +112,7 @@ class AISiteGenerator {
             plan: 'Free'
           }
         });
-        console.log("âœ… Created default user:", user.id);
+        console.log("✅ Created default user:", user.id);
       }
       return user;
     } catch (error) {
@@ -171,11 +170,11 @@ class AISiteGenerator {
 
       const text = await this.generateWithGroq(prompt);
       const cleanedText = this.cleanResponse(text);
-      
+
       try {
         return JSON.parse(cleanedText);
       } catch (parseError) {
-        console.error('Failed to parse JSON:', cleanedText);
+        console.error('Failed to parse JSON, using fallback');
         return {
           description: `${lead.name} is a professional auto repair garage located in ${lead.address}. We offer quality automotive services with experienced mechanics and modern equipment.`,
           services: ["General Repairs", "Diagnostics", "Tire Services", "Oil Changes", "Brake Services"],
@@ -223,33 +222,34 @@ class AISiteGenerator {
       `;
 
       let html = await this.generateWithGroq(prompt);
-      
-      // Remove everything before <!DOCTYPE html> or <html>
-      const htmlStart = html.search(/<!DOCTYPE html>|<html/i);
+
+      // Remove think tags and markdown
+      html = html.replace(/<think>[\s\S]*?<\/think>/gi, '');
+      html = html.replace(/```html/g, '').replace(/```/g, '').trim();
+
+      // Find the start of HTML
+      const htmlStart = html.search(/<!DOCTYPE html>/i);
       if (htmlStart > -1) {
         html = html.substring(htmlStart);
       }
-      
-      // Remove everything after </html>
+
+      // Find the end of HTML
       const htmlEnd = html.search(/<\/html>/i);
       if (htmlEnd > -1) {
         html = html.substring(0, htmlEnd + 7);
       }
-      
-      // Remove markdown code fences
-      html = html.replace(/```html/g, '').replace(/```/g, '').trim();
-      
+
       // Replace placeholders
       html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
       html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
       html = html.replace(/\[PHONE\]/g, phone);
-      
+
       // If HTML is empty or too short, use fallback
       if (!html || html.length < 100) {
-        console.log('âš ï¸ Generated HTML too short, using fallback template');
+        console.log('⚠️ Generated HTML too short, using fallback template');
         return this.getFallbackHTML(profile);
       }
-      
+
       return html;
     } catch (error) {
       console.error('Error generating site HTML:', error);
@@ -259,95 +259,32 @@ class AISiteGenerator {
 
   async storeSiteHtml(leadId, html) {
     const filename = `${leadId}.html`;
-    
+
     // Clean the HTML
     let cleanHtml = html;
-    
+
     // Remove think tags
     cleanHtml = cleanHtml.replace(/<think>[\s\S]*?<\/think>/gi, '');
     cleanHtml = cleanHtml.replace(/```html/g, '').replace(/```/g, '').trim();
-    
+
     // Ensure it starts with DOCTYPE
     const doctypeIndex = cleanHtml.search(/<!DOCTYPE html>/i);
     if (doctypeIndex > -1) {
-        cleanHtml = cleanHtml.substring(doctypeIndex);
+      cleanHtml = cleanHtml.substring(doctypeIndex);
     }
-    
+
     // Ensure it ends with </html>
     const htmlEndIndex = cleanHtml.search(/<\/html>/i);
     if (htmlEndIndex > -1) {
-        cleanHtml = cleanHtml.substring(0, htmlEndIndex + 7);
+      cleanHtml = cleanHtml.substring(0, htmlEndIndex + 7);
     }
-    
+
     // Upload to Supabase with explicit content type
-    const { error: uploadError } = await this.supabase.storage
-        .from(this.storageBucket)
-        .upload(filename, cleanHtml, {
-            contentType: 'text/html; charset=utf-8',
-            cacheControl: '3600',
-            upsert: true,
-        });
-
-    if (uploadError) {
-        throw new Error('Failed to upload site to storage: ' + uploadError.message);
-    }
-
-    const { data: publicUrlData } = this.supabase.storage
-        .from(this.storageBucket)
-        .getPublicUrl(filename);
-
-    const publicUrl = publicUrlData.publicUrl;
-    console.log(`✅ Site uploaded to Supabase: ${publicUrl}`);
-
-    return { publicUrl };
-}.html`;
-    
-    // Clean the HTML - remove any think tags or markdown
-    let cleanHtml = html;
-    
-    // Remove think tags
-    cleanHtml = cleanHtml.replace(/<think>[\s\S]*?<\/think>/gi, '');
-    cleanHtml = cleanHtml.replace(/```html/g, '').replace(/```/g, '').trim();
-    
-    // Ensure it starts with DOCTYPE
-    const doctypeIndex = cleanHtml.search(/<!DOCTYPE html>/i);
-    if (doctypeIndex > -1) {
-        cleanHtml = cleanHtml.substring(doctypeIndex);
-    }
-    
-    // Ensure it ends with </html>
-    const htmlEndIndex = cleanHtml.search(/<\/html>/i);
-    if (htmlEndIndex > -1) {
-        cleanHtml = cleanHtml.substring(0, htmlEndIndex + 7);
-    }
-    
-    // Upload to Supabase with explicit content type
-    const { error: uploadError } = await this.supabase.storage
-        .from(this.storageBucket)
-        .upload(filename, cleanHtml, {
-            contentType: 'text/html',
-            cacheControl: '3600',
-            upsert: true,
-        });
-
-    if (uploadError) {
-        throw new Error('Failed to upload site to storage: ' + uploadError.message);
-    }
-
-    const { data: publicUrlData } = this.supabase.storage
-        .from(this.storageBucket)
-        .getPublicUrl(filename);
-
-    const publicUrl = publicUrlData.publicUrl;
-    console.log(`✅ Site uploaded to Supabase: ${publicUrl}`);
-
-    return { publicUrl };
-}.html`;
-
     const { error: uploadError } = await this.supabase.storage
       .from(this.storageBucket)
-      .upload(filename, html, {
-        contentType: 'text/html',
+      .upload(filename, cleanHtml, {
+        contentType: 'text/html; charset=utf-8',
+        cacheControl: '3600',
         upsert: true,
       });
 
@@ -360,7 +297,7 @@ class AISiteGenerator {
       .getPublicUrl(filename);
 
     const publicUrl = publicUrlData.publicUrl;
-    console.log(`âœ… Site uploaded to Supabase: ${publicUrl}`);
+    console.log(`✅ Site uploaded to Supabase: ${publicUrl}`);
 
     return { publicUrl };
   }
@@ -375,23 +312,23 @@ class AISiteGenerator {
 
       if (!lead) throw new Error('Lead not found');
 
-      console.log("ðŸ“ Generating business profile...");
+      console.log("📝 Generating business profile...");
       const profile = await this.generateBusinessProfile(lead);
-      console.log("âœ… Business profile generated");
+      console.log("✅ Business profile generated");
 
-      console.log("ðŸŒ Generating website HTML...");
+      console.log("🌐 Generating website HTML...");
       const html = await this.generateOnePageSite({
         businessName: lead.name,
         address: lead.address,
         phone: lead.phone,
         ...profile
       });
-      console.log("âœ… Website HTML generated");
+      console.log("✅ Website HTML generated");
 
-      console.log("ðŸ’¾ Uploading HTML to storage...");
+      console.log("💾 Uploading HTML to storage...");
       const storageResult = await this.storeSiteHtml(leadId, html);
 
-      console.log("ðŸ“ Saving to database...");
+      console.log("📝 Saving to database...");
       const document = await prisma.document.create({
         data: {
           title: `${lead.name} - One Page Site`,
@@ -426,4 +363,3 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
-

@@ -1,4 +1,4 @@
-﻿// src/services/aiSiteGenerator.cjs
+// src/services/aiSiteGenerator.cjs
 const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
@@ -32,175 +32,10 @@ class AISiteGenerator {
   cleanResponse(text) {
     // Remove XML/HTML tags like <think>, <thought>, etc.
     let cleaned = text.replace(/<[^>]*>/g, '');
-    // Remove markdown code blocks
     cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '');
-    // Remove any leading/trailing whitespace
     cleaned = cleaned.trim();
-    // Find JSON object
     const match = cleaned.match(/\{[\s\S]*\}/);
     return match ? match[0] : cleaned;
-  }
-
-  async getDefaultUser() {
-    try {
-      let user = await prisma.user.findFirst({
-        where: { clerkId: 'default-clerk-id' }
-      });
-
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            clerkId: 'default-clerk-id',
-            email: 'default@dapc.co.ke',
-            name: 'Default User',
-            hasPaid: false,
-            plan: 'Free'
-          }
-        });
-        console.log("✅ Created default user:", user.id);
-      }
-      return user;
-    } catch (error) {
-      console.error("Error getting default user:", error.message);
-      throw error;
-    }
-  }
-
-  async generateWithGroq(prompt) {
-    try {
-      const response = await axios.post(
-        this.groqUrl,
-        {
-          model: this.groqModel,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.3,
-          max_tokens: 500
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.groqApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 60000
-        }
-      );
-      return response.data.choices?.[0]?.message?.content || '';
-    } catch (error) {
-      console.error('Groq error:', error.response?.data || error.message);
-      throw new Error('AI generation failed: ' + (error.response?.data?.error?.message || error.message));
-    }
-  }
-
-  async generateBusinessProfile(lead) {
-    try {
-      const phone = lead.phone || '+254 700 000 000';
-      const prompt = `
-        IMPORTANT: Return ONLY valid JSON. No XML tags, no markdown, no explanations, no thinking tags.
-
-        Create a JSON object for a garage/auto repair business in Kenya with these exact fields:
-        {
-          "description": "Professional business description (50-80 words)",
-          "services": ["service1", "service2", "service3", "service4", "service5"],
-          "usp": ["unique point 1", "unique point 2", "unique point 3"],
-          "hours": "Mon-Sat 8am-6pm",
-          "tagline": "Catchy tagline (5-7 words)"
-        }
-
-        Business Name: ${lead.name}
-        Location: ${lead.address}
-        Phone: ${phone}
-
-        Return ONLY the JSON object with no additional text.
-      `;
-
-      const text = await this.generateWithGroq(prompt);
-      const cleanedText = this.cleanResponse(text);
-      
-      try {
-        return JSON.parse(cleanedText);
-      } catch (parseError) {
-        console.error('Failed to parse JSON:', cleanedText);
-        // Fallback to default profile
-        return {
-          description: `${lead.name} is a professional auto repair garage located in ${lead.address}. We offer quality automotive services with experienced mechanics and modern equipment.`,
-          services: ["General Repairs", "Diagnostics", "Tire Services", "Oil Changes", "Brake Services"],
-          usp: ["Experienced Mechanics", "Quality Parts", "Fast Service"],
-          hours: "Mon-Sat 8am-6pm",
-          tagline: "Quality Service You Can Trust"
-        };
-      }
-    } catch (error) {
-      console.error('Error generating business profile:', error);
-      throw error;
-    }
-  }
-
-  async generateOnePageSite(profile) {
-    try {
-      const phone = profile.phone || '+254 700 000 000';
-      const whatsappNumber = phone.replace(/\D/g, '');
-
-      const prompt = `
-        Generate a complete, professional, mobile-responsive HTML/CSS one-page website for a garage/auto repair business in Kenya.
-
-        Business Details:
-        - Name: ${profile.businessName || 'Auto Care Garage'}
-        - Tagline: ${profile.tagline || 'Quality Service You Can Trust'}
-        - Description: ${profile.description || 'Professional automotive services'}
-        - Services: ${profile.services ? profile.services.join(', ') : 'General repairs, Diagnostics, Tire services'}
-        - Unique Selling Points: ${profile.usp ? profile.usp.join(', ') : 'Professional team, Quality parts, Fast service'}
-        - Hours: ${profile.hours || 'Mon-Sat 8am-6pm'}
-        - Address: ${profile.address || 'Nairobi, Kenya'}
-        - Phone: ${phone}
-
-        Design Requirements:
-        - Modern, clean design with a color scheme suitable for an auto garage
-        - Mobile-responsive (use CSS flexbox/grid)
-        - Include sections: Hero, Services, About, Contact
-        - Include a contact form (HTML structure only)
-        - Include a Google Maps placeholder
-        - Professional typography
-        - Use inline CSS (no external dependencies except Google Fonts)
-        - Include a "Claim This Listing" button
-        - Include WhatsApp link using "https://wa.me/${whatsappNumber}"
-
-        Return ONLY the complete HTML code starting with <!DOCTYPE html> and ending with </html>. No explanations, no thinking tags, no markdown code fences.
-      `;
-
-      let html = await this.generateWithGroq(prompt);
-      
-      // Remove everything before the first <!DOCTYPE html> or <html>
-      const htmlStart = html.search(/<!DOCTYPE html>|<html/i);
-      if (htmlStart > -1) {
-        html = html.substring(htmlStart);
-      }
-      
-      // Remove everything after </html>
-      const htmlEnd = html.search(/<\/html>/i);
-      if (htmlEnd > -1) {
-        html = html.substring(0, htmlEnd + 7);
-      }
-      
-      // Remove markdown code fences
-      html = html.replace(/```html/g, '').replace(/```/g, '').trim();
-      
-      // Replace placeholders
-      html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
-      html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
-      html = html.replace(/\[PHONE\]/g, phone);
-      
-      // If HTML is empty or too short, use a fallback
-      if (!html || html.length < 100) {
-        console.log('⚠️ Generated HTML too short, using fallback template');
-        html = this.getFallbackHTML(profile);
-      }
-      
-      return html;
-    } catch (error) {
-      console.error('Error generating site HTML:', error);
-      // Return fallback template
-      return this.getFallbackHTML(profile);
-    }
   }
 
   getFallbackHTML(profile) {
@@ -261,6 +96,101 @@ class AISiteGenerator {
 </body>
 </html>`;
   }
+
+  async getDefaultUser() {
+    try {
+      let user = await prisma.user.findFirst({
+        where: { clerkId: 'default-clerk-id' }
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            clerkId: 'default-clerk-id',
+            email: 'default@dapc.co.ke',
+            name: 'Default User',
+            hasPaid: false,
+            plan: 'Free'
+          }
+        });
+        console.log("✅ Created default user:", user.id);
+      }
+      return user;
+    } catch (error) {
+      console.error("Error getting default user:", error.message);
+      throw error;
+    }
+  }
+
+  async generateWithGroq(prompt) {
+    try {
+      const response = await axios.post(
+        this.groqUrl,
+        {
+          model: this.groqModel,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.3,
+          max_tokens: 500
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.groqApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+      return response.data.choices?.[0]?.message?.content || '';
+    } catch (error) {
+      console.error('Groq error:', error.response?.data || error.message);
+      throw new Error('AI generation failed: ' + (error.response?.data?.error?.message || error.message));
+    }
+  }
+
+  async generateBusinessProfile(lead) {
+    try {
+      const phone = lead.phone || '+254 700 000 000';
+      const prompt = `
+        IMPORTANT: Return ONLY valid JSON. No XML tags, no markdown, no explanations.
+
+        Create a JSON object for a garage/auto repair business in Kenya with these exact fields:
+        {
+          "description": "Professional business description (50-80 words)",
+          "services": ["service1", "service2", "service3", "service4", "service5"],
+          "usp": ["unique point 1", "unique point 2", "unique point 3"],
+          "hours": "Mon-Sat 8am-6pm",
+          "tagline": "Catchy tagline (5-7 words)"
+        }
+
+        Business Name: ${lead.name}
+        Location: ${lead.address}
+        Phone: ${phone}
+
+        Return ONLY the JSON object with no additional text.
+      `;
+
+      const text = await this.generateWithGroq(prompt);
+      const cleanedText = this.cleanResponse(text);
+      
+      try {
+        return JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', cleanedText);
+        return {
+          description: `${lead.name} is a professional auto repair garage located in ${lead.address}. We offer quality automotive services with experienced mechanics and modern equipment.`,
+          services: ["General Repairs", "Diagnostics", "Tire Services", "Oil Changes", "Brake Services"],
+          usp: ["Experienced Mechanics", "Quality Parts", "Fast Service"],
+          hours: "Mon-Sat 8am-6pm",
+          tagline: "Quality Service You Can Trust"
+        };
+      }
+    } catch (error) {
+      console.error('Error generating business profile:', error);
+      throw error;
+    }
+  }
+
+  async generateOnePageSite(profile) {
     try {
       const phone = profile.phone || '+254 700 000 000';
       const whatsappNumber = phone.replace(/\D/g, '');
@@ -289,19 +219,41 @@ class AISiteGenerator {
         - Include a "Claim This Listing" button
         - Include WhatsApp link using "https://wa.me/${whatsappNumber}"
 
-        Return ONLY the complete HTML code with embedded CSS, no markdown code fences.
+        Return ONLY the complete HTML code starting with <!DOCTYPE html> and ending with </html>. No explanations, no thinking tags, no markdown code fences.
       `;
 
       let html = await this.generateWithGroq(prompt);
+      
+      // Remove everything before <!DOCTYPE html> or <html>
+      const htmlStart = html.search(/<!DOCTYPE html>|<html/i);
+      if (htmlStart > -1) {
+        html = html.substring(htmlStart);
+      }
+      
+      // Remove everything after </html>
+      const htmlEnd = html.search(/<\/html>/i);
+      if (htmlEnd > -1) {
+        html = html.substring(0, htmlEnd + 7);
+      }
+      
+      // Remove markdown code fences
       html = html.replace(/```html/g, '').replace(/```/g, '').trim();
+      
+      // Replace placeholders
       html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
       html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
       html = html.replace(/\[PHONE\]/g, phone);
-
+      
+      // If HTML is empty or too short, use fallback
+      if (!html || html.length < 100) {
+        console.log('⚠️ Generated HTML too short, using fallback template');
+        return this.getFallbackHTML(profile);
+      }
+      
       return html;
     } catch (error) {
       console.error('Error generating site HTML:', error);
-      throw error;
+      return this.getFallbackHTML(profile);
     }
   }
 
@@ -390,4 +342,3 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
-

@@ -7,12 +7,10 @@ const prisma = new PrismaClient();
 
 class AISiteGenerator {
   constructor() {
-    // Groq AI Configuration
     this.groqApiKey = process.env.GROQ_API_KEY;
-    this.groqModel = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+    this.groqModel = process.env.GROQ_MODEL || 'qwen/qwen3.6-27b';
     this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-    // Supabase Storage Configuration
     this.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     this.supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     this.storageBucket = process.env.AI_SITES_BUCKET || 'sites';
@@ -29,6 +27,18 @@ class AISiteGenerator {
 
     console.log(`🤖 Using AI Provider: Groq (${this.groqModel})`);
     console.log(`💾 Storage: Supabase (${this.storageBucket})`);
+  }
+
+  cleanResponse(text) {
+    // Remove XML/HTML tags like <think>, <thought>, etc.
+    let cleaned = text.replace(/<[^>]*>/g, '');
+    // Remove markdown code blocks
+    cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '');
+    // Remove any leading/trailing whitespace
+    cleaned = cleaned.trim();
+    // Find JSON object
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    return match ? match[0] : cleaned;
   }
 
   async getDefaultUser() {
@@ -63,7 +73,7 @@ class AISiteGenerator {
         {
           model: this.groqModel,
           messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
+          temperature: 0.3,
           max_tokens: 500
         },
         {
@@ -85,13 +95,9 @@ class AISiteGenerator {
     try {
       const phone = lead.phone || '+254 700 000 000';
       const prompt = `
-        Create a detailed business profile for a garage/auto repair business in Kenya.
+        IMPORTANT: Return ONLY valid JSON. No XML tags, no markdown, no explanations, no thinking tags.
 
-        Business Name: ${lead.name}
-        Location: ${lead.address}
-        Phone: ${phone}
-
-        Generate a JSON object with these fields:
+        Create a JSON object for a garage/auto repair business in Kenya with these exact fields:
         {
           "description": "Professional business description (50-80 words)",
           "services": ["service1", "service2", "service3", "service4", "service5"],
@@ -100,15 +106,29 @@ class AISiteGenerator {
           "tagline": "Catchy tagline (5-7 words)"
         }
 
-        Return ONLY the JSON object, no additional text, no markdown code fences.
+        Business Name: ${lead.name}
+        Location: ${lead.address}
+        Phone: ${phone}
+
+        Return ONLY the JSON object with no additional text.
       `;
 
       const text = await this.generateWithGroq(prompt);
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+      const cleanedText = this.cleanResponse(text);
+      
+      try {
+        return JSON.parse(cleanedText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', cleanedText);
+        // Fallback to default profile
+        return {
+          description: `${lead.name} is a professional auto repair garage located in ${lead.address}. We offer quality automotive services with experienced mechanics and modern equipment.`,
+          services: ["General Repairs", "Diagnostics", "Tire Services", "Oil Changes", "Brake Services"],
+          usp: ["Experienced Mechanics", "Quality Parts", "Fast Service"],
+          hours: "Mon-Sat 8am-6pm",
+          tagline: "Quality Service You Can Trust"
+        };
       }
-      return JSON.parse(text);
     } catch (error) {
       console.error('Error generating business profile:', error);
       throw error;
@@ -245,6 +265,3 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
-
-
-

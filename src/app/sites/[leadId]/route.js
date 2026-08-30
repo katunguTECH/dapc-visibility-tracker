@@ -11,6 +11,21 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: 'Storage not configured' }, { status: 500 });
   }
 
-  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${leadId}.html`;
-  return NextResponse.redirect(publicUrl);
+  const fileUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${leadId}.html`;
+
+  try {
+    const res = await fetch(fileUrl);
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Site not found. Please generate it first.' }, { status: 404 });
+    }
+    const html = await res.text();
+
+    return new NextResponse(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+      },
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to load site' }, { status: 500 });
+  }
 }

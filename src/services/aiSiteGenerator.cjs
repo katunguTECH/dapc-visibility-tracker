@@ -164,6 +164,131 @@ class AISiteGenerator {
         - Include a "Claim This Listing" button
         - Include WhatsApp link using "https://wa.me/${whatsappNumber}"
 
+        Return ONLY the complete HTML code starting with <!DOCTYPE html> and ending with </html>. No explanations, no thinking tags, no markdown code fences.
+      `;
+
+      let html = await this.generateWithGroq(prompt);
+      
+      // Remove everything before the first <!DOCTYPE html> or <html>
+      const htmlStart = html.search(/<!DOCTYPE html>|<html/i);
+      if (htmlStart > -1) {
+        html = html.substring(htmlStart);
+      }
+      
+      // Remove everything after </html>
+      const htmlEnd = html.search(/<\/html>/i);
+      if (htmlEnd > -1) {
+        html = html.substring(0, htmlEnd + 7);
+      }
+      
+      // Remove markdown code fences
+      html = html.replace(/```html/g, '').replace(/```/g, '').trim();
+      
+      // Replace placeholders
+      html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
+      html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
+      html = html.replace(/\[PHONE\]/g, phone);
+      
+      // If HTML is empty or too short, use a fallback
+      if (!html || html.length < 100) {
+        console.log('⚠️ Generated HTML too short, using fallback template');
+        html = this.getFallbackHTML(profile);
+      }
+      
+      return html;
+    } catch (error) {
+      console.error('Error generating site HTML:', error);
+      // Return fallback template
+      return this.getFallbackHTML(profile);
+    }
+  }
+
+  getFallbackHTML(profile) {
+    const phone = profile.phone || '+254 700 000 000';
+    const whatsappNumber = phone.replace(/\D/g, '');
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${profile.businessName || 'Auto Care Garage'}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8f9fa; color: #1a1a2e; }
+    .hero { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 80px 20px; text-align: center; }
+    .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 10px; }
+    .hero p { font-size: 1.2rem; opacity: 0.9; margin-bottom: 20px; }
+    .btn { display: inline-block; background: #d42020; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+    section { padding: 60px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .card h3 { margin-bottom: 10px; }
+    .footer { background: #1a1a2e; color: white; text-align: center; padding: 30px; }
+    @media (max-width: 768px) { .hero h1 { font-size: 2rem; } }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="container">
+      <h1>${profile.businessName || 'Auto Care Garage'}</h1>
+      <p>${profile.tagline || 'Quality Service You Can Trust'}</p>
+      <a href="https://wa.me/${whatsappNumber}" class="btn">📱 WhatsApp Us</a>
+    </div>
+  </div>
+  <div class="container">
+    <section>
+      <h2>About Us</h2>
+      <p>${profile.description || 'Professional auto repair services in Kenya.'}</p>
+    </section>
+    <section>
+      <h2>Our Services</h2>
+      <div class="grid">
+        ${(profile.services || ['General Repairs', 'Diagnostics', 'Tire Services']).map(s => `<div class="card"><h3>${s}</h3></div>`).join('')}
+      </div>
+    </section>
+    <section>
+      <h2>Contact Us</h2>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Address:</strong> ${profile.address || 'Nairobi, Kenya'}</p>
+      <a href="https://wa.me/${whatsappNumber}" style="display:inline-block;background:#25D366;color:white;padding:12px 30px;border-radius:8px;text-decoration:none;margin-top:10px;">Chat on WhatsApp</a>
+    </section>
+  </div>
+  <div class="footer">
+    <p>&copy; ${new Date().getFullYear()} ${profile.businessName || 'Auto Care Garage'}</p>
+  </div>
+</body>
+</html>`;
+  }
+    try {
+      const phone = profile.phone || '+254 700 000 000';
+      const whatsappNumber = phone.replace(/\D/g, '');
+
+      const prompt = `
+        Generate a complete, professional, mobile-responsive HTML/CSS one-page website for a garage/auto repair business in Kenya.
+
+        Business Details:
+        - Name: ${profile.businessName || 'Auto Care Garage'}
+        - Tagline: ${profile.tagline || 'Quality Service You Can Trust'}
+        - Description: ${profile.description || 'Professional automotive services'}
+        - Services: ${profile.services ? profile.services.join(', ') : 'General repairs, Diagnostics, Tire services'}
+        - Unique Selling Points: ${profile.usp ? profile.usp.join(', ') : 'Professional team, Quality parts, Fast service'}
+        - Hours: ${profile.hours || 'Mon-Sat 8am-6pm'}
+        - Address: ${profile.address || 'Nairobi, Kenya'}
+        - Phone: ${phone}
+
+        Design Requirements:
+        - Modern, clean design with a color scheme suitable for an auto garage
+        - Mobile-responsive (use CSS flexbox/grid)
+        - Include sections: Hero, Services, About, Contact
+        - Include a contact form (HTML structure only)
+        - Include a Google Maps placeholder
+        - Professional typography
+        - Use inline CSS (no external dependencies except Google Fonts)
+        - Include a "Claim This Listing" button
+        - Include WhatsApp link using "https://wa.me/${whatsappNumber}"
+
         Return ONLY the complete HTML code with embedded CSS, no markdown code fences.
       `;
 
@@ -265,3 +390,4 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
+

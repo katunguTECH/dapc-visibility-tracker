@@ -1,26 +1,16 @@
 // src/app/sites/[leadId]/route.js
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
 
 export async function GET(request, { params }) {
-  try {
-    const { leadId } = await params;
-    const sitePath = path.join(process.cwd(), 'public', 'sites', `${leadId}.html`);
+  const { leadId } = await params;
 
-    try {
-      const html = await readFile(sitePath, 'utf-8');
-      return new NextResponse(html, {
-        headers: {
-          'Content-Type': 'text/html',
-        },
-      });
-    } catch (error) {
-      return NextResponse.json({
-        error: 'Site not found. Please generate it first.'
-      }, { status: 404 });
-    }
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to load site' }, { status: 500 });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const bucket = process.env.AI_SITES_BUCKET || 'sites';
+
+  if (!supabaseUrl) {
+    return NextResponse.json({ error: 'Storage not configured' }, { status: 500 });
   }
+
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${leadId}.html`;
+  return NextResponse.redirect(publicUrl);
 }

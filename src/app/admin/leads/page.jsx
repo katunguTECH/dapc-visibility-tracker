@@ -6,6 +6,8 @@ export default function AdminLeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState(null);
+  const [findingEmailId, setFindingEmailId] = useState(null);
+  const [sendingId, setSendingId] = useState(null);
   const [error, setError] = useState(null);
 
   const [authorized, setAuthorized] = useState(false);
@@ -62,6 +64,43 @@ export default function AdminLeadsPage() {
     }
   }
 
+  async function handleFindEmail(leadId) {
+    setFindingEmailId(leadId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/find-email`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Email search failed");
+      if (!data.success) {
+        setError("No email found for this business");
+      }
+      await fetchLeads();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFindingEmailId(null);
+    }
+  }
+
+  async function handleSendEmail(leadId, isKenyan) {
+    setSendingId(leadId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isKenyan }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Send failed");
+      await fetchLeads();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSendingId(null);
+    }
+  }
+
   if (checkingAuth) {
     return <p className="p-6 text-gray-500">Loading...</p>;
   }
@@ -115,18 +154,16 @@ export default function AdminLeadsPage() {
       <ul className="space-y-3">
         {leads.map((lead) => (
           <li key={lead.id} className="border rounded p-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-medium">{lead.name}</p>
                 <p className="text-sm text-gray-600">{lead.address}</p>
                 {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
+                {lead.email && <p className="text-sm text-blue-600">{lead.email}</p>}
                 <p className="text-xs text-gray-400 mt-1">Status: {lead.status}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {lead.status === "site_generated" && (
-                  <a href={`/sites/${lead.id}`} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-3 py-1.5 rounded text-sm">View Site</a>
-                )}
-                {lead.status !== "site_generated" && (
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {lead.status !== "site_generated" && lead.status !== "email_sent" && (
                   <button
                     onClick={() => handleGenerate(lead.id)}
                     disabled={generatingId === lead.id}
@@ -134,6 +171,34 @@ export default function AdminLeadsPage() {
                   >
                     {generatingId === lead.id ? "Generating..." : "Generate Site"}
                   </button>
+                )}
+
+                {(lead.status === "site_generated" || lead.status === "email_sent") && (
+                  <a href={`/sites/${lead.id}`} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-3 py-1.5 rounded text-sm">View Site</a>
+                )}
+
+                {(lead.status === "site_generated" || lead.status === "email_sent") && !lead.email && (
+                  <button
+                    onClick={() => handleFindEmail(lead.id)}
+                    disabled={findingEmailId === lead.id}
+                    className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                  >
+                    {findingEmailId === lead.id ? "Searching..." : "Find Email"}
+                  </button>
+                )}
+
+                {(lead.status === "site_generated") && lead.email && (
+                  <button
+                    onClick={() => handleSendEmail(lead.id, true)}
+                    disabled={sendingId === lead.id}
+                    className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                  >
+                    {sendingId === lead.id ? "Sending..." : "Send Email"}
+                  </button>
+                )}
+
+                {lead.status === "email_sent" && (
+                  <span className="text-xs text-green-700 font-medium">Email Sent</span>
                 )}
               </div>
             </div>

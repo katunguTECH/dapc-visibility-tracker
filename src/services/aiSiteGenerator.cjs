@@ -1,32 +1,34 @@
 ﻿// src/services/aiSiteGenerator.cjs
 const { PrismaClient } = require('@prisma/client');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
 const prisma = new PrismaClient();
 
 class AISiteGenerator {
   constructor() {
-    this.provider = process.env.AI_PROVIDER || 'gemini';
-    this.geminiApiKey = process.env.GEMINI_API_KEY;
-    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+    // Groq AI Configuration
+    this.groqApiKey = process.env.GROQ_API_KEY;
+    this.groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-    if (!this.geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is not set');
-    }
-    this.genAI = new GoogleGenerativeAI(this.geminiApiKey);
-
+    // Supabase Storage Configuration
     this.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     this.supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     this.storageBucket = process.env.AI_SITES_BUCKET || 'sites';
 
+    if (!this.groqApiKey) {
+      throw new Error('GROQ_API_KEY is not set');
+    }
+
     if (!this.supabaseUrl || !this.supabaseServiceKey) {
       throw new Error('Supabase storage is not configured');
     }
+
     this.supabase = createClient(this.supabaseUrl, this.supabaseServiceKey);
 
-    console.log(`🤖 Using AI Provider: ${this.provider} (${this.geminiModel})`);
-    console.log(`💾 Storage: supabase (${this.storageBucket})`);
+    console.log(`🤖 Using AI Provider: Groq (${this.groqModel})`);
+    console.log(`💾 Storage: Supabase (${this.storageBucket})`);
   }
 
   async getDefaultUser() {
@@ -54,14 +56,28 @@ class AISiteGenerator {
     }
   }
 
-  async generateWithGemini(prompt) {
+  async generateWithGroq(prompt) {
     try {
-      const model = this.genAI.getGenerativeModel({ model: this.geminiModel });
-      const result = await model.generateContent(prompt);
-      return result.response.text() || '';
+      const response = await axios.post(
+        this.groqUrl,
+        {
+          model: this.groqModel,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 500
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.groqApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 60000
+        }
+      );
+      return response.data.choices?.[0]?.message?.content || '';
     } catch (error) {
-      console.error('Gemini error:', error.message);
-      throw new Error('AI generation failed: ' + error.message);
+      console.error('Groq error:', error.response?.data || error.message);
+      throw new Error('AI generation failed: ' + (error.response?.data?.error?.message || error.message));
     }
   }
 
@@ -87,7 +103,7 @@ class AISiteGenerator {
         Return ONLY the JSON object, no additional text, no markdown code fences.
       `;
 
-      const text = await this.generateWithGemini(prompt);
+      const text = await this.generateWithGroq(prompt);
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
@@ -131,7 +147,7 @@ class AISiteGenerator {
         Return ONLY the complete HTML code with embedded CSS, no markdown code fences.
       `;
 
-      let html = await this.generateWithGemini(prompt);
+      let html = await this.generateWithGroq(prompt);
       html = html.replace(/```html/g, '').replace(/```/g, '').trim();
       html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
       html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
@@ -204,7 +220,7 @@ class AISiteGenerator {
           fileSize: Buffer.byteLength(html, 'utf8'),
           ownerId: defaultUser.id,
           folder: 'ai-generated-sites',
-          tags: JSON.stringify(['ai-generated', 'one-page', 'prospect']),
+          tags: ['ai-generated', 'one-page', 'prospect'],
           isPublic: true,
         }
       });
@@ -229,4 +245,3 @@ class AISiteGenerator {
 }
 
 module.exports = { AISiteGenerator };
-

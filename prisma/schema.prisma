@@ -75,6 +75,8 @@ model Lead {
   phone     String?
   email     String?
   placeId   String   @unique
+  lat       Float?
+  lng       Float?
   status    String   @default("new")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

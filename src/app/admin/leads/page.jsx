@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -37,7 +37,7 @@ export default function AdminLeadsPage() {
     try {
       const res = await fetch("/api/leads");
       const data = await res.json();
-      setLeads(Array.isArray(data) ? data : []);
+      setLeads(Array.isArray(data.leads) ? data.leads : []);
     } catch (err) {
       setError("Failed to load leads");
     } finally {

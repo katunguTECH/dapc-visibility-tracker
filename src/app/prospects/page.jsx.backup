@@ -1,0 +1,232 @@
+﻿// src/app/prospects/page.jsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+
+const LeadMap = dynamic(() => import('@/components/LeadMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 flex items-center justify-center bg-gray-100 rounded-lg">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading map...</p>
+      </div>
+    </div>
+  )
+});
+
+export default function ProspectsPage() {
+  const [leads, setLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchLeads = async (query = '') => {
+    setLoading(true);
+    try {
+      const url = query ? `/api/leads/search?q=${encodeURIComponent(query)}` : '/api/leads';
+      const response = await fetch(url);
+      const data = await response.json();
+      setLeads(data);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    fetchLeads(query);
+  };
+
+  const handleLeadClick = (lead) => {
+    setSelectedLead(lead);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Lead Finder</h1>
+        <div className="flex space-x-3">
+          <Link
+            href="/admin/leads"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            📋 View All Leads
+          </Link>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="e.g. car garages in Nairobi"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={() => handleSearch(searchQuery)}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Search
+          </button>
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              fetchLeads();
+            }}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+          >
+            Reset
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mt-1">
+          {leads.length} businesses found {searchQuery && `for "${searchQuery}"`}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden h-[600px]">
+            <LeadMap
+              leads={leads}
+              onLeadClick={handleLeadClick}
+              onSearch={handleSearch}
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-md p-4 h-[600px] overflow-y-auto">
+            <h2 className="font-semibold text-lg mb-3">Leads ({leads.length})</h2>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading...</p>
+              </div>
+            ) : leads.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No leads found</p>
+                <p className="text-sm mt-1">Try searching for a location</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {leads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    onClick={() => handleLeadClick(lead)}
+                    className={`border rounded-lg p-3 hover:shadow-md transition cursor-pointer ${
+                      selectedLead?.id === lead.id ? 'border-blue-500 bg-blue-50' : ''
+                    }`}
+                  >
+                    <h3 className="font-semibold text-blue-600">{lead.name}</h3>
+                    <p className="text-sm text-gray-600 truncate">{lead.address}</p>
+                    {lead.phone && (
+                      <p className="text-sm text-gray-500">📞 {lead.phone}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <span className={`inline-block px-2 py-1 text-xs rounded ${
+                        lead.status === 'site_generated' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {lead.status === 'site_generated' ? '✅ Has Website' : '❌ No Website'}
+                      </span>
+                      {lead.status === 'site_generated' && (
+                        <a
+                          href={`/sites/${lead.id}.html`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          View Site →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {selectedLead && (
+        <div className="mt-4 bg-white rounded-lg shadow-md p-6 border-t-4 border-blue-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold">{selectedLead.name}</h2>
+              <p className="text-gray-600">{selectedLead.address}</p>
+              {selectedLead.phone && (
+                <p className="text-gray-600">📞 {selectedLead.phone}</p>
+              )}
+              {selectedLead.email && (
+                <p className="text-gray-600">📧 {selectedLead.email}</p>
+              )}
+              <div className="mt-2">
+                <span className={`inline-block px-3 py-1 text-sm rounded ${
+                  selectedLead.status === 'site_generated' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {selectedLead.status === 'site_generated' ? '✅ Website Generated' : '❌ No Website'}
+                </span>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              {selectedLead.status !== 'site_generated' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/leads/${selectedLead.id}/generate-site`, {
+                        method: 'POST'
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        alert('✅ Site generated successfully!');
+                        fetchLeads(searchQuery);
+                      } else {
+                        alert('❌ Failed to generate site: ' + data.error);
+                      }
+                    } catch (error) {
+                      alert('❌ Error generating site');
+                    }
+                  }}
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                >
+                  🚀 Generate Site
+                </button>
+              )}
+              {selectedLead.status === 'site_generated' && (
+                <a
+                  href={`/sites/${selectedLead.id}.html`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                >
+                  🌐 View Site
+                </a>
+              )}
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

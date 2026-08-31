@@ -25,8 +25,8 @@ class AISiteGenerator {
 
     this.supabase = createClient(this.supabaseUrl, this.supabaseServiceKey);
 
-    console.log(`?? Using AI Provider: Groq (${this.groqModel})`);
-    console.log(`?? Storage: Supabase (${this.storageBucket})`);
+    console.log(`🤖 Using AI Provider: Groq (${this.groqModel})`);
+    console.log(`💾 Storage: Supabase (${this.storageBucket})`);
   }
 
   cleanResponse(text) {
@@ -53,7 +53,7 @@ class AISiteGenerator {
             plan: 'Free'
           }
         });
-        console.log("? Created default user:", user.id);
+        console.log("✅ Created default user:", user.id);
       }
       return user;
     } catch (error) {
@@ -87,46 +87,63 @@ class AISiteGenerator {
     }
   }
 
+  // Generic fallback profile used whenever Groq fails OR returns unparsable
+  // JSON. Kept business-agnostic since we no longer assume "garage".
+  getFallbackProfile(lead) {
+    return {
+      description: `${lead.name} is a trusted local business located at ${lead.address}. We are committed to providing quality service to our customers.`,
+      services: ["Quality Service", "Customer Support", "Reliable Delivery", "Professional Staff", "Competitive Pricing"],
+      usp: ["Trusted by the Community", "Convenient Location", "Friendly Service"],
+      hours: "Mon-Sat 8am-6pm",
+      tagline: "Quality Service You Can Trust"
+    };
+  }
+
   async generateBusinessProfile(lead) {
+    const phone = lead.phone || '+254 700 000 000';
+    const prompt = `
+      IMPORTANT: Return ONLY valid JSON. No XML tags, no markdown, no explanations.
+
+      You will be given the name, address, and phone number of a real local business
+      in Kenya. First, infer what TYPE of business this is purely from its name and
+      address (for example: restaurant, pharmacy, hair salon, barber shop, plumber,
+      electrician, auto garage, grocery store/supermarket, etc). Then write business
+      profile content that accurately matches that specific type of business. Do NOT
+      assume it is a garage or auto repair shop unless the name/context clearly says so.
+
+      Return a JSON object with these exact fields:
+      {
+        "businessType": "the type of business you inferred (e.g. 'restaurant', 'pharmacy', 'hair salon')",
+        "description": "Professional business description (50-80 words) that matches the actual business type",
+        "services": ["service1", "service2", "service3", "service4", "service5"],
+        "usp": ["unique point 1", "unique point 2", "unique point 3"],
+        "hours": "typical opening hours for this type of business in Kenya",
+        "tagline": "Catchy tagline (5-7 words) relevant to this business type"
+      }
+
+      Business Name: ${lead.name}
+      Location: ${lead.address}
+      Phone: ${phone}
+
+      Return ONLY the JSON object with no additional text.
+    `;
+
     try {
-      const phone = lead.phone || '+254 700 000 000';
-      const prompt = `
-        IMPORTANT: Return ONLY valid JSON. No XML tags, no markdown, no explanations.
-
-        Create a JSON object for a garage/auto repair business in Kenya with these exact fields:
-        {
-          "description": "Professional business description (50-80 words)",
-          "services": ["service1", "service2", "service3", "service4", "service5"],
-          "usp": ["unique point 1", "unique point 2", "unique point 3"],
-          "hours": "Mon-Sat 8am-6pm",
-          "tagline": "Catchy tagline (5-7 words)"
-        }
-
-        Business Name: ${lead.name}
-        Location: ${lead.address}
-        Phone: ${phone}
-
-        Return ONLY the JSON object with no additional text.
-      `;
-
       const text = await this.generateWithGroq(prompt);
       const cleanedText = this.cleanResponse(text);
 
       try {
         return JSON.parse(cleanedText);
       } catch (parseError) {
-        console.error('Failed to parse JSON, using fallback');
-        return {
-          description: `${lead.name} is a professional auto repair garage located in ${lead.address}. We offer quality automotive services with experienced mechanics and modern equipment.`,
-          services: ["General Repairs", "Diagnostics", "Tire Services", "Oil Changes", "Brake Services"],
-          usp: ["Experienced Mechanics", "Quality Parts", "Fast Service"],
-          hours: "Mon-Sat 8am-6pm",
-          tagline: "Quality Service You Can Trust"
-        };
+        console.error('Failed to parse JSON, using generic fallback profile');
+        return this.getFallbackProfile(lead);
       }
-    } catch (error) {
-      console.error('Error generating business profile:', error);
-      throw error;
+    } catch (apiError) {
+      // Groq call itself failed (e.g. rate limit). Previously this threw
+      // and killed the whole generation with no fallback - now it degrades
+      // gracefully instead, same as generateOnePageSite already did.
+      console.error('Business profile generation failed, using generic fallback profile:', apiError.message);
+      return this.getFallbackProfile(lead);
     }
   }
 
@@ -136,20 +153,25 @@ class AISiteGenerator {
       const whatsappNumber = phone.replace(/\D/g, '');
 
       const prompt = `
-        Generate a complete, professional, mobile-responsive HTML/CSS one-page website for a garage/auto repair business in Kenya.
+        Generate a complete, professional, mobile-responsive HTML/CSS one-page website
+        for a real local business in Kenya. The business type is: ${profile.businessType || 'local business'}.
+        Design the site's tone, imagery references, and service descriptions to genuinely
+        match this business type - do NOT default to an auto garage/repair theme unless
+        the business type actually is an auto garage.
 
         Business Details:
-        - Name: ${profile.businessName || 'Auto Care Garage'}
+        - Name: ${profile.businessName || 'Local Business'}
+        - Type: ${profile.businessType || 'local business'}
         - Tagline: ${profile.tagline || 'Quality Service You Can Trust'}
-        - Description: ${profile.description || 'Professional automotive services'}
-        - Services: ${profile.services ? profile.services.join(', ') : 'General repairs, Diagnostics, Tire services'}
-        - Unique Selling Points: ${profile.usp ? profile.usp.join(', ') : 'Professional team, Quality parts, Fast service'}
+        - Description: ${profile.description || 'Professional local business'}
+        - Services: ${profile.services ? profile.services.join(', ') : 'General services'}
+        - Unique Selling Points: ${profile.usp ? profile.usp.join(', ') : 'Professional team, Quality service, Reliable'}
         - Hours: ${profile.hours || 'Mon-Sat 8am-6pm'}
         - Address: ${profile.address || 'Nairobi, Kenya'}
         - Phone: ${phone}
 
         Design Requirements:
-        - Modern, clean design with a color scheme suitable for an auto garage
+        - Modern, clean design with a color scheme suitable for THIS business type
         - Mobile-responsive (use CSS flexbox/grid)
         - Include sections: Hero, Services, About, Contact
         - Include a contact form (HTML structure only)
@@ -181,13 +203,13 @@ class AISiteGenerator {
       }
 
       // Replace placeholders
-      html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Auto Care Garage');
+      html = html.replace(/\[BUSINESS_NAME\]/g, profile.businessName || 'Local Business');
       html = html.replace(/\[ADDRESS\]/g, profile.address || 'Nairobi, Kenya');
       html = html.replace(/\[PHONE\]/g, phone);
 
       // If HTML is empty or too short, use fallback
       if (!html || html.length < 100) {
-        console.log('?? Generated HTML too short, using fallback template');
+        console.log('⚠️ Generated HTML too short, using fallback template');
         return this.getFallbackHTML(profile);
       }
 
@@ -206,7 +228,7 @@ class AISiteGenerator {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${profile.businessName || 'Auto Care Garage'}</title>
+  <title>${profile.businessName || 'Local Business'}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -227,20 +249,20 @@ class AISiteGenerator {
 <body>
   <div class="hero">
     <div class="container">
-      <h1>${profile.businessName || 'Auto Care Garage'}</h1>
+      <h1>${profile.businessName || 'Local Business'}</h1>
       <p>${profile.tagline || 'Quality Service You Can Trust'}</p>
-      <a href="https://wa.me/${whatsappNumber}" class="btn">?? WhatsApp Us</a>
+      <a href="https://wa.me/${whatsappNumber}" class="btn">💬 WhatsApp Us</a>
     </div>
   </div>
   <div class="container">
     <section>
       <h2>About Us</h2>
-      <p>${profile.description || 'Professional auto repair services in Kenya.'}</p>
+      <p>${profile.description || `${profile.businessName || 'This business'} is a trusted local business in Kenya.`}</p>
     </section>
     <section>
       <h2>Our Services</h2>
       <div class="grid">
-        ${(profile.services || ['General Repairs', 'Diagnostics', 'Tire Services']).map(s => `<div class="card"><h3>${s}</h3></div>`).join('')}
+        ${(profile.services || ['Quality Service', 'Customer Support', 'Reliable Delivery']).map(s => `<div class="card"><h3>${s}</h3></div>`).join('')}
       </div>
     </section>
     <section>
@@ -251,7 +273,7 @@ class AISiteGenerator {
     </section>
   </div>
   <div class="footer">
-    <p>&copy; ${new Date().getFullYear()} ${profile.businessName || 'Auto Care Garage'}</p>
+    <p>&copy; ${new Date().getFullYear()} ${profile.businessName || 'Local Business'}</p>
   </div>
 </body>
 </html>`;
@@ -297,7 +319,7 @@ class AISiteGenerator {
       .getPublicUrl(filename);
 
     const publicUrl = publicUrlData.publicUrl;
-    console.log(`? Site uploaded to Supabase: ${publicUrl}`);
+    console.log(`✅ Site uploaded to Supabase: ${publicUrl}`);
 
     return { publicUrl };
   }
@@ -312,23 +334,23 @@ class AISiteGenerator {
 
       if (!lead) throw new Error('Lead not found');
 
-      console.log("?? Generating business profile...");
+      console.log("🧠 Generating business profile...");
       const profile = await this.generateBusinessProfile(lead);
-      console.log("? Business profile generated");
+      console.log("✅ Business profile generated");
 
-      console.log("?? Generating website HTML...");
+      console.log("🌐 Generating website HTML...");
       const html = await this.generateOnePageSite({
         businessName: lead.name,
         address: lead.address,
         phone: lead.phone,
         ...profile
       });
-      console.log("? Website HTML generated");
+      console.log("✅ Website HTML generated");
 
-      console.log("?? Uploading HTML to storage...");
+      console.log("📤 Uploading HTML to storage...");
       const storageResult = await this.storeSiteHtml(leadId, html);
 
-      console.log("?? Saving to database...");
+      console.log("💾 Saving to database...");
       const document = await prisma.document.create({
         data: {
           title: `${lead.name} - One Page Site`,

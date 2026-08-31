@@ -101,6 +101,57 @@ export default function AdminLeadsPage() {
     }
   }
 
+  // --- WhatsApp Helper Functions ---
+  
+  // Format phone number for WhatsApp
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return null;
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '254' + cleaned.substring(1);
+    }
+    if (!cleaned.startsWith('254') && !cleaned.startsWith('+')) {
+      cleaned = '254' + cleaned;
+    }
+    return cleaned;
+  };
+
+  // Get site URL for the lead
+  const getSiteUrl = (lead) => {
+    if (lead.siteUrl) return lead.siteUrl;
+    if (lead.status === 'site_generated' || lead.status === 'email_sent') {
+      return `${window.location.origin}/sites/${lead.id}`;
+    }
+    return null;
+  };
+
+  // Generate WhatsApp link with personalized message
+  const getWhatsAppLink = (lead) => {
+    const phone = formatPhoneNumber(lead.phone);
+    if (!phone) return null;
+
+    const name = lead.name || 'there';
+    const siteUrl = getSiteUrl(lead);
+    const hasSite = lead.status === 'site_generated' || lead.status === 'email_sent';
+
+    // Create the message (exactly like the email)
+    let message = `Hi ${name}\n\n`;
+    message += `We built a free website preview for ${name} to show you what's possible.\n\n`;
+    
+    if (hasSite && siteUrl) {
+      message += `View Your Free Preview: ${siteUrl}\n\n`;
+    } else {
+      message += `View Your Free Preview\n\n`;
+    }
+    
+    message += `Like what you see? We can make this exact site live under your own domain for a one-time offer of just $23 — no monthly fees, no hidden costs.\n\n`;
+    message += `Reply to this message or reach us on WhatsApp to claim your site and get started.\n\n`;
+    message += `Best,\nDAPC Visibility Tracker`;
+
+    const encodedMessage = encodeURIComponent(message);
+    return `https://wa.me/${phone}?text=${encodedMessage}`;
+  };
+
   if (checkingAuth) {
     return <p className="p-6 text-gray-500">Loading...</p>;
   }
@@ -139,7 +190,7 @@ export default function AdminLeadsPage() {
   if (loading) return <p className="p-6 text-gray-500">Loading leads...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-6">Leads &amp; AI Site Generator</h1>
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
@@ -152,58 +203,94 @@ export default function AdminLeadsPage() {
       )}
 
       <ul className="space-y-3">
-        {leads.map((lead) => (
-          <li key={lead.id} className="border rounded p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-medium">{lead.name}</p>
-                <p className="text-sm text-gray-600">{lead.address}</p>
-                {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
-                {lead.email && <p className="text-sm text-blue-600">{lead.email}</p>}
-                <p className="text-xs text-gray-400 mt-1">Status: {lead.status}</p>
+        {leads.map((lead) => {
+          // Get WhatsApp link for this lead
+          const waLink = getWhatsAppLink(lead);
+          const isWhatsAppSent = lead.status === 'whatsapp_sent';
+
+          return (
+            <li key={lead.id} className="border rounded p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-medium">{lead.name}</p>
+                  <p className="text-sm text-gray-600">{lead.address}</p>
+                  {lead.phone && <p className="text-sm text-gray-600">📞 {lead.phone}</p>}
+                  {lead.email && <p className="text-sm text-blue-600">✉️ {lead.email}</p>}
+                  <p className="text-xs text-gray-400 mt-1">Status: {lead.status}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {lead.status !== "site_generated" && lead.status !== "email_sent" && (
+                    <button
+                      onClick={() => handleGenerate(lead.id)}
+                      disabled={generatingId === lead.id}
+                      className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                    >
+                      {generatingId === lead.id ? "Generating..." : "Generate Site"}
+                    </button>
+                  )}
+
+                  {(lead.status === "site_generated" || lead.status === "email_sent") && (
+                    <a href={`/sites/${lead.id}`} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-3 py-1.5 rounded text-sm">View Site</a>
+                  )}
+
+                  {(lead.status === "site_generated" || lead.status === "email_sent") && !lead.email && (
+                    <button
+                      onClick={() => handleFindEmail(lead.id)}
+                      disabled={findingEmailId === lead.id}
+                      className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                    >
+                      {findingEmailId === lead.id ? "Searching..." : "Find Email"}
+                    </button>
+                  )}
+
+                  {(lead.status === "site_generated") && lead.email && (
+                    <button
+                      onClick={() => handleSendEmail(lead.id, true)}
+                      disabled={sendingId === lead.id}
+                      className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                    >
+                      {sendingId === lead.id ? "Sending..." : "Send Email"}
+                    </button>
+                  )}
+
+                  {lead.status === "email_sent" && (
+                    <span className="text-xs text-green-700 font-medium">Email Sent</span>
+                  )}
+
+                  {/* --- NEW: WhatsApp Button --- */}
+                  {waLink ? (
+                    <a
+                      href={waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`px-3 py-1.5 rounded text-sm text-center ${
+                        isWhatsAppSent
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                      onClick={(e) => {
+                        if (isWhatsAppSent) {
+                          e.preventDefault();
+                          alert('WhatsApp message already sent to this lead');
+                        }
+                      }}
+                    >
+                      {isWhatsAppSent ? '✅ Sent' : '📱 Send WhatsApp'}
+                    </a>
+                  ) : (
+                    <button
+                      disabled
+                      className="bg-gray-300 text-gray-500 px-3 py-1.5 rounded text-sm cursor-not-allowed"
+                      title="No phone number available"
+                    >
+                      📱 No Phone
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                {lead.status !== "site_generated" && lead.status !== "email_sent" && (
-                  <button
-                    onClick={() => handleGenerate(lead.id)}
-                    disabled={generatingId === lead.id}
-                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                  >
-                    {generatingId === lead.id ? "Generating..." : "Generate Site"}
-                  </button>
-                )}
-
-                {(lead.status === "site_generated" || lead.status === "email_sent") && (
-                  <a href={`/sites/${lead.id}`} target="_blank" rel="noopener noreferrer" className="bg-green-600 text-white px-3 py-1.5 rounded text-sm">View Site</a>
-                )}
-
-                {(lead.status === "site_generated" || lead.status === "email_sent") && !lead.email && (
-                  <button
-                    onClick={() => handleFindEmail(lead.id)}
-                    disabled={findingEmailId === lead.id}
-                    className="bg-purple-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                  >
-                    {findingEmailId === lead.id ? "Searching..." : "Find Email"}
-                  </button>
-                )}
-
-                {(lead.status === "site_generated") && lead.email && (
-                  <button
-                    onClick={() => handleSendEmail(lead.id, true)}
-                    disabled={sendingId === lead.id}
-                    className="bg-orange-600 text-white px-3 py-1.5 rounded text-sm disabled:opacity-50"
-                  >
-                    {sendingId === lead.id ? "Sending..." : "Send Email"}
-                  </button>
-                )}
-
-                {lead.status === "email_sent" && (
-                  <span className="text-xs text-green-700 font-medium">Email Sent</span>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

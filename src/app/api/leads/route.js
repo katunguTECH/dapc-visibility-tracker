@@ -1,6 +1,9 @@
 ﻿import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-
+console.log('DB URL length:', process.env.DATABASE_URL?.length);
+console.log('DB URL starts:', process.env.DATABASE_URL?.slice(0, 30));
+console.log('DB URL ends:', process.env.DATABASE_URL?.slice(-25));
+const prisma = new PrismaClient();
 const prisma = new PrismaClient();
 
 export async function GET(request) {

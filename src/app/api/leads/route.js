@@ -134,7 +134,12 @@ export async function GET(request) {
     console.error('❌ API error:', error);
     return NextResponse.json({ 
       leads: [], 
-      error: error.message 
+      error: error.message,
+      debug: {
+        urlLength: process.env.DATABASE_URL?.length,
+        urlStart: process.env.DATABASE_URL?.slice(0, 30),
+        urlEnd: process.env.DATABASE_URL?.slice(-25),
+      }
     }, { status: 500 });
   }
 }
@@ -189,31 +194,3 @@ export async function POST(request) {
                 email: null,
                 placeId: place.place_id,
                 lat: placeDetails.geometry?.location?.lat,
-                lng: placeDetails.geometry?.location?.lng,
-                status: "new"
-              }
-            });
-            leads.push(lead);
-          } else {
-            leads.push(existingLead);
-          }
-        }
-      } else {
-        console.error('❌ Place Details failed for', place.name, '-', detailData.status, detailData.error_message || '');
-      }
-    }
-    
-    return NextResponse.json({ 
-      success: true, 
-      leads,
-      count: leads.length 
-    });
-    
-  } catch (error) {
-    console.error('POST error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
-  }
-}

@@ -11,6 +11,7 @@ import TermsModal from "@/components/TermsModal";
 import { useFreeSearches } from "@/components/FreeSearchesTracker";
 import FreeSearchesModal from "@/components/FreeSearchesModal";
 import { hasCompletedFirstAudit, markFirstAuditCompleted } from "@/utils/audit-storage";
+import BrandingServices from "@/components/BrandingServices";
 
 // Admin emails - only these users can see the Reports link
 const ADMIN_EMAILS = [
@@ -40,7 +41,7 @@ function ErrorDisplay({ message }: { message: string }) {
     <div className="mt-6 p-6 bg-red-50 border border-red-200 rounded-2xl">
       <h3 className="text-red-800 font-semibold mb-2">Audit Failed</h3>
       <p className="text-red-600">{message}</p>
-      <button 
+      <button
         onClick={() => window.location.reload()}
         className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
       >
@@ -61,10 +62,10 @@ function NoDataState() {
   );
 }
 
-// Header Component – now includes "Documents" link
+// Header Component - now includes "Documents" and "Branding" links
 function Header() {
   const { isSignedIn } = useAuth();
-    const { user } = useUser();
+  const { user } = useUser();
   const [showTerms, setShowTerms] = useState(false);
   const [pendingAction, setPendingAction] = useState<'signin' | 'signup' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -144,34 +145,36 @@ function Header() {
                 <Link href="#features" className="text-gray-600 hover:text-gray-900 transition">
                   Features
                 </Link>
+                <Link href="#branding" className="text-gray-600 hover:text-blue-600 transition font-medium">
+                  Branding
+                </Link>
                 <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition">
                   Pricing
                 </Link>
                 <Link href="#about" className="text-gray-600 hover:text-gray-900 transition">
                   About
                 </Link>
-                {/* NEW: Documents link */}
-                <Link 
-                  href="/documents" 
+                <Link
+                  href="/documents"
                   className="text-gray-600 hover:text-blue-600 transition font-medium"
                 >
                   Documents
                 </Link>
               </nav>
 
-              <Link 
-                href="/admin-reports" 
+              <Link
+                href="/admin-reports"
                 className="text-gray-600 hover:text-blue-600 transition font-medium"
               >
                 Admin Reports
               </Link>
 
-                <Link
-                  href="/prospects"
-                  className="text-gray-600 hover:text-blue-600 transition font-medium"
-                >
-                  AI Site Creator
-                </Link>
+              <Link
+                href="/prospects"
+                className="text-gray-600 hover:text-blue-600 transition font-medium"
+              >
+                AI Site Creator
+              </Link>
 
               {isSignedIn ? (
                 <>
@@ -187,8 +190,8 @@ function Header() {
                 </>
               ) : (
                 <>
-                  <Link 
-                    href="/sign-in" 
+                  <Link
+                    href="/sign-in"
                     onClick={handleSignInClick}
                     className="px-5 py-2 text-blue-600 font-medium hover:text-blue-700 transition"
                   >
@@ -208,7 +211,7 @@ function Header() {
         </div>
       </header>
 
-      <TermsModal 
+      <TermsModal
         isOpen={showTerms}
         onAccept={handleTermsAccept}
         onClose={handleTermsDecline}
@@ -218,13 +221,13 @@ function Header() {
 }
 
 // Search Section Component (only shows input if user is signed in)
-function SearchSection({ 
-  query, 
-  setQuery, 
-  loading, 
+function SearchSection({
+  query,
+  setQuery,
+  loading,
   onSearch,
   isSignedIn
-}: { 
+}: {
   query: string;
   setQuery: (q: string) => void;
   loading: boolean;
@@ -241,7 +244,7 @@ function SearchSection({
     <div className="bg-white rounded-2xl shadow-xl border p-8 mb-12">
       <h2 className="text-2xl font-bold mb-2 text-center">Run Your Visibility Audit</h2>
       <p className="text-gray-600 text-center mb-6">Enter any business name to get started</p>
-      
+
       {!isSignedIn ? (
         <div className="text-center">
           <p className="text-red-600 mb-4">🔒 Please sign in to run a visibility audit</p>
@@ -275,7 +278,7 @@ function SearchSection({
           </button>
         </div>
       )}
-      
+
       <p className="text-xs text-gray-400 text-center mt-4">
         {isSignedIn ? "Free audit • Subscription unlocks unlimited searches" : "Sign in to start your free visibility audit"}
       </p>
@@ -284,13 +287,13 @@ function SearchSection({
 }
 
 // Hero Section
-function HeroSection({ 
-  query, 
-  setQuery, 
-  loading, 
+function HeroSection({
+  query,
+  setQuery,
+  loading,
   onSearch,
   isSignedIn
-}: { 
+}: {
   query: string;
   setQuery: (q: string) => void;
   loading: boolean;
@@ -306,14 +309,14 @@ function HeroSection({
         </span>
         <span className="text-sm text-blue-700 font-medium">AI-Powered Analysis</span>
       </div>
-      
+
       <h1 className="text-5xl md:text-7xl font-black mb-6 italic">
         <span className="text-black">Are You Visible</span>
         <br />
         <span className="text-blue-600">Online?</span>
       </h1>
-      
-      <SearchSection 
+
+      <SearchSection
         query={query}
         setQuery={setQuery}
         loading={loading}
@@ -361,7 +364,7 @@ function FeaturesSection() {
 
   const FeatureIcon = ({ src, alt }: { src: string; alt: string }) => {
     const [imgError, setImgError] = useState(false);
-    
+
     if (imgError) {
       const fallbackIcons: { [key: string]: string } = {
         "SEO Analysis": "🔍",
@@ -377,7 +380,7 @@ function FeaturesSection() {
         </div>
       );
     }
-    
+
     return (
       <img
         src={src}
@@ -392,7 +395,7 @@ function FeaturesSection() {
     <div id="features" className="mb-20">
       <h2 className="text-3xl font-bold text-center mb-4">Powerful Features</h2>
       <p className="text-gray-600 text-center mb-12">Everything you need to dominate your market</p>
-      
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {features.map((feature, idx) => (
           <div key={idx} className="p-6 bg-white rounded-xl border border-gray-100 hover:shadow-lg transition hover:border-blue-200 group text-center">
@@ -415,13 +418,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [showFreeSearchesModal, setShowFreeSearchesModal] = useState(false);
   const [userJustSignedUp, setUserJustSignedUp] = useState(false);
-  
-  const { 
-    canPerformSearch, 
-    useFreeSearch, 
+
+  const {
+    canPerformSearch,
+    useFreeSearch,
     getRemainingFreeSearches,
     hasSubscription,
-    freeSearches 
+    freeSearches
   } = useFreeSearches();
 
   // Check if the user just signed up (flag from sign-up flow)
@@ -463,7 +466,7 @@ export default function Home() {
     if (userJustSignedUp) {
       setUserJustSignedUp(false);
       // Continue with audit
-    } 
+    }
     // If not signed in at all, redirect to sign-up page
     else if (!isSignedIn) {
       // Store the query in sessionStorage to pre-fill after sign-up
@@ -513,12 +516,12 @@ export default function Home() {
         validatedData.mapsPresence,
         validatedData.social
       );
-      
+
       // Mark first audit as completed
       if (!hasCompletedFirstAudit()) {
         markFirstAuditCompleted();
       }
-      
+
       // Use one free search
       useFreeSearch();
 
@@ -540,7 +543,7 @@ export default function Home() {
           console.error("Failed to save profile:", err);
         }
       }
-      
+
     } catch (err: any) {
       console.error("Audit error:", err);
       setError(err.message || "Failed to run visibility audit. Please try again.");
@@ -553,16 +556,16 @@ export default function Home() {
   return (
     <>
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <HeroSection 
+        <HeroSection
           query={query}
           setQuery={setQuery}
           loading={loading}
           onSearch={runAudit}
           isSignedIn={!!isSignedIn}
         />
-        
+
         {/* Free searches counter (only for signed-in non-subscribers) */}
         {isSignedIn && !hasSubscription && freeSearches.remainingSearches > 0 && (
           <div className="mb-6 text-center">
@@ -579,7 +582,7 @@ export default function Home() {
             </p>
           </div>
         )}
-        
+
         {/* Unlimited banner for subscribers */}
         {isSignedIn && hasSubscription && (
           <div className="mb-6 text-center">
@@ -593,10 +596,10 @@ export default function Home() {
             </div>
           </div>
         )}
-        
+
         {error && <ErrorDisplay message={error} />}
         {loading && <LoadingState />}
-        
+
         <div className="mt-6">
           <Suspense fallback={<LoadingState />}>
             {!loading && !error && data && <VisibilityCard {...data} />}
@@ -610,27 +613,30 @@ export default function Home() {
             )}
           </Suspense>
         </div>
-        
+
         <FeaturesSection />
-        
+
+        {/* Branding Services section */}
+        <BrandingServices />
+
         <div id="pricing" className="mt-12">
           <Pricing />
         </div>
-        
+
         {/* Footer with WhatsApp and email contact */}
         <footer id="about" className="mt-20 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
           <p>&copy; 2026 DAPC Visibility Tracker. All rights reserved.</p>
           <p className="mt-2">Empowering Kenyan businesses with data-driven insights</p>
           <p className="mt-1 text-xs text-gray-400">DAPC Visibility Tracker is a subsidiary of Lumee Ent. Limited</p>
-          
+
           <div className="mt-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <a 
-                href="https://wa.me/254722973020?text=Hello!%20I%20need%20assistance%20with%20the%20DAPC%20Visibility%20Tracker.%20Can%20you%20help%20me%3F" 
-                target="_blank" 
+              <a
+                href="https://wa.me/254722973020?text=Hello!%20I%20need%20assistance%20with%20the%20DAPC%20Visibility%20Tracker.%20Can%20you%20help%20me%3F"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-600 hover:text-green-700 transition-colors font-medium"
               >
@@ -641,8 +647,8 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <a 
-                href="mailto:info@dapc.co.ke" 
+              <a
+                href="mailto:info@dapc.co.ke"
                 className="text-blue-600 hover:text-blue-700 transition-colors"
               >
                 info@dapc.co.ke
@@ -652,7 +658,7 @@ export default function Home() {
         </footer>
       </main>
 
-      <FreeSearchesModal 
+      <FreeSearchesModal
         isOpen={showFreeSearchesModal}
         onClose={() => setShowFreeSearchesModal(false)}
         remainingSearches={getRemainingFreeSearches()}

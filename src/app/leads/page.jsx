@@ -14,7 +14,7 @@ export default async function LeadsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <LeadManager />
+      <LeadManager userId={userId} />
     </div>
   );
 }
